@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout · Beyond Beauty KE</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--cream:#faf8f5;--white:#fff;--black:#0e0e0e;--mid:#6b6560;--light:#c8c4be;--accent:#b5853a;--border:#e8e4df;--green:#16a34a;--red:#dc2626;--font-serif:'Cormorant Garamond',Georgia,serif;--font-sans:'Jost',sans-serif}
+  body{background:var(--cream);color:var(--black);font-family:var(--font-sans);font-size:14px;line-height:1.6}
+
+  /* HEADER */
+  .site-header{background:var(--white);border-bottom:1px solid var(--border);padding:18px 40px;display:flex;align-items:center;justify-content:space-between}
+  .site-logo{text-decoration:none;color:var(--black);text-align:center}
+  .site-logo-main{font-family:var(--font-serif);font-size:26px;font-weight:400;letter-spacing:.22em;text-transform:uppercase;display:block}
+  .site-logo-sub{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:var(--accent);display:block;margin-top:3px}
+  .back-link{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);text-decoration:none;display:flex;align-items:center;gap:6px;transition:color .2s}
+  .back-link:hover{color:var(--black)}
+
+  /* LAYOUT */
+  .checkout-wrap{max-width:1100px;margin:0 auto;padding:48px 24px 80px;display:grid;grid-template-columns:1fr 420px;gap:48px;align-items:start}
+  @media(max-width:860px){.checkout-wrap{grid-template-columns:1fr;padding:24px 16px 60px}}
+
+  /* SECTION */
+  .section-title{font-family:var(--font-serif);font-size:22px;font-weight:400;letter-spacing:.06em;margin-bottom:24px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+
+  /* FORM */
+  .form-group{margin-bottom:18px}
+  .form-label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;font-weight:500}
+  .form-input,.form-select,.form-textarea{width:100%;padding:12px 14px;border:1px solid var(--border);background:var(--white);font-family:var(--font-sans);font-size:13px;color:var(--black);outline:none;transition:border-color .2s;border-radius:0;-webkit-appearance:none}
+  .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--black)}
+  .form-input.error,.form-select.error{border-color:var(--red)}
+  .form-textarea{resize:vertical;min-height:80px}
+  .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:480px){.form-row{grid-template-columns:1fr}}
+  .field-error{font-size:11px;color:var(--red);margin-top:4px}
+
+  /* MPESA SECTION */
+  .mpesa-section{background:var(--white);border:1px solid var(--border);padding:28px}
+  .mpesa-logo{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  .mpesa-badge{background:#00a650;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:2px}
+  .mpesa-title{font-size:14px;font-weight:500;letter-spacing:.04em}
+  .mpesa-hint{font-size:12px;color:var(--mid);margin-bottom:18px;line-height:1.7}
+  .pay-btn{width:100%;background:#00a650;color:#fff;border:none;padding:16px;font-family:var(--font-sans);font-size:12px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:6px}
+  .pay-btn:hover{background:#008040}
+  .pay-btn:disabled{background:var(--light);cursor:not-allowed}
+
+  /* STATUS STATES */
+  .status-screen{display:none;text-align:center;padding:32px 24px}
+  .status-screen.show{display:block}
+  .status-icon{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .status-icon.pending{background:#fef9c3;animation:spin-ring 1.2s linear infinite}
+  .status-icon.success{background:#dcfce7}
+  .status-icon.failed{background:#fee2e2}
+  .status-title{font-family:var(--font-serif);font-size:26px;font-weight:400;margin-bottom:8px}
+  .status-msg{font-size:13px;color:var(--mid);line-height:1.7;max-width:340px;margin:0 auto}
+  .status-order{font-size:12px;letter-spacing:.08em;color:var(--accent);margin-top:12px;font-weight:500}
+  .retry-btn{margin-top:20px;background:none;border:1px solid var(--border);padding:10px 24px;font-family:var(--font-sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:border-color .2s}
+  .retry-btn:hover{border-color:var(--black)}
+  @keyframes spin-ring{0%{box-shadow:0 0 0 2px #ca8a04}50%{box-shadow:0 0 0 4px #fbbf24}100%{box-shadow:0 0 0 2px #ca8a04}}
+
+  /* ORDER SUMMARY */
+  .order-summary{background:var(--white);border:1px solid var(--border);padding:28px;position:sticky;top:20px}
+  .summary-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .summary-item:last-of-type{border-bottom:none}
+  .summary-img{width:56px;height:74px;object-fit:cover;background:#f0ede9;flex-shrink:0}
+  .summary-name{font-size:13px;font-weight:400;margin-bottom:3px}
+  .summary-qty{font-size:11px;color:var(--mid)}
+  .summary-price{font-size:13px;color:var(--mid);margin-left:auto;white-space:nowrap}
+  .summary-totals{padding-top:14px;margin-top:6px;border-top:1px solid var(--border)}
+  .summary-row{display:flex;justify-content:space-between;font-size:12px;color:var(--mid);padding:4px 0}
+  .summary-row.grand{font-size:14px;color:var(--black);font-weight:500;padding-top:10px;margin-top:6px;border-top:1px solid var(--border)}
+  .empty-msg{text-align:center;padding:48px 24px;color:var(--mid);font-size:13px}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <a href="/" class="back-link">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="15,18 9,12 15,6"/></svg>
+    Continue Shopping
+  </a>
+  <a href="/" class="site-logo">
+    <span class="site-logo-main">Beyond Beauty</span>
+    <span class="site-logo-sub">Nairobi · Kenya</span>
+  </a>
+  <div style="width:140px"></div>
+</header>
+
+<div class="checkout-wrap">
+
+  <!-- LEFT: FORM + PAYMENT -->
+  <div>
+    <div id="formSection">
+      <div class="section-title">Your Details</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-input" id="customerName" placeholder="Jane Mwangi">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone Number *</label>
+          <input class="form-input" id="customerPhone" placeholder="07XX XXX XXX" type="tel">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email (optional)</label>
+        <input class="form-input" id="customerEmail" placeholder="jane@example.com" type="email">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Delivery Address *</label>
+        <textarea class="form-textarea" id="deliveryAddress" placeholder="e.g. Apt 4B, Kilimani Road, Nairobi · Landmark: Near Java House"></textarea>
+      </div>
+
+      <!-- MPESA -->
+      <div class="mpesa-section">
+        <div class="mpesa-logo">
+          <span class="mpesa-badge">M-PESA</span>
+          <span class="mpesa-title">Pay via Lipa Na M-Pesa</span>
+        </div>
+        <p class="mpesa-hint">
+          Enter the M-Pesa number to send the payment to. This will open a payment prompt on that phone. Enter your PIN to confirm — it's instant and secure.
+        </p>
+        <div class="form-group">
+          <label class="form-label">M-Pesa Number *</label>
+          <input class="form-input" id="mpesaPhone" placeholder="07XX XXX XXX" type="tel">
+          <div class="field-error" id="mpesaPhoneErr"></div>
+        </div>
+        <button class="pay-btn" id="payBtn" onclick="initiatePayment()">Pay via M-Pesa</button>
+      </div>
+
+      <!-- STATUS SCREENS -->
+      <div class="status-screen" id="statusPending">
+        <div class="status-icon pending">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="status-title">Check Your Phone</div>
+        <p class="status-msg">An M-Pesa payment request has been sent to <strong id="pendingPhone"></strong>. Enter your PIN to complete the payment.</p>
+        <p class="status-order">Order #<span id="pendingOrderNo"></span></p>
+        <p style="font-size:11px;color:var(--light);margin-top:14px;letter-spacing:.04em">Waiting for confirmation…</p>
+      </div>
+
+      <div class="status-screen" id="statusSuccess">
+        <div class="status-icon success">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="status-title">Payment Received!</div>
+        <p class="status-msg">Thank you! Your order has been confirmed. We'll WhatsApp you with delivery updates.</p>
+        <p class="status-order">Order #<span id="successOrderNo"></span> · M-Pesa Receipt: <span id="successReceipt"></span></p>
+        <a href="/" style="display:inline-block;margin-top:20px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--black);text-decoration:none;border-bottom:1px solid var(--black);padding-bottom:2px">Continue Shopping</a>
+      </div>
+
+      <div class="status-screen" id="statusFailed">
+        <div class="status-icon failed">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </div>
+        <div class="status-title">Payment Failed</div>
+        <p class="status-msg" id="failedMsg">The payment was not completed. This could be due to insufficient funds, wrong PIN, or a timeout. Please try again.</p>
+        <button class="retry-btn" onclick="retryPayment()">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: ORDER SUMMARY -->
+  <div>
+    <div class="order-summary">
+      <div class="section-title">Order Summary</div>
+      <div id="summaryItems"></div>
+      <div class="summary-totals" id="summaryTotals"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let cart = JSON.parse(localStorage.getItem('bb_cart') || '[]');
+  let orderId = null;
+  let orderNumber = null;
+  let pollInterval = null;
+
+  function fmt(p) { return 'KSh ' + p.toLocaleString('en-KE'); }
+
+  // ── RENDER SUMMARY ──
+  function renderSummary() {
+    const el = document.getElementById('summaryItems');
+    const totalsEl = document.getElementById('summaryTotals');
+
+    if (!cart.length) {
+      el.innerHTML = `<div class="empty-msg"><p>Your bag is empty.</p><a href="/" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid)">← Continue Shopping</a></div>`;
+      totalsEl.innerHTML = '';
+      return;
+    }
+
+    el.innerHTML = cart.map(item => `
+      <div class="summary-item">
+        <img class="summary-img" src="${item.image_url || ''}" alt="${item.name}" onerror="this.style.display='none'">
+        <div>
+          <div class="summary-name">${item.name}</div>
+          <div class="summary-qty">Qty: ${item.qty}</div>
+        </div>
+        <div class="summary-price">${fmt(item.price * item.qty)}</div>
+      </div>
+    `).join('');
+
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const delivery = subtotal >= 3000 ? 0 : 200;
+    const grand = subtotal + delivery;
+
+    totalsEl.innerHTML = `
+      <div class="summary-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
+      <div class="summary-row"><span>Delivery</span><span>${delivery === 0 ? 'Free' : fmt(delivery)}</span></div>
+      ${delivery > 0 ? `<div class="summary-row" style="color:var(--accent);font-size:11px"><span colspan="2">Add ${fmt(3000 - subtotal)} more for free delivery</span></div>` : ''}
+      <div class="summary-row grand"><span>Total</span><span>${fmt(grand)}</span></div>
+    `;
+  }
+
+  // ── VALIDATE ──
+  function validate() {
+    let ok = true;
+    const fields = [
+      { id: 'customerName', label: 'Name' },
+      { id: 'customerPhone', label: 'Phone number' },
+      { id: 'deliveryAddress', label: 'Delivery address' },
+      { id: 'mpesaPhone', label: 'M-Pesa number' },
+    ];
+    fields.forEach(f => {
+      const el = document.getElementById(f.id);
+      el.classList.remove('error');
+      if (!el.value.trim()) { el.classList.add('error'); ok = false; }
+    });
+    if (!ok) { showMsg('Please fill in all required fields.', 'red'); }
+    return ok;
+  }
+
+  // ── PAYMENT FLOW ──
+  async function initiatePayment() {
+    if (!cart.length) return showMsg('Your bag is empty.', 'red');
+    if (!validate()) return;
+
+    const payBtn = document.getElementById('payBtn');
+    payBtn.disabled = true;
+    payBtn.textContent = 'Creating order…';
+
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const delivery = subtotal >= 3000 ? 0 : 200;
+
+    try {
+      // 1. Create order
+      const orderRes = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer_name: document.getElementById('customerName').value.trim(),
+          customer_phone: document.getElementById('customerPhone').value.trim(),
+          customer_email: document.getElementById('customerEmail').value.trim() || null,
+          delivery_address: document.getElementById('deliveryAddress').value.trim(),
+          items: cart.map(i => ({
+            product_id: i.id,
+            product_name: i.name,
+            quantity: i.qty,
+            unit_price: i.price,
+          })),
+        }),
+      });
+      const orderData = await orderRes.json();
+      if (!orderRes.ok) throw new Error(orderData.error || 'Could not create order');
+      orderId = orderData.id;
+      orderNumber = orderData.order_number;
+
+      // 2. Initiate STK Push
+      payBtn.textContent = 'Sending M-Pesa request…';
+      const mpesaPhone = document.getElementById('mpesaPhone').value.trim();
+      const stkRes = await fetch('/api/payments/mpesa/stk-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId, phone: mpesaPhone }),
+      });
+      const stkData = await stkRes.json();
+      if (!stkRes.ok) throw new Error(stkData.error || 'M-Pesa request failed');
+
+      // 3. Show pending screen and start polling
+      showStatus('pending');
+      document.getElementById('pendingPhone').textContent = mpesaPhone;
+      document.getElementById('pendingOrderNo').textContent = orderNumber;
+      startPolling();
+
+    } catch (err) {
+      payBtn.disabled = false;
+      payBtn.textContent = 'Pay via M-Pesa';
+      showMsg(err.message, 'red');
+    }
+  }
+
+  // ── POLLING ──
+  function startPolling() {
+    let attempts = 0;
+    const maxAttempts = 40; // ~2 minutes
+    pollInterval = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        clearInterval(pollInterval);
+        document.getElementById('failedMsg').textContent = 'Payment timed out. Please try again.';
+        showStatus('failed');
+        return;
+      }
+      try {
+        const res = await fetch(`/api/orders/${orderId}`);
+        const data = await res.json();
+        if (data.payment_status === 'paid') {
+          clearInterval(pollInterval);
+          localStorage.removeItem('bb_cart');
+          document.getElementById('successOrderNo').textContent = orderNumber;
+          document.getElementById('successReceipt').textContent = data.mpesa_transaction_id || '—';
+          showStatus('success');
+        } else if (data.payment_status === 'failed') {
+          clearInterval(pollInterval);
+          showStatus('failed');
+        }
+      } catch { /* keep polling */ }
+    }, 3000);
+  }
+
+  function retryPayment() {
+    clearInterval(pollInterval);
+    orderId = null;
+    orderNumber = null;
+    showStatus(null);
+    const payBtn = document.getElementById('payBtn');
+    payBtn.disabled = false;
+    payBtn.textContent = 'Pay via M-Pesa';
+  }
+
+  function showStatus(state) {
+    ['formSection'].forEach(id => {
+      document.getElementById(id).style.display = state ? 'none' : 'block';
+    });
+    ['statusPending', 'statusSuccess', 'statusFailed'].forEach(id => {
+      document.getElementById(id).classList.remove('show');
+    });
+    if (state) {
+      document.getElementById(`status${state.charAt(0).toUpperCase() + state.slice(1)}`).classList.add('show');
+    }
+  }
+
+  function showMsg(msg, color) {
+    const existing = document.getElementById('formMsg');
+    if (existing) existing.remove();
+    const div = document.createElement('div');
+    div.id = 'formMsg';
+    div.style.cssText = `padding:12px 16px;background:${color === 'red' ? '#fee2e2' : '#dcfce7'};color:${color === 'red' ? '#dc2626' : '#16a34a'};font-size:12px;margin-bottom:16px;letter-spacing:.02em`;
+    div.textContent = msg;
+    document.querySelector('.mpesa-section').before(div);
+    div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  // Pre-fill mpesa phone from customer phone
+  document.getElementById('customerPhone').addEventListener('blur', function () {
+    if (!document.getElementById('mpesaPhone').value) {
+      document.getElementById('mpesaPhone').value = this.value;
+    }
+  });
+
+  renderSummary();
+</script>
+</body>
+</html>

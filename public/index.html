@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beyond Beauty KE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf8f5; --white: #ffffff; --black: #0e0e0e;
+    --mid: #6b6560; --light: #c8c4be; --accent: #b5853a;
+    --border: #e8e4df;
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-sans: 'Jost', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body { background: var(--cream); color: var(--black); font-family: var(--font-sans); font-size: 14px; line-height: 1.6; overflow-x: hidden; }
+
+  /* ── HEADER ── */
+  .site-header { background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  .header-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 18px 40px; gap: 16px; }
+  .header-left { display: flex; align-items: center; gap: 20px; }
+  .header-right { display: flex; align-items: center; justify-content: flex-end; gap: 20px; }
+
+  .search-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--mid); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-family: var(--font-sans); font-weight: 400; transition: color .2s; }
+  .search-wrap:hover { color: var(--black); }
+
+  .site-logo { text-align: center; text-decoration: none; color: var(--black); }
+  .site-logo-main { font-family: var(--font-serif); font-size: clamp(22px,3vw,34px); font-weight: 400; letter-spacing: .22em; text-transform: uppercase; line-height: 1; display: block; }
+  .site-logo-sub { font-family: var(--font-sans); font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: var(--accent); font-weight: 400; display: block; margin-top: 4px; }
+
+  .header-btn { display: flex; align-items: center; gap: 7px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mid); font-family: var(--font-sans); text-decoration: none; cursor: pointer; background: none; border: none; transition: color .2s; white-space: nowrap; }
+  .header-btn:hover { color: var(--black); }
+  .header-btn.whatsapp-btn { color: #25D366; }
+  .header-btn.whatsapp-btn:hover { color: #128C7E; }
+
+  .cart-count { background: var(--black); color: var(--white); border-radius: 50%; width: 16px; height: 16px; font-size: 9px; display: inline-flex; align-items: center; justify-content: center; margin-left: 2px; font-weight: 500; }
+
+  /* ── NAV ── */
+  .site-nav { border-top: 1px solid var(--border); display: flex; justify-content: center; padding: 0 40px; background: var(--white); }
+  .nav-item { font-family: var(--font-sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 500; color: var(--mid); text-decoration: none; padding: 14px 20px; position: relative; transition: color .2s; white-space: nowrap; cursor: pointer; background: none; border: none; }
+  .nav-item:hover, .nav-item.active { color: var(--black); }
+  .nav-item.active::after { content: ''; position: absolute; bottom: 0; left: 20px; right: 20px; height: 2px; background: var(--black); }
+  .nav-item.new { color: var(--accent); }
+  .nav-item.new:hover { color: var(--black); }
+
+  /* ── ANNOUNCE ── */
+  .announce-bar { background: var(--black); color: var(--white); text-align: center; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; padding: 9px 20px; font-family: var(--font-sans); }
+  .announce-bar a { color: var(--accent); text-decoration: none; }
+
+  /* ── HERO ── */
+  .page-hero { text-align: center; padding: 48px 40px 32px; border-bottom: 1px solid var(--border); background: var(--white); }
+  .page-hero h1 { font-family: var(--font-serif); font-size: clamp(28px,4vw,48px); font-weight: 300; letter-spacing: .06em; margin-bottom: 10px; }
+  .page-hero p { font-size: 13px; color: var(--mid); letter-spacing: .04em; max-width: 480px; margin: 0 auto; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; border-bottom: 1px solid var(--border); background: var(--white); gap: 16px; }
+  .filter-count { font-size: 12px; color: var(--mid); letter-spacing: .04em; }
+  .filter-right { display: flex; align-items: center; gap: 20px; }
+  .sort-select { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mid); background: none; border: none; cursor: pointer; font-family: var(--font-sans); outline: none; appearance: none; padding-right: 14px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6560' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0 center; }
+
+  /* ── PRODUCT GRID ── */
+  .shop-main { padding: 32px 40px 80px; }
+  .product-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 32px 20px; }
+
+  .product-card { cursor: pointer; position: relative; text-decoration: none; color: inherit; display: block; }
+  .product-img-wrap { position: relative; overflow: hidden; aspect-ratio: 3/4; background: #f0ede9; margin-bottom: 14px; }
+  .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .55s cubic-bezier(.25,.46,.45,.94); }
+  .product-card:hover .product-img-wrap img { transform: scale(1.04); }
+
+  .product-badge { position: absolute; top: 12px; left: 12px; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; padding: 4px 9px; font-family: var(--font-sans); font-weight: 500; z-index: 2; }
+  .product-badge.sale { background: var(--accent); color: var(--white); }
+  .product-badge.new-in { background: var(--black); color: var(--white); }
+
+  .product-save { position: absolute; top: 10px; right: 10px; z-index: 2; background: none; border: none; cursor: pointer; color: var(--mid); padding: 6px; transition: color .2s, transform .2s; }
+  .product-save:hover { color: var(--black); transform: scale(1.15); }
+  .product-save.saved { color: var(--accent); }
+
+  .product-info { padding: 0 2px; }
+  .product-name { font-size: 13px; font-weight: 400; margin-bottom: 5px; line-height: 1.4; letter-spacing: .02em; }
+  .product-price-row { display: flex; align-items: center; gap: 8px; }
+  .product-price { font-size: 13px; color: var(--mid); font-weight: 400; }
+  .product-price.sale-price { color: var(--accent); font-weight: 500; }
+  .product-price.original { text-decoration: line-through; font-size: 11px; }
+
+  /* Quick actions */
+  .product-quick { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,.96); border-top: 1px solid var(--border); padding: 12px; transform: translateY(100%); transition: transform .28s cubic-bezier(.25,.46,.45,.94); z-index: 3; }
+  .product-card:hover .product-quick { transform: translateY(0); }
+  .quick-btn { width: 100%; background: var(--black); color: var(--white); border: none; padding: 10px; font-family: var(--font-sans); font-size: 10px; letter-spacing: .15em; text-transform: uppercase; cursor: pointer; transition: background .2s; }
+  .quick-btn:hover { background: #333; }
+  .quick-whatsapp { width: 100%; background: none; color: #25D366; border: 1px solid #25D366; padding: 8px; margin-top: 6px; font-family: var(--font-sans); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; transition: background .2s, color .2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .quick-whatsapp:hover { background: #25D366; color: white; }
+
+  /* ── CART PANEL ── */
+  .cart-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 300; }
+  .cart-overlay.open { display: block; }
+  .cart-panel { position: fixed; top: 0; right: -420px; width: 420px; max-width: 100vw; height: 100%; background: var(--white); z-index: 301; display: flex; flex-direction: column; transition: right .32s cubic-bezier(.25,.46,.45,.94); box-shadow: -4px 0 32px rgba(0,0,0,.1); }
+  .cart-panel.open { right: 0; }
+
+  .cart-header { display: flex; align-items: center; justify-content: space-between; padding: 24px; border-bottom: 1px solid var(--border); }
+  .cart-header-title { font-family: var(--font-serif); font-size: 22px; font-weight: 400; letter-spacing: .06em; }
+  .cart-close { background: none; border: none; cursor: pointer; color: var(--mid); padding: 4px; transition: color .2s; }
+  .cart-close:hover { color: var(--black); }
+
+  .cart-items { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  .cart-empty { text-align: center; color: var(--mid); font-size: 13px; padding: 48px 0; }
+  .cart-empty svg { margin-bottom: 12px; opacity: .4; }
+
+  .cart-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .cart-item-img { width: 72px; height: 96px; object-fit: cover; flex-shrink: 0; background: #f0ede9; }
+  .cart-item-info { flex: 1; }
+  .cart-item-name { font-size: 13px; font-weight: 400; margin-bottom: 4px; }
+  .cart-item-price { font-size: 12px; color: var(--mid); }
+  .cart-item-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .qty-btn { width: 26px; height: 26px; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: border-color .2s; }
+  .qty-btn:hover { border-color: var(--black); }
+  .qty-num { font-size: 13px; min-width: 20px; text-align: center; }
+  .cart-item-remove { background: none; border: none; cursor: pointer; color: var(--light); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; transition: color .2s; margin-left: auto; align-self: flex-start; padding: 0; }
+  .cart-item-remove:hover { color: var(--mid); }
+
+  .cart-footer { padding: 20px 24px; border-top: 1px solid var(--border); }
+  .cart-totals { margin-bottom: 10px; }
+  .cart-total-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--mid); margin-bottom: 6px; }
+  .cart-total-row.grand { font-size: 14px; color: var(--black); font-weight: 500; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .cart-delivery-msg { font-size: 11px; color: var(--accent); letter-spacing: .04em; margin-bottom: 14px; }
+  .cart-checkout-btn { display: block; width: 100%; background: var(--black); color: var(--white); border: none; padding: 14px; font-family: var(--font-sans); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; cursor: pointer; text-align: center; text-decoration: none; transition: background .2s; }
+  .cart-checkout-btn:hover { background: #333; }
+  .cart-checkout-btn:disabled { background: var(--light); cursor: not-allowed; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--black); color: var(--white); padding: 12px 24px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: 0; transition: opacity .3s, transform .3s; z-index: 500; pointer-events: none; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── WHATSAPP FAB ── */
+  .wa-fab { position: fixed; bottom: 28px; right: 28px; z-index: 200; }
+  .wa-fab-btn { width: 56px; height: 56px; border-radius: 50%; background: #25D366; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(37,211,102,.4); transition: transform .2s, box-shadow .2s; position: relative; }
+  .wa-fab-btn:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(37,211,102,.5); }
+  .wa-tooltip { position: absolute; right: 68px; bottom: 50%; transform: translateY(50%); background: var(--black); color: var(--white); font-size: 12px; white-space: nowrap; padding: 8px 14px; letter-spacing: .04em; font-family: var(--font-sans); opacity: 0; pointer-events: none; transition: opacity .2s; border-radius: 2px; }
+  .wa-tooltip::after { content: ''; position: absolute; right: -6px; top: 50%; transform: translateY(-50%); border: 6px solid transparent; border-right: none; border-left-color: var(--black); }
+  .wa-fab-btn:hover .wa-tooltip { opacity: 1; }
+  .wa-pulse { position: absolute; inset: 0; border-radius: 50%; animation: pulse 2.4s ease-out infinite; background: #25D366; }
+  @keyframes pulse { 0% { transform: scale(1); opacity: .6; } 100% { transform: scale(1.7); opacity: 0; } }
+
+  /* ── FOOTER ── */
+  .site-footer { background: var(--black); color: rgba(255,255,255,.6); padding: 56px 40px 32px; }
+  .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 48px; }
+  .footer-brand-name { font-family: var(--font-serif); font-size: 22px; font-weight: 400; letter-spacing: .2em; color: var(--white); margin-bottom: 12px; }
+  .footer-desc { font-size: 12px; line-height: 1.8; max-width: 220px; }
+  .footer-heading { font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: var(--white); font-weight: 500; margin-bottom: 16px; font-family: var(--font-sans); }
+  .footer-links { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .footer-links a { font-size: 12px; color: rgba(255,255,255,.55); text-decoration: none; letter-spacing: .03em; transition: color .2s; }
+  .footer-links a:hover { color: var(--white); }
+  .footer-bottom { border-top: 1px solid rgba(255,255,255,.1); padding-top: 24px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; gap: 16px; flex-wrap: wrap; }
+  .footer-social { display: flex; gap: 16px; }
+  .footer-social a { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.5); text-decoration: none; transition: color .2s; }
+  .footer-social a:hover { color: var(--white); }
+
+  /* ── MOBILE ── */
+  @media (max-width: 768px) {
+    .header-top { padding: 14px 16px; grid-template-columns: auto 1fr auto; }
+    .header-left .search-wrap span { display: none; }
+    .header-btn span { display: none; }
+    .header-right { gap: 12px; }
+    .site-nav { overflow-x: auto; justify-content: flex-start; padding: 0 16px; scrollbar-width: none; }
+    .site-nav::-webkit-scrollbar { display: none; }
+    .nav-item { padding: 12px 14px; font-size: 10px; }
+    .announce-bar { font-size: 10px; padding: 8px 16px; }
+    .page-hero { padding: 28px 16px 20px; }
+    .filter-bar { padding: 12px 16px; }
+    .shop-main { padding: 20px 16px 60px; }
+    .product-grid { grid-template-columns: repeat(2,1fr); gap: 20px 12px; }
+    .product-quick { display: none; }
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+    .site-footer { padding: 40px 16px 24px; }
+    .footer-bottom { flex-direction: column; text-align: center; }
+    .wa-fab { bottom: 20px; right: 16px; }
+    .cart-panel { width: 100vw; }
+  }
+  @media (max-width: 480px) { .footer-grid { grid-template-columns: 1fr; } }
+
+  /* ── ANIMATIONS ── */
+  .product-card { opacity: 0; transform: translateY(20px); animation: fadeUp .5s forwards; }
+  @keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
+</style>
+</head>
+<body>
+
+<div class="announce-bar">
+  Free delivery on orders over KSh 3,000 · WhatsApp: <a id="waAnnounce" href="#" target="_blank">+254 700 000 000</a>
+</div>
+
+<header class="site-header">
+  <div class="header-top">
+    <div class="header-left">
+      <div class="search-wrap" onclick="toggleSearch()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="17" y1="17" x2="22" y2="22"/></svg>
+        <span>Search</span>
+      </div>
+    </div>
+    <a class="site-logo" href="/">
+      <span class="site-logo-main">Beyond Beauty</span>
+      <span class="site-logo-sub">Nairobi · Kenya</span>
+    </a>
+    <div class="header-right">
+      <a id="waHeaderBtn" href="#" target="_blank" class="header-btn whatsapp-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        <span>WhatsApp</span>
+      </a>
+      <button class="header-btn" onclick="openCartPanel()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span>Bag</span>
+        <span class="cart-count" id="cartCount" style="display:none">0</span>
+      </button>
+    </div>
+  </div>
+
+  <nav class="site-nav">
+    <button class="nav-item new active" data-cat="all">All Products</button>
+    <button class="nav-item" data-cat="bags">Bags</button>
+    <button class="nav-item" data-cat="accessories">Accessories</button>
+    <button class="nav-item" data-cat="hair">Hair</button>
+    <button class="nav-item" data-cat="skincare">Skincare</button>
+    <button class="nav-item" data-cat="sale">Sale</button>
+  </nav>
+</header>
+
+<div class="page-hero">
+  <h1 id="heroTitle">All Products</h1>
+  <p>Curated pieces for the modern Kenyan woman</p>
+</div>
+
+<div class="filter-bar">
+  <span class="filter-count" id="productCount">Loading…</span>
+  <div class="filter-right">
+    <select class="sort-select" id="sortSelect">
+      <option value="default">Sort: Featured</option>
+      <option value="price_asc">Price: Low to High</option>
+      <option value="price_desc">Price: High to Low</option>
+    </select>
+  </div>
+</div>
+
+<main class="shop-main">
+  <div class="product-grid" id="productGrid"></div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand-name">Beyond Beauty</div>
+      <p class="footer-desc">Curated fashion, beauty &amp; accessories for the modern Kenyan woman. Shop online and pay via M-Pesa — we deliver nationwide.</p>
+    </div>
+    <div>
+      <p class="footer-heading">Shop</p>
+      <ul class="footer-links">
+        <li><a href="#" onclick="filterCat('all')">All Products</a></li>
+        <li><a href="#" onclick="filterCat('bags')">Bags</a></li>
+        <li><a href="#" onclick="filterCat('accessories')">Accessories</a></li>
+        <li><a href="#" onclick="filterCat('hair')">Hair</a></li>
+        <li><a href="#" onclick="filterCat('skincare')">Skincare</a></li>
+        <li><a href="#" onclick="filterCat('sale')">Sale</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-heading">Help</p>
+      <ul class="footer-links">
+        <li><a href="#">How to Order</a></li>
+        <li><a href="#">Delivery Info</a></li>
+        <li><a href="#">Returns Policy</a></li>
+        <li><a href="#">Size Guide</a></li>
+        <li><a href="#" id="waContact">Contact Us</a></li>
+      </ul>
+    </div>
+    <div>
+      <p class="footer-heading">Connect</p>
+      <ul class="footer-links">
+        <li><a href="https://www.instagram.com/beyondbeautyke/" target="_blank">Instagram</a></li>
+        <li><a id="waFooter" href="#" target="_blank">WhatsApp</a></li>
+        <li><a href="#">TikTok</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Beyond Beauty KE · Nairobi, Kenya</span>
+    <div class="footer-social">
+      <a href="https://www.instagram.com/beyondbeautyke/" target="_blank">Instagram</a>
+      <a id="waFooter2" href="#" target="_blank">WhatsApp</a>
+    </div>
+  </div>
+</footer>
+
+<!-- WhatsApp FAB -->
+<div class="wa-fab">
+  <button class="wa-fab-btn" id="waFab">
+    <div class="wa-pulse"></div>
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    <span class="wa-tooltip">Chat to order</span>
+  </button>
+</div>
+
+<!-- Cart Panel -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCartPanel()"></div>
+<div class="cart-panel" id="cartPanel">
+  <div class="cart-header">
+    <span class="cart-header-title">Your Bag</span>
+    <button class="cart-close" onclick="closeCartPanel()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="cart-items" id="cartItemsEl"></div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-totals">
+      <div class="cart-total-row"><span>Subtotal</span><span id="cartSubtotal">KSh 0</span></div>
+      <div class="cart-total-row"><span>Delivery</span><span id="cartDelivery">KSh 200</span></div>
+      <div class="cart-total-row grand"><span>Total</span><span id="cartGrand">KSh 0</span></div>
+    </div>
+    <p class="cart-delivery-msg" id="cartDeliveryMsg"></p>
+    <a href="/checkout" class="cart-checkout-btn">Proceed to Checkout</a>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── CONFIG (fetched from server, WA number set here as fallback) ──
+  let WA_NUMBER = '254700000000';
+  let allProducts = [];
+  let activeCategory = 'all';
+  const savedSet = new Set();
+
+  // ── WHATSAPP LINKS ──
+  function setWaLinks(num) {
+    WA_NUMBER = num;
+    const base = `https://wa.me/${num}`;
+    const msg = encodeURIComponent("Hi Beyond Beauty KE! I'd like to enquire about a product.");
+    [
+      document.getElementById('waAnnounce'),
+      document.getElementById('waHeaderBtn'),
+      document.getElementById('waFooter'),
+      document.getElementById('waFooter2'),
+    ].forEach(el => el && (el.href = `${base}?text=${msg}`));
+    document.getElementById('waContact').href = `${base}?text=${encodeURIComponent('Hi! I have a question about an order.')}`;
+    document.getElementById('waFab').onclick = () => window.open(`${base}?text=${msg}`, '_blank');
+  }
+  setWaLinks(WA_NUMBER);
+
+  // ── CART ──
+  let cart = JSON.parse(localStorage.getItem('bb_cart') || '[]');
+
+  function saveCart() {
+    localStorage.setItem('bb_cart', JSON.stringify(cart));
+    updateCartUI();
+  }
+
+  function addToCart(product) {
+    const existing = cart.find(i => i.id === product.id);
+    if (existing) {
+      existing.qty++;
+    } else {
+      cart.push({ id: product.id, name: product.name, price: product.price, image_url: product.image_url, qty: 1 });
+    }
+    saveCart();
+    showToast('Added to bag');
+  }
+
+  function removeFromCart(id) {
+    cart = cart.filter(i => i.id !== id);
+    saveCart();
+  }
+
+  function changeQty(id, delta) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    item.qty = Math.max(1, item.qty + delta);
+    saveCart();
+  }
+
+  function updateCartUI() {
+    const total = cart.reduce((s, i) => s + i.qty, 0);
+    const el = document.getElementById('cartCount');
+    el.textContent = total;
+    el.style.display = total > 0 ? 'inline-flex' : 'none';
+    renderCartItems();
+  }
+
+  function renderCartItems() {
+    const el = document.getElementById('cartItemsEl');
+    const footer = document.getElementById('cartFooter');
+    if (!cart.length) {
+      el.innerHTML = `<div class="cart-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><p>Your bag is empty</p></div>`;
+      footer.style.display = 'none';
+      return;
+    }
+    footer.style.display = 'block';
+    const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+    const delivery = subtotal >= 3000 ? 0 : 200;
+    const grand = subtotal + delivery;
+    document.getElementById('cartSubtotal').textContent = fmt(subtotal);
+    document.getElementById('cartDelivery').textContent = delivery === 0 ? 'Free' : fmt(delivery);
+    document.getElementById('cartGrand').textContent = fmt(grand);
+    document.getElementById('cartDeliveryMsg').textContent = delivery > 0 ? `Add ${fmt(3000 - subtotal)} more for free delivery` : '✓ You qualify for free delivery';
+    el.innerHTML = cart.map(item => `
+      <div class="cart-item">
+        <img class="cart-item-img" src="${item.image_url || ''}" alt="${item.name}" onerror="this.style.display='none'">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${item.name}</div>
+          <div class="cart-item-price">${fmt(item.price)}</div>
+          <div class="cart-item-controls">
+            <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
+            <span class="qty-num">${item.qty}</span>
+            <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+            <button class="cart-item-remove" onclick="removeFromCart(${item.id})">Remove</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openCartPanel() {
+    document.getElementById('cartOverlay').classList.add('open');
+    document.getElementById('cartPanel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeCartPanel() {
+    document.getElementById('cartOverlay').classList.remove('open');
+    document.getElementById('cartPanel').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  // ── TOAST ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── UTILS ──
+  function fmt(p) { return 'KSh ' + p.toLocaleString('en-KE'); }
+
+  function waLink(product) {
+    const msg = encodeURIComponent(`Hi Beyond Beauty KE! 👋\n\nI'm interested in:\n*${product.name}* – ${fmt(product.price)}\n\nIs it available?`);
+    return `https://wa.me/${WA_NUMBER}?text=${msg}`;
+  }
+
+  function heartIcon(filled) {
+    return `<svg width="16" height="16" viewBox="0 0 24 24" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>`;
+  }
+
+  function toggleSave(id, btn) {
+    const key = String(id);
+    if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); }
+    else { savedSet.add(key); btn.classList.add('saved'); }
+    btn.innerHTML = heartIcon(savedSet.has(key));
+  }
+
+  // ── RENDER ──
+  function renderProducts(list) {
+    const grid = document.getElementById('productGrid');
+    document.getElementById('productCount').textContent = list.length + ' products';
+    if (!list.length) {
+      grid.innerHTML = '<p style="color:var(--mid);font-size:13px;padding:40px 0">No products found.</p>';
+      return;
+    }
+    grid.innerHTML = list.map((p, i) => {
+      const safeId = CSS.escape(p.id);
+      const priceHtml = p.price
+        ? `<span class="product-price ${p.original_price ? 'sale-price' : ''}">${fmt(p.price)}</span>${p.original_price ? `<span class="product-price original">${fmt(p.original_price)}</span>` : ''}`
+        : `<span class="product-price" style="color:var(--accent);font-style:italic">Enquire for price</span>`;
+      return `
+      <div class="product-card" style="animation-delay:${i * 0.05}s">
+        <div class="product-img-wrap">
+          ${p.badge ? `<span class="product-badge ${p.badge === 'Sale' ? 'sale' : 'new-in'}">${p.badge}</span>` : ''}
+          <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/f0ede9/6b6560?text=Photo+Coming'">
+          <button class="product-save" onclick="toggleSave('${p.id}', this)" title="Save">${heartIcon(false)}</button>
+          <div class="product-quick">
+            ${p.price ? `<button class="quick-btn" onclick="addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')})">Add to Bag</button>` : ''}
+            <a href="${waLink(p)}" target="_blank" class="quick-whatsapp">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+              ${p.price ? 'Order via WhatsApp' : 'Enquire via WhatsApp'}
+            </a>
+          </div>
+        </div>
+        <div class="product-info">
+          <div class="product-name">${p.name}</div>
+          <div class="product-price-row">${priceHtml}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── FETCH & FILTER ──
+  async function loadProducts(category = 'all') {
+    try {
+      const url = `/api/products${category !== 'all' ? `?category=${category}` : ''}`;
+      const res = await fetch(url);
+      allProducts = await res.json();
+      sortAndRender();
+    } catch {
+      document.getElementById('productGrid').innerHTML = '<p style="color:var(--mid);padding:40px 0">Could not load products. Please refresh.</p>';
+    }
+  }
+
+  function sortAndRender() {
+    const sort = document.getElementById('sortSelect').value;
+    let list = [...allProducts];
+    if (sort === 'price_asc') list.sort((a, b) => a.price - b.price);
+    else if (sort === 'price_desc') list.sort((a, b) => b.price - a.price);
+    renderProducts(list);
+  }
+
+  function filterCat(cat) {
+    activeCategory = cat;
+    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', sale: 'Sale' };
+    document.getElementById('heroTitle').textContent = titles[cat] || 'All Products';
+    loadProducts(cat);
+  }
+
+  function toggleSearch() {
+    const q = prompt('Search products:');
+    if (!q) return;
+    const filtered = allProducts.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.category.toLowerCase().includes(q.toLowerCase()));
+    renderProducts(filtered);
+    document.getElementById('heroTitle').textContent = `Results for "${q}"`;
+  }
+
+  // ── NAV ──
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      btn.classList.add('active');
+      filterCat(btn.dataset.cat);
+    });
+  });
+
+  document.getElementById('sortSelect').addEventListener('change', sortAndRender);
+
+  // ── INIT ──
+  updateCartUI();
+  loadProducts('all');
+</script>
+</body>
+</html>

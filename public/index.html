@@ -11,7 +11,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --cream: #faf8f5; --white: #ffffff; --black: #0e0e0e;
+    --cream: #ffffff; --white: #ffffff; --black: #0e0e0e;
     --mid: #6b6560; --light: #c8c4be; --accent: #b5853a;
     --border: #e8e4df;
     --font-serif: 'Cormorant Garamond', Georgia, serif;
@@ -160,6 +160,97 @@
   .footer-social a { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: rgba(255,255,255,.5); text-decoration: none; transition: color .2s; }
   .footer-social a:hover { color: var(--white); }
 
+  /* ── THRIFTLY BANNER ── */
+  .thriftly-banner{display:none;background:#F9F5F0;width:100%;min-height:380px;border-bottom:1px solid var(--border)}
+  .thriftly-banner.visible{display:flex}
+  .thriftly-banner-inner{max-width:1140px;margin:0 auto;padding:0 40px;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:48px;width:100%;min-height:380px}
+  .thriftly-banner-left{padding:48px 0}
+  .thriftly-eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:14px;font-family:var(--font-sans)}
+  .thriftly-headline{font-family:var(--font-serif);font-size:clamp(28px,3.5vw,44px);font-weight:400;letter-spacing:.06em;text-transform:uppercase;line-height:1.1;color:var(--black);margin-bottom:14px}
+  .thriftly-sub{font-family:var(--font-serif);font-size:clamp(15px,1.6vw,18px);font-weight:300;font-style:italic;color:var(--mid);margin-bottom:18px}
+  .thriftly-body{font-size:13px;color:var(--mid);line-height:1.8;max-width:420px;margin-bottom:28px}
+  .thriftly-cta{display:inline-flex;align-items:center;gap:10px;background:var(--black);color:var(--white);font-family:var(--font-sans);font-size:11px;letter-spacing:.18em;text-transform:uppercase;padding:14px 28px;border:none;cursor:pointer;transition:background .2s}
+  .thriftly-cta:hover{background:#333}
+  .thriftly-banner-right{position:relative;height:100%;min-height:320px;display:flex;align-items:center;justify-content:center}
+  .thriftly-collage{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;height:320px;width:100%}
+  .thriftly-collage-img{background:#e8e4df;overflow:hidden;position:relative}
+  .thriftly-collage-img:first-child{grid-row:span 2;background:#ddd8d0}
+  .thriftly-collage-img img{width:100%;height:100%;object-fit:cover;display:block}
+  .thriftly-tag{position:absolute;bottom:10px;left:10px;background:var(--white);font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 8px;font-family:var(--font-sans);color:var(--black)}
+
+  /* ── THRIFTLY LISTINGS GRID ── */
+  .thriftly-section{display:none;padding:32px 40px 80px}
+  .thriftly-section.visible{display:block}
+  .thriftly-section-title{font-family:var(--font-serif);font-size:clamp(18px,2vw,24px);font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--black);margin-bottom:24px}
+  .thriftly-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px 20px}
+  .thriftly-card{display:flex;flex-direction:column;background:var(--white);border:1px solid var(--border)}
+  .thriftly-card-img{aspect-ratio:3/4;overflow:hidden;background:#f0ede9;position:relative}
+  .thriftly-card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s cubic-bezier(.25,.46,.45,.94)}
+  .thriftly-card:hover .thriftly-card-img img{transform:scale(1.04)}
+  .thriftly-card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1}
+  .thriftly-card-title{font-size:13px;line-height:1.4;color:var(--black);letter-spacing:.02em}
+  .thriftly-card-price{font-size:14px;color:var(--mid);font-weight:400}
+  .thriftly-card-location{font-size:11px;color:var(--light);letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
+  .thriftly-card-btn{margin-top:auto;padding-top:12px}
+  .thriftly-msg-btn{width:100%;background:none;border:1px solid #25D366;color:#25D366;padding:10px;font-family:var(--font-sans);font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .thriftly-msg-btn:hover{background:#25D366;color:#fff}
+  .thriftly-empty{text-align:center;padding:60px 20px;color:var(--mid);font-size:13px}
+
+  /* ── THRIFTLY FORM MODAL ── */
+  .tl-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;padding:16px}
+  .tl-overlay.open{display:flex}
+  .tl-modal{background:#fff;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;position:relative}
+  .tl-modal-head{padding:22px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-shrink:0}
+  .tl-modal-title{font-family:var(--font-serif);font-size:22px;font-weight:400;letter-spacing:.06em;text-transform:uppercase;line-height:1.2}
+  .tl-modal-sub{font-size:11px;color:var(--mid);letter-spacing:.04em;margin-top:3px}
+  .tl-close{background:none;border:none;cursor:pointer;color:var(--mid);padding:4px;line-height:1;font-size:22px;flex-shrink:0;margin-top:-2px}
+  .tl-close:hover{color:var(--black)}
+  .tl-steps-bar{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;gap:0;flex-shrink:0}
+  .tl-step-ind{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
+  .tl-step-ind:not(:last-child)::after{content:'';position:absolute;top:13px;left:50%;width:100%;height:1px;background:var(--border)}
+  .tl-step-dot{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--border);background:#fff;font-size:10px;font-weight:500;letter-spacing:.04em;display:flex;align-items:center;justify-content:center;color:var(--mid);position:relative;z-index:1;transition:border-color .2s,background .2s,color .2s}
+  .tl-step-ind.done .tl-step-dot{background:var(--black);border-color:var(--black);color:#fff}
+  .tl-step-ind.active .tl-step-dot{border-color:var(--accent);color:var(--accent)}
+  .tl-step-label{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--mid);text-align:center;white-space:nowrap}
+  .tl-step-ind.active .tl-step-label{color:var(--black)}
+  .tl-body{padding:28px;overflow-y:auto;flex:1}
+  .tl-field{margin-bottom:20px}
+  .tl-label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:7px;font-family:var(--font-sans)}
+  .tl-input,.tl-select,.tl-textarea{width:100%;border:1px solid var(--border);padding:11px 13px;font-size:13px;font-family:var(--font-sans);color:var(--black);background:#fff;outline:none;transition:border-color .2s;appearance:none;-webkit-appearance:none}
+  .tl-input:focus,.tl-select:focus,.tl-textarea:focus{border-color:var(--black)}
+  .tl-textarea{resize:vertical;min-height:100px}
+  .tl-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6560' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+  .tl-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .tl-hint{font-size:11px;color:var(--mid);margin-top:5px}
+  .tl-error{font-size:11px;color:#c0392b;margin-top:5px;display:none}
+  .tl-field.invalid .tl-input,.tl-field.invalid .tl-select,.tl-field.invalid .tl-textarea{border-color:#c0392b}
+  .tl-field.invalid .tl-error{display:block}
+  /* photo upload */
+  .tl-photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+  .tl-photo-slot{aspect-ratio:3/4;border:1.5px dashed var(--border);position:relative;background:#fafafa;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;transition:border-color .2s}
+  .tl-photo-slot:hover{border-color:var(--mid)}
+  .tl-photo-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .tl-photo-slot .slot-label{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);text-align:center;padding:0 6px;position:relative;z-index:1}
+  .tl-photo-slot .slot-remove{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:2;line-height:1}
+  .tl-photo-slot.has-photo .slot-remove{display:flex}
+  .tl-photo-slot.has-photo .slot-label{display:none}
+  .tl-photo-req{font-size:11px;color:var(--mid)}
+  /* footer */
+  .tl-footer{padding:18px 28px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-shrink:0}
+  .tl-back{background:none;border:1px solid var(--border);color:var(--mid);padding:11px 22px;font-family:var(--font-sans);font-size:11px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;transition:border-color .2s,color .2s}
+  .tl-back:hover{border-color:var(--black);color:var(--black)}
+  .tl-next{background:var(--black);color:#fff;border:none;padding:12px 28px;font-family:var(--font-sans);font-size:11px;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:background .2s;display:flex;align-items:center;gap:8px}
+  .tl-next:hover{background:#333}
+  .tl-next:disabled{background:var(--light);cursor:not-allowed}
+  @keyframes tlSpin{to{transform:rotate(360deg)}}
+
+  /* ── THRIFTLY SUCCESS ── */
+  .tl-success{text-align:center;padding:48px 28px}
+  .tl-success-icon{width:60px;height:60px;background:var(--black);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 22px}
+  .tl-success-title{font-family:var(--font-serif);font-size:26px;font-weight:400;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+  .tl-success-body{font-size:13px;color:var(--mid);line-height:1.8;max-width:340px;margin:0 auto 28px}
+  .tl-success-ref{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);background:#f7f7f5;padding:10px 16px;margin-bottom:28px;display:inline-block}
+
   /* ── MOBILE ── */
   @media (max-width: 768px) {
     .header-top { padding: 14px 16px; grid-template-columns: auto 1fr auto; }
@@ -174,6 +265,16 @@
     .filter-bar { padding: 12px 16px; }
     .shop-main { padding: 20px 16px 60px; }
     .product-grid { grid-template-columns: repeat(2,1fr); gap: 20px 12px; }
+    .thriftly-banner-inner{grid-template-columns:1fr;padding:0 16px;gap:0;min-height:auto}
+    .thriftly-banner-left{padding:32px 0 24px}
+    .thriftly-banner-right{min-height:220px}
+    .thriftly-collage{height:220px}
+    .thriftly-section{padding:20px 16px 60px}
+    .thriftly-grid{grid-template-columns:repeat(2,1fr);gap:20px 12px}
+    .tl-overlay{padding:0;align-items:flex-end}
+    .tl-modal{max-height:96vh;border-radius:0}
+    .tl-row{grid-template-columns:1fr}
+    .tl-photo-grid{grid-template-columns:repeat(3,1fr)}
     .product-quick { display: none; }
     .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
     .site-footer { padding: 40px 16px 24px; }
@@ -191,7 +292,7 @@
 <body>
 
 <div class="announce-bar">
-  Free delivery on orders over KSh 3,000 · WhatsApp: <a id="waAnnounce" href="#" target="_blank">+254 700 000 000</a>
+  Free delivery on orders over KSh 9,500 · WhatsApp: <a id="waAnnounce" href="#" target="_blank">+254 700 000 000</a>
 </div>
 
 <header class="site-header">
@@ -226,6 +327,7 @@
     <button class="nav-item" data-cat="hair">Hair</button>
     <button class="nav-item" data-cat="skincare">Skincare</button>
     <button class="nav-item" data-cat="sale">Sale</button>
+    <button class="nav-item" data-cat="thrift" style="color:var(--accent)">Thriftly ✦</button>
   </nav>
 </header>
 
@@ -244,6 +346,44 @@
     </select>
   </div>
 </div>
+
+<!-- ── THRIFTLY BANNER ── -->
+<div class="thriftly-banner" id="thriftlyBanner">
+  <div class="thriftly-banner-inner">
+    <div class="thriftly-banner-left">
+      <p class="thriftly-eyebrow">Thriftly by Beyond Beauty KE</p>
+      <h2 class="thriftly-headline">Sell Your<br>Preloved Pieces</h2>
+      <p class="thriftly-sub">Give your wardrobe a second life — and earn from it.</p>
+      <p class="thriftly-body">List any fashion or beauty item on Thriftly for just KES 250. Reach thousands of Beyond Beauty shoppers and get paid directly to your M-Pesa.</p>
+      <button class="thriftly-cta" onclick="openThriftlyForm()">
+        List Your Item
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+    <div class="thriftly-banner-right">
+      <div class="thriftly-collage">
+        <div class="thriftly-collage-img">
+          <img src="https://placehold.co/400x600/ddd8d0/6b6560?text=Preloved" alt="Thriftly item" onerror="this.style.display='none'">
+          <span class="thriftly-tag">From KES 500</span>
+        </div>
+        <div class="thriftly-collage-img">
+          <img src="https://placehold.co/400x296/e8e4df/6b6560?text=Bags" alt="Thriftly bag" onerror="this.style.display='none'">
+        </div>
+        <div class="thriftly-collage-img">
+          <img src="https://placehold.co/400x296/f0ede9/6b6560?text=Clothing" alt="Thriftly clothing" onerror="this.style.display='none'">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── THRIFTLY LISTINGS ── -->
+<section class="thriftly-section" id="thriftlySection">
+  <h2 class="thriftly-section-title">Browse Thriftly</h2>
+  <div class="thriftly-grid" id="thriftlyGrid">
+    <div class="thriftly-empty">Loading listings…</div>
+  </div>
+</section>
 
 <main class="shop-main">
   <div class="product-grid" id="productGrid"></div>
@@ -329,7 +469,7 @@
 
 <script>
   // ── CONFIG (fetched from server, WA number set here as fallback) ──
-  let WA_NUMBER = '254700000000';
+  let WA_NUMBER = '14155238886';
   let allProducts = [];
   let activeCategory = 'all';
   const savedSet = new Set();
@@ -399,12 +539,12 @@
     }
     footer.style.display = 'block';
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const delivery = subtotal >= 3000 ? 0 : 200;
+    const delivery = subtotal >= 9500 ? 0 : 250;
     const grand = subtotal + delivery;
     document.getElementById('cartSubtotal').textContent = fmt(subtotal);
     document.getElementById('cartDelivery').textContent = delivery === 0 ? 'Free' : fmt(delivery);
     document.getElementById('cartGrand').textContent = fmt(grand);
-    document.getElementById('cartDeliveryMsg').textContent = delivery > 0 ? `Add ${fmt(3000 - subtotal)} more for free delivery` : '✓ You qualify for free delivery';
+    document.getElementById('cartDeliveryMsg').textContent = delivery > 0 ? `Add ${fmt(9500 - subtotal)} more for free delivery` : '✓ You qualify for free delivery';
     el.innerHTML = cart.map(item => `
       <div class="cart-item">
         <img class="cart-item-img" src="${item.image_url || ''}" alt="${item.name}" onerror="this.style.display='none'">
@@ -446,7 +586,8 @@
   function fmt(p) { return 'KSh ' + p.toLocaleString('en-KE'); }
 
   function waLink(product) {
-    const msg = encodeURIComponent(`Hi Beyond Beauty KE! 👋\n\nI'm interested in:\n*${product.name}* – ${fmt(product.price)}\n\nIs it available?`);
+    const priceStr = product.price ? fmt(product.price) : 'price on enquiry';
+    const msg = encodeURIComponent(`Hi Beyond Beauty KE! 👋\n\nI'm interested in:\n*${product.name}* – ${priceStr}\n\nIs it available?`);
     return `https://wa.me/${WA_NUMBER}?text=${msg}`;
   }
 
@@ -462,7 +603,15 @@
   }
 
   // ── RENDER ──
+  // Products are stored here so onclick handlers can look them up by index
+  // instead of embedding JSON (which breaks on & characters in Google Drive URLs)
+  let renderedList = [];
+
+  function addToCartByIndex(i) { addToCart(renderedList[i]); }
+  function waLinkByIndex(i) { return waLink(renderedList[i]); }
+
   function renderProducts(list) {
+    renderedList = list;
     const grid = document.getElementById('productGrid');
     document.getElementById('productCount').textContent = list.length + ' products';
     if (!list.length) {
@@ -470,19 +619,18 @@
       return;
     }
     grid.innerHTML = list.map((p, i) => {
-      const safeId = CSS.escape(p.id);
       const priceHtml = p.price
         ? `<span class="product-price ${p.original_price ? 'sale-price' : ''}">${fmt(p.price)}</span>${p.original_price ? `<span class="product-price original">${fmt(p.original_price)}</span>` : ''}`
         : `<span class="product-price" style="color:var(--accent);font-style:italic">Enquire for price</span>`;
       return `
-      <div class="product-card" style="animation-delay:${i * 0.05}s">
+      <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='/product?id=${p.id}'">
         <div class="product-img-wrap">
           ${p.badge ? `<span class="product-badge ${p.badge === 'Sale' ? 'sale' : 'new-in'}">${p.badge}</span>` : ''}
           <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/f0ede9/6b6560?text=Photo+Coming'">
-          <button class="product-save" onclick="toggleSave('${p.id}', this)" title="Save">${heartIcon(false)}</button>
+          <button class="product-save" onclick="event.stopPropagation();toggleSave('${p.id}', this)" title="Save">${heartIcon(false)}</button>
           <div class="product-quick">
-            ${p.price ? `<button class="quick-btn" onclick="addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')})">Add to Bag</button>` : ''}
-            <a href="${waLink(p)}" target="_blank" class="quick-whatsapp">
+            ${p.price ? `<button class="quick-btn" onclick="event.stopPropagation();addToCartByIndex(${i})">Add to Bag</button>` : ''}
+            <a href="#" onclick="event.stopPropagation();window.open(waLinkByIndex(${i}),'_blank');return false;" class="quick-whatsapp">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               ${p.price ? 'Order via WhatsApp' : 'Enquire via WhatsApp'}
             </a>
@@ -503,7 +651,8 @@
       const res = await fetch(url);
       allProducts = await res.json();
       sortAndRender();
-    } catch {
+    } catch (err) {
+      console.error('loadProducts error:', err);
       document.getElementById('productGrid').innerHTML = '<p style="color:var(--mid);padding:40px 0">Could not load products. Please refresh.</p>';
     }
   }
@@ -518,9 +667,66 @@
 
   function filterCat(cat) {
     activeCategory = cat;
-    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', sale: 'Sale' };
+    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', sale: 'Sale', thrift: 'Thriftly' };
+
+    const isThrift = cat === 'thrift';
     document.getElementById('heroTitle').textContent = titles[cat] || 'All Products';
-    loadProducts(cat);
+    document.querySelector('.filter-bar').style.display = isThrift ? 'none' : '';
+    document.querySelector('.shop-main').style.display  = isThrift ? 'none' : '';
+
+    const banner  = document.getElementById('thriftlyBanner');
+    const section = document.getElementById('thriftlySection');
+    if (isThrift) {
+      banner.classList.add('visible');
+      section.classList.add('visible');
+      loadThriftlyListings();
+    } else {
+      banner.classList.remove('visible');
+      section.classList.remove('visible');
+      loadProducts(cat);
+    }
+  }
+
+  // ── THRIFTLY ──
+  function openThriftlyForm() {
+    alert('Listing form coming soon! To list your item now, WhatsApp us at +254 722 474 866.');
+  }
+
+  async function loadThriftlyListings() {
+    const grid = document.getElementById('thriftlyGrid');
+    grid.innerHTML = '<div class="thriftly-empty">Loading listings…</div>';
+    try {
+      const res  = await fetch('/api/thriftly/listings');
+      const data = await res.json();
+      if (!data.length) {
+        grid.innerHTML = '<div class="thriftly-empty">No listings yet — be the first to list!</div>';
+        return;
+      }
+      grid.innerHTML = data.map(item => {
+        const img   = item.photo_1 ? `<img src="${item.photo_1}" alt="${item.item_title}" loading="lazy">` : '';
+        const price = `KES ${Number(item.item_price_kes).toLocaleString()}`;
+        const loc   = item.seller_location ? `<p class="thriftly-card-location">${item.seller_location}</p>` : '';
+        const waNum = item.whatsapp_number || '254722474866';
+        const msg   = encodeURIComponent(`Hi, I'm interested in your listing: ${item.item_title} (${price})`);
+        return `
+          <div class="thriftly-card">
+            <div class="thriftly-card-img">${img}</div>
+            <div class="thriftly-card-body">
+              <p class="thriftly-card-title">${item.item_title}</p>
+              <p class="thriftly-card-price">${price}</p>
+              ${loc}
+              <div class="thriftly-card-btn">
+                <button class="thriftly-msg-btn" onclick="window.open('https://wa.me/${waNum}?text=${msg}','_blank')">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.997 2C6.48 2 2 6.48 2 12c0 1.833.497 3.552 1.362 5.029L2 22l5.1-1.338A9.947 9.947 0 0011.997 22C17.515 22 22 17.52 22 12S17.515 2 11.997 2zm0 18.182a8.16 8.16 0 01-4.156-1.133l-.299-.178-3.027.795.808-2.96-.194-.304A8.2 8.2 0 013.818 12c0-4.517 3.672-8.182 8.179-8.182S20.18 7.483 20.18 12c0 4.517-3.662 8.182-8.183 8.182z"/></svg>
+                  Message Seller
+                </button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    } catch (e) {
+      grid.innerHTML = '<div class="thriftly-empty">Could not load listings. Please try again.</div>';
+    }
   }
 
   function toggleSearch() {
@@ -545,6 +751,484 @@
   // ── INIT ──
   updateCartUI();
   loadProducts('all');
+</script>
+
+<!-- ── THRIFTLY LISTING FORM MODAL ── -->
+<div class="tl-overlay" id="tlOverlay">
+  <div class="tl-modal" role="dialog" aria-modal="true" aria-labelledby="tlModalTitle">
+    <div class="tl-modal-head">
+      <div>
+        <div class="tl-modal-title" id="tlModalTitle">List Your Item</div>
+        <div class="tl-modal-sub">Thriftly by Beyond Beauty KE &mdash; KES 250 listing fee</div>
+      </div>
+      <button class="tl-close" onclick="closeTlForm()" aria-label="Close">&times;</button>
+    </div>
+
+    <!-- step indicators -->
+    <div class="tl-steps-bar" id="tlStepsBar">
+      <div class="tl-step-ind active" data-step="1">
+        <div class="tl-step-dot">1</div>
+        <span class="tl-step-label">Your Info</span>
+      </div>
+      <div class="tl-step-ind" data-step="2">
+        <div class="tl-step-dot">2</div>
+        <span class="tl-step-label">Item Details</span>
+      </div>
+      <div class="tl-step-ind" data-step="3">
+        <div class="tl-step-dot">3</div>
+        <span class="tl-step-label">Photos</span>
+      </div>
+      <div class="tl-step-ind" data-step="4">
+        <div class="tl-step-dot">4</div>
+        <span class="tl-step-label">Payment</span>
+      </div>
+    </div>
+
+    <!-- ── STEP 1: seller info ── -->
+    <div class="tl-body" id="tlStep1">
+      <div class="tl-row">
+        <div class="tl-field" id="fld-seller_name">
+          <label class="tl-label" for="tl-seller-name">Full Name *</label>
+          <input class="tl-input" id="tl-seller-name" type="text" placeholder="Jane Wanjiku" autocomplete="name">
+          <span class="tl-error">Please enter your name</span>
+        </div>
+        <div class="tl-field" id="fld-seller_phone">
+          <label class="tl-label" for="tl-seller-phone">Phone (M-Pesa) *</label>
+          <input class="tl-input" id="tl-seller-phone" type="tel" placeholder="0712 345 678" autocomplete="tel">
+          <span class="tl-error">Please enter a valid phone number</span>
+        </div>
+      </div>
+      <div class="tl-field" id="fld-seller_email">
+        <label class="tl-label" for="tl-seller-email">Email Address</label>
+        <input class="tl-input" id="tl-seller-email" type="email" placeholder="jane@example.com" autocomplete="email">
+        <span class="tl-error">Please enter a valid email</span>
+      </div>
+      <div class="tl-row">
+        <div class="tl-field" id="fld-seller_location">
+          <label class="tl-label" for="tl-seller-location">Location *</label>
+          <input class="tl-input" id="tl-seller-location" type="text" placeholder="Westlands, Nairobi">
+          <span class="tl-error">Please enter your location</span>
+        </div>
+        <div class="tl-field" id="fld-seller_id">
+          <label class="tl-label" for="tl-seller-id">ID Number *</label>
+          <input class="tl-input" id="tl-seller-id" type="text" placeholder="12345678" inputmode="numeric">
+          <span class="tl-error">Please enter your ID number</span>
+        </div>
+      </div>
+      <div class="tl-field" id="fld-whatsapp">
+        <label class="tl-label" for="tl-seller-wa">WhatsApp Number *</label>
+        <input class="tl-input" id="tl-seller-wa" type="tel" placeholder="0712 345 678">
+        <p class="tl-hint">Buyers will message you on this number</p>
+        <span class="tl-error">Please enter your WhatsApp number</span>
+      </div>
+    </div>
+
+    <!-- ── STEP 2: item details ── -->
+    <div class="tl-body" id="tlStep2" style="display:none">
+      <div class="tl-field" id="fld-item_title">
+        <label class="tl-label" for="tl-item-title">Item Title *</label>
+        <input class="tl-input" id="tl-item-title" type="text" placeholder="e.g. Black Leather Tote Bag">
+        <span class="tl-error">Please enter a title</span>
+      </div>
+      <div class="tl-field" id="fld-item_condition">
+        <label class="tl-label" for="tl-item-condition">Item Condition *</label>
+        <select class="tl-select" id="tl-item-condition">
+          <option value="">Select condition</option>
+          <option value="New with Tags">New with Tags — unused, tags still attached</option>
+          <option value="New with Defects">New with Defects — new but has minor flaws</option>
+          <option value="Like New / Mint Condition">Like New / Mint Condition — worn very few times, no visible wear</option>
+          <option value="Used in Good Condition">Used in Good Condition — well-maintained, minor cosmetic imperfections</option>
+          <option value="Used Condition">Used Condition — moderate signs of wear, fully functional</option>
+          <option value="Heavily Used Condition">Heavily Used Condition — heavy wear but still usable</option>
+          <option value="Used and Needs Repair">Used and Needs Repair — missing or broken parts needing fixing</option>
+        </select>
+        <span class="tl-error">Please select the item condition</span>
+      </div>
+      <div class="tl-field" id="fld-item_desc">
+        <label class="tl-label" for="tl-item-desc">Description *</label>
+        <textarea class="tl-textarea" id="tl-item-desc" placeholder="Describe the item — condition, brand, size, any flaws…"></textarea>
+        <span class="tl-error">Please describe your item</span>
+      </div>
+      <div class="tl-row">
+        <div class="tl-field" id="fld-item_category">
+          <label class="tl-label" for="tl-item-cat">Category *</label>
+          <select class="tl-select" id="tl-item-cat">
+            <option value="">Select category</option>
+            <option value="Bags">Bags</option>
+            <option value="Shoes">Shoes</option>
+            <option value="Clothing">Clothing</option>
+            <option value="Jewellery">Jewellery</option>
+            <option value="Accessories">Accessories</option>
+            <option value="Hair">Hair</option>
+            <option value="Skincare & Beauty">Skincare &amp; Beauty</option>
+            <option value="Other">Other</option>
+          </select>
+          <span class="tl-error">Please select a category</span>
+        </div>
+        <div class="tl-field" id="fld-item_price">
+          <label class="tl-label" for="tl-item-price">Asking Price (KES) *</label>
+          <input class="tl-input" id="tl-item-price" type="number" min="100" placeholder="e.g. 1500" inputmode="numeric">
+          <span class="tl-error">Please enter a price (min KES 100)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: photos ── -->
+    <div class="tl-body" id="tlStep3" style="display:none">
+      <p style="font-size:13px;color:var(--mid);margin-bottom:20px;line-height:1.7">Upload at least <strong>3 photos</strong> (max 5). Clear photos sell faster &mdash; try good lighting and a plain background.</p>
+      <div class="tl-photo-grid" id="tlPhotoGrid">
+        <!-- slots injected by JS -->
+      </div>
+      <p class="tl-photo-req" id="tlPhotoReq"></p>
+      <input type="file" id="tlFileInput" accept="image/*" style="display:none">
+    </div>
+
+    <!-- ── STEP 4: payment ── -->
+    <div class="tl-body" id="tlStep4" style="display:none">
+      <!-- state: idle -->
+      <div id="tlPayIdle">
+        <div style="text-align:center;padding:8px 0 24px">
+          <div style="font-family:var(--font-serif);font-size:38px;font-weight:400;letter-spacing:.04em;color:var(--black);margin-bottom:6px">KES 250</div>
+          <div style="font-size:12px;color:var(--mid);letter-spacing:.06em;text-transform:uppercase">One-time listing fee</div>
+        </div>
+        <div style="background:#f7f7f5;padding:16px 18px;margin-bottom:22px;font-size:12px;color:var(--mid);line-height:1.8">
+          Your listing will be reviewed and activated within <strong style="color:var(--black)">24 hours</strong> of payment. You'll be notified on WhatsApp once it's live.
+        </div>
+        <div class="tl-field" id="fld-pay_phone">
+          <label class="tl-label" for="tl-pay-phone">M-Pesa Phone Number *</label>
+          <input class="tl-input" id="tl-pay-phone" type="tel" placeholder="0712 345 678" inputmode="numeric">
+          <p class="tl-hint">We'll send an M-Pesa prompt to this number</p>
+          <span class="tl-error">Please enter a valid phone number</span>
+        </div>
+      </div>
+      <!-- state: waiting for payment -->
+      <div id="tlPayWaiting" style="display:none;text-align:center;padding:24px 0">
+        <div style="width:56px;height:56px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 20px;animation:tlSpin 1s linear infinite"></div>
+        <p style="font-size:15px;font-weight:500;margin-bottom:8px">Check your phone</p>
+        <p style="font-size:13px;color:var(--mid);line-height:1.7;max-width:300px;margin:0 auto 20px">An M-Pesa prompt has been sent to <strong id="tlPayPhoneDisplay"></strong>. Enter your PIN to pay <strong>KES 250</strong>.</p>
+        <button class="tl-back" style="visibility:visible;margin:0 auto" onclick="tlCancelPayment()">Use a different number</button>
+      </div>
+    </div>
+
+    <div class="tl-footer">
+      <button class="tl-back" id="tlBack" onclick="tlPrev()" style="visibility:hidden">Back</button>
+      <button class="tl-next" id="tlNext" onclick="tlNext()">
+        Continue
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── THRIFTLY FORM ──
+let tlCurrentStep = 1;
+const TL_TOTAL_STEPS = 4;
+const tlPhotos = []; // { file, dataUrl }
+let tlActiveSlot = null;
+let tlRecordId   = null;
+let tlCheckoutId = null;
+let tlPollTimer  = null;
+
+function openThriftlyForm() {
+  tlCurrentStep = 1;
+  tlPhotos.length = 0;
+  tlRecordId = null;
+  tlCheckoutId = null;
+  clearInterval(tlPollTimer);
+  document.getElementById('tlOverlay').classList.add('open');
+  tlRenderStep();
+  document.body.style.overflow = 'hidden';
+}
+function closeTlForm() {
+  clearInterval(tlPollTimer);
+  document.getElementById('tlOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.getElementById('tlOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeTlForm();
+});
+
+function tlRenderStep() {
+  for (let i = 1; i <= TL_TOTAL_STEPS; i++) {
+    document.getElementById(`tlStep${i}`).style.display = i === tlCurrentStep ? '' : 'none';
+  }
+  document.querySelectorAll('.tl-step-ind').forEach(el => {
+    const s = parseInt(el.dataset.step);
+    el.classList.toggle('done',   s < tlCurrentStep);
+    el.classList.toggle('active', s === tlCurrentStep);
+  });
+  const footer  = document.querySelector('.tl-footer');
+  const nextBtn = document.getElementById('tlNext');
+  const backBtn = document.getElementById('tlBack');
+
+  // Step 4 footer is managed separately by payment state
+  footer.style.display = tlCurrentStep === 4 ? 'none' : '';
+  backBtn.style.visibility = tlCurrentStep > 1 && tlCurrentStep < 4 ? 'visible' : 'hidden';
+
+  if (tlCurrentStep === 3) {
+    nextBtn.innerHTML = 'Save & Continue to Payment <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+  } else {
+    nextBtn.innerHTML = 'Continue <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+  }
+  nextBtn.disabled = false;
+  if (tlCurrentStep === 3) tlRenderPhotoSlots();
+  if (tlCurrentStep === 4) tlInitPayStep();
+}
+
+function tlValidateStep() {
+  if (tlCurrentStep === 1) {
+    const name  = document.getElementById('tl-seller-name').value.trim();
+    const phone = document.getElementById('tl-seller-phone').value.trim();
+    const loc   = document.getElementById('tl-seller-location').value.trim();
+    const id    = document.getElementById('tl-seller-id').value.trim();
+    const wa    = document.getElementById('tl-seller-wa').value.trim();
+    let ok = true;
+    ok = tlRequired('fld-seller_name',     name,                                       'Please enter your name')              && ok;
+    ok = tlRequired('fld-seller_phone',    phone && /\d{9,}/.test(phone.replace(/\s/g,'')), 'Please enter a valid phone number') && ok;
+    ok = tlRequired('fld-seller_location', loc,                                         'Please enter your location')          && ok;
+    ok = tlRequired('fld-seller_id',       id,                                           'Please enter your ID number')         && ok;
+    ok = tlRequired('fld-whatsapp',        wa && /\d{9,}/.test(wa.replace(/\s/g,'')),   'Please enter your WhatsApp number')   && ok;
+    return ok;
+  }
+  if (tlCurrentStep === 2) {
+    const title     = document.getElementById('tl-item-title').value.trim();
+    const condition = document.getElementById('tl-item-condition').value;
+    const desc      = document.getElementById('tl-item-desc').value.trim();
+    const cat       = document.getElementById('tl-item-cat').value;
+    const price     = document.getElementById('tl-item-price').value;
+    let ok = true;
+    ok = tlRequired('fld-item_title',     title,                        'Please enter a title')               && ok;
+    ok = tlRequired('fld-item_condition', condition,                    'Please select the item condition')    && ok;
+    ok = tlRequired('fld-item_desc',      desc,                         'Please describe your item')          && ok;
+    ok = tlRequired('fld-item_category',  cat,                          'Please select a category')           && ok;
+    ok = tlRequired('fld-item_price',     price && Number(price) >= 100,'Please enter a price (min KES 100)') && ok;
+    return ok;
+  }
+  if (tlCurrentStep === 3) {
+    const req = document.getElementById('tlPhotoReq');
+    if (tlPhotos.length < 3) {
+      req.style.color = '#c0392b';
+      req.textContent = `Please add at least 3 photos (${tlPhotos.length}/3 added)`;
+      return false;
+    }
+    req.style.color = '';
+    req.textContent = '';
+    return true;
+  }
+  return true;
+}
+
+function tlRequired(fieldId, condition, msg) {
+  const el    = document.getElementById(fieldId);
+  const errEl = el ? el.querySelector('.tl-error') : null;
+  if (!condition) {
+    el && el.classList.add('invalid');
+    if (errEl) errEl.textContent = msg;
+    return false;
+  }
+  el && el.classList.remove('invalid');
+  return true;
+}
+
+function tlNext() {
+  if (!tlValidateStep()) return;
+  if (tlCurrentStep === 3) {
+    tlSubmitListing();
+  } else if (tlCurrentStep < TL_TOTAL_STEPS) {
+    tlCurrentStep++;
+    tlRenderStep();
+  }
+}
+function tlPrev() {
+  if (tlCurrentStep > 1 && tlCurrentStep < 4) { tlCurrentStep--; tlRenderStep(); }
+}
+
+// ── PHOTO SLOTS ──
+function tlRenderPhotoSlots() {
+  const grid = document.getElementById('tlPhotoGrid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 5; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'tl-photo-slot' + (tlPhotos[i] ? ' has-photo' : '');
+    slot.dataset.idx = i;
+    if (tlPhotos[i]) {
+      const img = document.createElement('img');
+      img.src = tlPhotos[i].dataUrl;
+      slot.appendChild(img);
+      const rem = document.createElement('button');
+      rem.className = 'slot-remove';
+      rem.innerHTML = '&times;';
+      rem.onclick = e => { e.stopPropagation(); tlPhotos.splice(i,1); tlRenderPhotoSlots(); };
+      slot.appendChild(rem);
+    } else {
+      const lbl = document.createElement('span');
+      lbl.className = 'slot-label';
+      lbl.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg><br>${i < 3 ? 'Required' : 'Optional'}`;
+      slot.appendChild(lbl);
+      slot.addEventListener('click', () => {
+        if (tlPhotos.length >= 5) return;
+        tlActiveSlot = i;
+        document.getElementById('tlFileInput').click();
+      });
+    }
+    grid.appendChild(slot);
+  }
+  const req = document.getElementById('tlPhotoReq');
+  req.textContent = `${tlPhotos.length} of 5 photos added (minimum 3)`;
+  if (tlPhotos.length >= 3) req.style.color = '';
+}
+
+document.getElementById('tlFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const idx = tlPhotos.length < 5 ? tlPhotos.length : tlActiveSlot;
+    tlPhotos[idx] = { file, dataUrl: ev.target.result };
+    tlRenderPhotoSlots();
+  };
+  reader.readAsDataURL(file);
+  e.target.value = '';
+});
+
+// ── SUBMIT LISTING ──
+async function tlSubmitListing() {
+  const nextBtn = document.getElementById('tlNext');
+  nextBtn.disabled = true;
+  nextBtn.textContent = 'Saving…';
+
+  const fd = new FormData();
+  fd.append('seller_name',      document.getElementById('tl-seller-name').value.trim());
+  fd.append('seller_phone',     document.getElementById('tl-seller-phone').value.trim());
+  fd.append('seller_email',     document.getElementById('tl-seller-email').value.trim());
+  fd.append('seller_location',  document.getElementById('tl-seller-location').value.trim());
+  fd.append('seller_id_number', document.getElementById('tl-seller-id').value.trim());
+  fd.append('whatsapp_number',  document.getElementById('tl-seller-wa').value.trim());
+  fd.append('item_title',       document.getElementById('tl-item-title').value.trim());
+  fd.append('item_condition',   document.getElementById('tl-item-condition').value);
+  fd.append('item_description', document.getElementById('tl-item-desc').value.trim());
+  fd.append('item_category',    document.getElementById('tl-item-cat').value);
+  fd.append('item_price_kes',   document.getElementById('tl-item-price').value);
+  fd.append('submission_channel', 'website');
+  fd.append('listing_fee_paid', 'false');
+  tlPhotos.forEach((p, i) => fd.append('photos', p.file, `photo_${i+1}_${p.file.name}`));
+
+  try {
+    const res  = await fetch('/api/thriftly/listings', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Submission failed');
+    tlRecordId = data.id;
+    tlCurrentStep = 4;
+    tlRenderStep();
+  } catch (err) {
+    alert('Sorry, something went wrong: ' + err.message);
+    nextBtn.disabled = false;
+    nextBtn.innerHTML = 'Save & Continue to Payment <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+  }
+}
+
+// ── PAYMENT STEP ──
+function tlInitPayStep() {
+  // pre-fill phone from seller phone
+  const sellerPhone = document.getElementById('tl-seller-phone').value.trim();
+  document.getElementById('tl-pay-phone').value = sellerPhone;
+  tlSetPayState('idle');
+}
+
+function tlSetPayState(state) {
+  document.getElementById('tlPayIdle').style.display    = state === 'idle'    ? '' : 'none';
+  document.getElementById('tlPayWaiting').style.display = state === 'waiting' ? '' : 'none';
+
+  // rebuild footer buttons based on state
+  const footer = document.querySelector('.tl-footer');
+  footer.style.display = '';
+  if (state === 'idle') {
+    footer.innerHTML = `
+      <span></span>
+      <button class="tl-next" onclick="tlTriggerSTK()">
+        Pay KES 250 via M-Pesa
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>`;
+  } else {
+    footer.innerHTML = '';
+  }
+}
+
+async function tlTriggerSTK() {
+  const phone = document.getElementById('tl-pay-phone').value.trim();
+  const ok = tlRequired('fld-pay_phone', phone && /\d{9,}/.test(phone.replace(/\s/g,'')), 'Please enter a valid phone number');
+  if (!ok) return;
+
+  const btn = document.querySelector('.tl-footer .tl-next');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending prompt…'; }
+
+  try {
+    const res  = await fetch('/api/thriftly/pay/stk-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ record_id: tlRecordId, phone }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'STK push failed');
+    tlCheckoutId = data.checkout_request_id;
+    document.getElementById('tlPayPhoneDisplay').textContent = phone;
+    tlSetPayState('waiting');
+    tlStartPolling();
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Pay KES 250 via M-Pesa'; }
+    alert('Could not send M-Pesa prompt: ' + err.message);
+  }
+}
+
+function tlCancelPayment() {
+  clearInterval(tlPollTimer);
+  tlCheckoutId = null;
+  tlSetPayState('idle');
+}
+
+function tlStartPolling() {
+  let attempts = 0;
+  tlPollTimer = setInterval(async () => {
+    attempts++;
+    if (attempts > 24) { // 2 min timeout
+      clearInterval(tlPollTimer);
+      tlSetPayState('idle');
+      alert('Payment timed out. Please try again.');
+      return;
+    }
+    try {
+      const res  = await fetch('/api/thriftly/pay/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checkout_request_id: tlCheckoutId, record_id: tlRecordId }),
+      });
+      const data = await res.json();
+      if (data.status === 'paid') {
+        clearInterval(tlPollTimer);
+        tlShowSuccess(data.mpesa_code);
+      } else if (data.status === 'failed') {
+        clearInterval(tlPollTimer);
+        tlSetPayState('idle');
+        alert('Payment was not completed. Please try again.');
+      }
+    } catch (_) {}
+  }, 5000);
+}
+
+function tlShowSuccess(mpesaCode) {
+  const modal = document.querySelector('.tl-modal');
+  modal.innerHTML = `
+    <div class="tl-success">
+      <div class="tl-success-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="tl-success-title">Listing Submitted!</div>
+      <p class="tl-success-body">Your item has been received and is under review. We'll notify you on WhatsApp once it's live — usually within 24 hours.</p>
+      ${mpesaCode ? `<div class="tl-success-ref">M-Pesa Ref: ${mpesaCode}</div>` : ''}
+      <button class="tl-next" style="margin:0 auto" onclick="closeTlForm()">Done</button>
+    </div>`;
+}
 </script>
 </body>
 </html>

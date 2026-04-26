@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>M-Pesa STK Push Checkout</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--cream:#faf8f5;--white:#fff;--black:#0e0e0e;--mid:#6b6560;--light:#c8c4be;--accent:#b5853a;--border:#e8e4df;--green:#16a34a;--red:#dc2626;--font-serif:'Cormorant Garamond',Georgia,serif;--font-sans:'Jost',sans-serif}
+  body{background:var(--cream);color:var(--black);font-family:var(--font-sans);font-size:14px;line-height:1.6;display:flex;align-items:center;justify-content:center;min-height:100vh}
+
+  .checkout-container{max-width:400px;width:100%;background:var(--white);border:1px solid var(--border);padding:32px}
+
+  .section-title{font-family:var(--font-serif);font-size:22px;font-weight:400;letter-spacing:.06em;margin-bottom:24px;text-align:center}
+
+  .form-group{margin-bottom:18px}
+  .form-label{display:block;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin-bottom:6px;font-weight:500}
+  .form-input{width:100%;padding:12px 14px;border:1px solid var(--border);background:var(--white);font-family:var(--font-sans);font-size:13px;color:var(--black);outline:none;transition:border-color .2s;border-radius:0}
+  .form-input:focus{border-color:var(--black)}
+  .form-input.error{border-color:var(--red)}
+  .field-error{font-size:11px;color:var(--red);margin-top:4px}
+
+  .mpesa-section{background:var(--white);padding:0}
+  .mpesa-logo{display:flex;align-items:center;gap:12px;margin-bottom:20px;justify-content:center}
+  .mpesa-badge{background:#00a650;color:#fff;font-size:11px;font-weight:700;letter-spacing:.08em;padding:4px 10px;border-radius:2px}
+  .mpesa-title{font-size:14px;font-weight:500;letter-spacing:.04em}
+  .mpesa-hint{font-size:12px;color:var(--mid);margin-bottom:18px;line-height:1.7;text-align:center}
+  .pay-btn{width:100%;background:#00a650;color:#fff;border:none;padding:16px;font-family:var(--font-sans);font-size:12px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer;transition:background .2s;margin-top:6px}
+  .pay-btn:hover{background:#008040}
+  .pay-btn:disabled{background:var(--light);cursor:not-allowed}
+
+  .status-screen{display:none;text-align:center;padding:32px 24px}
+  .status-screen.show{display:block}
+  .status-icon{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .status-icon.pending{background:#fef9c3;animation:spin-ring 1.2s linear infinite}
+  .status-icon.success{background:#dcfce7}
+  .status-icon.failed{background:#fee2e2}
+  .status-title{font-family:var(--font-serif);font-size:26px;font-weight:400;margin-bottom:8px}
+  .status-msg{font-size:13px;color:var(--mid);line-height:1.7;max-width:340px;margin:0 auto}
+  .status-order{font-size:12px;letter-spacing:.08em;color:var(--accent);margin-top:12px;font-weight:500}
+  .retry-btn{margin-top:20px;background:none;border:1px solid var(--border);padding:10px 24px;font-family:var(--font-sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:border-color .2s}
+  .retry-btn:hover{border-color:var(--black)}
+  @keyframes spin-ring{0%{box-shadow:0 0 0 2px #ca8a04}50%{box-shadow:0 0 0 4px #fbbf24}100%{box-shadow:0 0 0 2px #ca8a04}}
+</style>
+</head>
+<body>
+
+<div class="checkout-container">
+  <div class="section-title">M-Pesa Checkout</div>
+
+  <div id="formSection">
+    <div class="mpesa-section">
+      <div class="mpesa-logo">
+        <span class="mpesa-badge">M-PESA</span>
+        <span class="mpesa-title">Pay via Lipa Na M-Pesa</span>
+      </div>
+      <p class="mpesa-hint">
+        Enter your M-Pesa phone number. You'll receive a STK push prompt to enter your PIN and complete the payment.
+      </p>
+      <div class="form-group">
+        <label class="form-label">M-Pesa Phone Number *</label>
+        <input class="form-input" id="mpesaPhone" placeholder="07XX XXX XXX" type="tel">
+        <div class="field-error" id="mpesaPhoneErr"></div>
+      </div>
+      <button class="pay-btn" id="payBtn" onclick="initiatePayment()">Pay KSh 100</button> <!-- Placeholder amount -->
+    </div>
+
+    <!-- STATUS SCREENS -->
+    <div class="status-screen" id="statusPending">
+      <div class="status-icon pending">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ca8a04" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="status-title">Check Your Phone</div>
+      <p class="status-msg">An M-Pesa payment request has been sent to <strong id="pendingPhone"></strong>. Enter your PIN to complete the payment.</p>
+      <p class="status-order">Transaction in progress...</p>
+      <p style="font-size:11px;color:var(--light);margin-top:14px;letter-spacing:.04em">Waiting for confirmation…</p>
+    </div>
+
+    <div class="status-screen" id="statusSuccess">
+      <div class="status-icon success">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div class="status-title">Payment Received!</div>
+      <p class="status-msg">Thank you! Your payment has been confirmed.</p>
+      <p class="status-order">Receipt: <span id="successReceipt"></span></p>
+    </div>
+
+    <div class="status-screen" id="statusFailed">
+      <div class="status-icon failed">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <div class="status-title">Payment Failed</div>
+      <p class="status-msg" id="failedMsg">The payment was not completed. Please try again.</p>
+      <button class="retry-btn" onclick="retryPayment()">Try Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let checkoutRequestId = null;
+  let pollInterval = null;
+
+  // ── VALIDATE ──
+  function validate() {
+    const el = document.getElementById('mpesaPhone');
+    el.classList.remove('error');
+    if (!el.value.trim()) {
+      el.classList.add('error');
+      document.getElementById('mpesaPhoneErr').textContent = 'Phone number is required';
+      return false;
+    }
+    return true;
+  }
+
+  // ── PAYMENT FLOW ──
+  async function initiatePayment() {
+    if (!validate()) return;
+
+    const payBtn = document.getElementById('payBtn');
+    payBtn.disabled = true;
+    payBtn.textContent = 'Sending request…';
+
+    try {
+      const phone = document.getElementById('mpesaPhone').value.trim();
+      const res = await fetch('/stk-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, amount: 100 }) // Placeholder amount
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+
+      checkoutRequestId = data.checkoutRequestId;
+
+      showStatus('pending');
+      document.getElementById('pendingPhone').textContent = phone;
+      startPolling();
+
+    } catch (err) {
+      payBtn.disabled = false;
+      payBtn.textContent = 'Pay KSh 100';
+      alert(err.message);
+    }
+  }
+
+  // ── POLLING ──
+  function startPolling() {
+    let attempts = 0;
+    const maxAttempts = 40; // ~2 minutes
+    pollInterval = setInterval(async () => {
+      attempts++;
+      if (attempts > maxAttempts) {
+        clearInterval(pollInterval);
+        document.getElementById('failedMsg').textContent = 'Payment timed out. Please try again.';
+        showStatus('failed');
+        return;
+      }
+      try {
+        const res = await fetch(`/status/${checkoutRequestId}`);
+        const data = await res.json();
+        if (data.resultCode === '0') {
+          clearInterval(pollInterval);
+          document.getElementById('successReceipt').textContent = data.mpesaReceiptNumber || '—';
+          showStatus('success');
+        } else if (data.resultCode !== '0') {
+          clearInterval(pollInterval);
+          showStatus('failed');
+        }
+      } catch { /* keep polling */ }
+    }, 3000);
+  }
+
+  function retryPayment() {
+    clearInterval(pollInterval);
+    checkoutRequestId = null;
+    showStatus(null);
+    const payBtn = document.getElementById('payBtn');
+    payBtn.disabled = false;
+    payBtn.textContent = 'Pay KSh 100';
+  }
+
+  function showStatus(state) {
+    document.getElementById('formSection').style.display = state ? 'none' : 'block';
+    ['statusPending', 'statusSuccess', 'statusFailed'].forEach(id => {
+      document.getElementById(id).classList.remove('show');
+    });
+    if (state) {
+      document.getElementById(`status${state.charAt(0).toUpperCase() + state.slice(1)}`).classList.add('show');
+    }
+  }
+</script>
+
+</body>
+</html>

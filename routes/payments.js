@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const db = require('../database');
+const { pool } = require('../database');
 
 const DARAJA_BASE = process.env.MPESA_ENV === 'production'
   ? 'https://api.safaricom.co.ke'
@@ -26,7 +26,7 @@ router.post('/mpesa/stk-push', async (req, res) => {
   const { order_id, phone } = req.body;
   if (!order_id || !phone) return res.status(400).json({ error: 'order_id and phone are required' });
 
-  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(order_id);
+  const [[order]] = await pool.execute('SELECT * FROM orders WHERE id = ?', [order_id]);
   if (!order) return res.status(404).json({ error: 'Order not found' });
   if (order.payment_status === 'paid') return res.status(400).json({ error: 'Order already paid' });
 
@@ -54,8 +54,10 @@ router.post('/mpesa/stk-push', async (req, res) => {
     }, { headers: { Authorization: `Bearer ${token}` } });
 
     if (data.ResponseCode === '0') {
-      db.prepare(`UPDATE orders SET mpesa_checkout_request_id = ?, payment_status = 'stk_sent', updated_at = datetime('now') WHERE id = ?`)
-        .run(data.CheckoutRequestID, order_id);
+      await pool.execute(
+        `UPDATE orders SET mpesa_checkout_request_id = ?, payment_status = 'stk_sent' WHERE id = ?`,
+        [data.CheckoutRequestID, order_id]
+      );
       res.json({ success: true, checkout_request_id: data.CheckoutRequestID });
     } else {
       res.status(400).json({ error: data.ResponseDescription || 'STK push failed' });
@@ -67,23 +69,24 @@ router.post('/mpesa/stk-push', async (req, res) => {
 });
 
 // POST /api/payments/mpesa/callback — Safaricom posts here after customer pays
-router.post('/mpesa/callback', (req, res) => {
+router.post('/mpesa/callback', async (req, res) => {
   const callback = req.body?.Body?.stkCallback;
   if (!callback) return res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
 
   const { CheckoutRequestID, ResultCode, CallbackMetadata } = callback;
-  const order = db.prepare('SELECT id FROM orders WHERE mpesa_checkout_request_id = ?').get(CheckoutRequestID);
+  const [[order]] = await pool.execute('SELECT id FROM orders WHERE mpesa_checkout_request_id = ?', [CheckoutRequestID]);
 
   if (order) {
     if (ResultCode === 0) {
       const items = CallbackMetadata?.Item || [];
       const receiptNumber = items.find(i => i.Name === 'MpesaReceiptNumber')?.Value || null;
-      db.prepare(`UPDATE orders SET payment_status = 'paid', mpesa_transaction_id = ?, status = 'confirmed', updated_at = datetime('now') WHERE id = ?`)
-        .run(receiptNumber, order.id);
+      await pool.execute(
+        `UPDATE orders SET payment_status = 'paid', mpesa_transaction_id = ?, status = 'confirmed' WHERE id = ?`,
+        [receiptNumber, order.id]
+      );
       console.log(`[Mpesa] Order ${order.id} paid — receipt ${receiptNumber}`);
     } else {
-      db.prepare(`UPDATE orders SET payment_status = 'failed', updated_at = datetime('now') WHERE id = ?`)
-        .run(order.id);
+      await pool.execute(`UPDATE orders SET payment_status = 'failed' WHERE id = ?`, [order.id]);
       console.log(`[Mpesa] Order ${order.id} payment failed — result code ${ResultCode}`);
     }
   }

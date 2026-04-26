@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout — Order via WhatsApp</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f7f7f5; color: #1a1a18; padding: 24px 16px; }
+    .container { max-width: 480px; margin: 0 auto; }
+    h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+    .card { background: #fff; border: 1px solid #e5e5e0; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 14px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; }
+    .order-line { display: flex; justify-content: space-between; align-items: center; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #f0f0ec; gap: 8px; }
+    .order-line:last-child { border-bottom: none; }
+    .order-line.total { font-weight: 600; font-size: 16px; padding-top: 12px; }
+    .item-name { flex: 1; }
+    .qty-badge { background: #f0f0ec; border-radius: 4px; padding: 1px 7px; font-size: 12px; color: #666; }
+
+    /* WhatsApp button */
+    .wa-btn {
+      width: 100%; padding: 14px 20px; background: #25D366; color: #fff;
+      font-size: 16px; font-weight: 600; border: none; border-radius: 10px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      gap: 10px; transition: background .2s;
+    }
+    .wa-btn:hover { background: #1ebe5d; }
+    .wa-icon { width: 22px; height: 22px; fill: white; flex-shrink: 0; }
+
+    .trust-note {
+      display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px;
+      background: #f0faf5; border: 1px solid #c5e8d5; border-radius: 8px;
+      font-size: 13px; color: #0f6e56; line-height: 1.5;
+    }
+    .trust-note svg { flex-shrink: 0; margin-top: 1px; }
+
+    /* Preview toggle */
+    .preview-toggle { font-size: 13px; color: #888; cursor: pointer; text-decoration: underline; display: block; text-align: center; margin-top: 8px; }
+    .preview-box {
+      display: none; background: #f7f7f5; border: 1px solid #e0e0da; border-radius: 8px;
+      padding: 12px 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap;
+      color: #444; margin-top: 10px; font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+
+<!--
+  This data attribute is one way to pass cart data to whatsapp-checkout.js.
+  Replace with however your cart system works — global JS variable, API call, etc.
+-->
+<div id="cart-data" data-cart='[
+  {"name":"Silk Wrap Dress","qty":1,"price":4500},
+  {"name":"Leather Belt","qty":1,"price":1200}
+]' style="display:none"></div>
+
+<div class="container">
+  <h1>Almost there!</h1>
+  <p class="sub">Review your order, then complete it via WhatsApp — it only takes a minute.</p>
+
+  <div class="card">
+    <h2>Your order</h2>
+    <!-- Populated dynamically below -->
+    <div id="order-lines"></div>
+  </div>
+
+  <div class="card">
+    <h2>Checkout</h2>
+    <div class="trust-note">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f6e56" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.14 13.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.05 2.78h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 10a16 16 0 0 0 6.29 6.29l1.3-1.3a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.27 17z"/></svg>
+      You'll complete your order with a real person on WhatsApp. Pay via M-Pesa after confirming your details.
+    </div>
+    <br/>
+    <button class="wa-btn" onclick="WACheckout.open()">
+      <svg class="wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+        <path d="M12.05 1.999C6.495 1.999 1.999 6.495 1.999 12.05c0 1.882.514 3.642 1.407 5.16L2 22l4.934-1.383A10.038 10.038 0 0 0 12.05 22.1C17.606 22.1 22 17.606 22 12.05 22 6.495 17.606 2 12.05 2zm0 18.355a8.303 8.303 0 0 1-4.23-1.16l-.303-.18-3.14.88.897-3.078-.197-.314A8.288 8.288 0 0 1 3.744 12.05c0-4.581 3.726-8.307 8.306-8.307 4.581 0 8.307 3.726 8.307 8.307 0 4.58-3.726 8.305-8.307 8.305z"/>
+      </svg>
+      Complete order via WhatsApp
+    </button>
+    <span class="preview-toggle" onclick="togglePreview()">Preview the message that will be sent</span>
+    <pre class="preview-box" id="preview-box"></pre>
+  </div>
+</div>
+
+<script src="whatsapp-checkout.js"></script>
+<script>
+  // ── Render order summary from cart data ────────────────────────────────────
+  (function renderOrder() {
+    const cartEl = document.getElementById('cart-data');
+    const items  = JSON.parse(cartEl?.dataset?.cart || '[]');
+    const linesEl = document.getElementById('order-lines');
+    if (!items.length) return;
+
+    const DELIVERY = 300;
+    const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
+    const total    = subtotal + DELIVERY;
+
+    items.forEach(item => {
+      linesEl.innerHTML += `
+        <div class="order-line">
+          <span class="item-name">${item.name}</span>
+          ${item.qty > 1 ? `<span class="qty-badge">×${item.qty}</span>` : ''}
+          <span>KES ${(item.price * item.qty).toLocaleString('en-KE')}</span>
+        </div>`;
+    });
+
+    linesEl.innerHTML += `
+      <div class="order-line"><span>Delivery</span><span>KES ${DELIVERY.toLocaleString('en-KE')}</span></div>
+      <div class="order-line total"><span>Total</span><span>KES ${total.toLocaleString('en-KE')}</span></div>`;
+  })();
+
+  // ── Preview toggle ─────────────────────────────────────────────────────────
+  function togglePreview() {
+    const box = document.getElementById('preview-box');
+    if (box.style.display === 'block') {
+      box.style.display = 'none';
+    } else {
+      box.textContent = WACheckout.preview();
+      box.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>

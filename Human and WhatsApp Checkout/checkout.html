@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout — Pay with M-Pesa</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f7f7f5; color: #1a1a18; padding: 24px 16px; }
+    .container { max-width: 480px; margin: 0 auto; }
+    h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+    .sub { font-size: 14px; color: #666; margin-bottom: 24px; }
+    .card { background: #fff; border: 1px solid #e5e5e0; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .card h2 { font-size: 14px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 12px; }
+    .order-line { display: flex; justify-content: space-between; font-size: 14px; padding: 6px 0; border-bottom: 1px solid #f0f0ec; }
+    .order-line:last-child { border-bottom: none; }
+    .order-line.total { font-weight: 600; font-size: 16px; padding-top: 10px; }
+    label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+    .hint { font-size: 12px; color: #888; margin-bottom: 8px; }
+    input[type="tel"] {
+      width: 100%; padding: 12px 14px; border: 1.5px solid #d0d0cc; border-radius: 8px;
+      font-size: 16px; outline: none; transition: border-color .2s;
+    }
+    input[type="tel"]:focus { border-color: #0f6e56; }
+    .pay-btn {
+      width: 100%; padding: 14px; background: #0f6e56; color: #fff; font-size: 16px;
+      font-weight: 600; border: none; border-radius: 8px; cursor: pointer; margin-top: 16px;
+      transition: background .2s;
+    }
+    .pay-btn:hover { background: #085041; }
+    .pay-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+    /* Status UI */
+    #status-box { display: none; text-align: center; padding: 24px 0; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #e5e5e0; border-top-color: #0f6e56; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .status-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .status-msg { font-size: 14px; color: #666; }
+    .status-icon { font-size: 40px; margin-bottom: 12px; }
+    .success { color: #0f6e56; }
+    .error { color: #c0392b; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Complete your order</h1>
+  <p class="sub">Pay securely via M-Pesa — you'll get a prompt on your phone.</p>
+
+  <!-- Order summary (populated by your cart JS) -->
+  <div class="card">
+    <h2>Order summary</h2>
+    <div id="order-lines">
+      <!-- Example items — replace with your dynamic cart data -->
+      <div class="order-line"><span>Silk Wrap Dress × 1</span><span>KES 4,500</span></div>
+      <div class="order-line"><span>Delivery</span><span>KES 300</span></div>
+      <div class="order-line total"><span>Total</span><span id="order-total">KES 4,800</span></div>
+    </div>
+  </div>
+
+  <!-- M-Pesa payment form -->
+  <div class="card" id="payment-form">
+    <h2>M-Pesa payment</h2>
+    <label for="phone">Safaricom number</label>
+    <p class="hint">Enter the number that will receive the payment prompt, e.g. 0712 345678</p>
+    <input type="tel" id="phone" placeholder="07XX XXX XXX" maxlength="13" />
+    <button class="pay-btn" id="pay-btn" onclick="initiatePayment()">Pay KES 4,800 with M-Pesa</button>
+  </div>
+
+  <!-- Status display (shown after button click) -->
+  <div id="status-box">
+    <div id="status-icon"></div>
+    <div id="status-title" class="status-title"></div>
+    <div id="status-msg" class="status-msg"></div>
+  </div>
+</div>
+
+<script>
+  // ── Config ────────────────────────────────────────────────────────────────
+  const API_BASE = 'http://localhost:3000';   // Your backend URL
+  const POLL_INTERVAL_MS = 3000;              // How often to check payment status
+  const POLL_MAX_ATTEMPTS = 20;               // Give up after ~60 seconds
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function formatPhone(raw) {
+    // Normalise Kenyan numbers to 254XXXXXXXXX format for Daraja
+    const digits = raw.replace(/\D/g, '');
+    if (digits.startsWith('0') && digits.length === 10) return '254' + digits.slice(1);
+    if (digits.startsWith('254') && digits.length === 12) return digits;
+    if (digits.startsWith('7') && digits.length === 9) return '254' + digits;
+    return null;
+  }
+
+  function showStatus(state, title, msg) {
+    document.getElementById('payment-form').style.display = 'none';
+    const box = document.getElementById('status-box');
+    box.style.display = 'block';
+
+    const icons = { loading: '<div class="spinner"></div>', success: '<div class="status-icon">✅</div>', error: '<div class="status-icon">❌</div>' };
+    document.getElementById('status-icon').innerHTML = icons[state] || '';
+    const titleEl = document.getElementById('status-title');
+    titleEl.textContent = title;
+    titleEl.className = 'status-title ' + (state === 'success' ? 'success' : state === 'error' ? 'error' : '');
+    document.getElementById('status-msg').textContent = msg;
+  }
+
+  // ── Main flow ─────────────────────────────────────────────────────────────
+  async function initiatePayment() {
+    const raw = document.getElementById('phone').value.trim();
+    const phone = formatPhone(raw);
+
+    if (!phone) {
+      alert('Please enter a valid Safaricom number (e.g. 0712 345678)');
+      return;
+    }
+
+    // Get total amount from page (replace with your real cart total)
+    const totalText = document.getElementById('order-total').textContent;
+    const amount = parseInt(totalText.replace(/\D/g, ''), 10);
+
+    document.getElementById('pay-btn').disabled = true;
+    showStatus('loading', 'Sending payment prompt…', 'Check your phone for the M-Pesa PIN prompt.');
+
+    try {
+      // 1. Initiate STK Push via your backend
+      const res = await fetch(`${API_BASE}/api/mpesa/stk-push`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, amount, orderId: 'ORD-' + Date.now() })
+      });
+
+      if (!res.ok) throw new Error('Failed to initiate payment');
+      const { checkoutRequestId } = await res.json();
+
+      // 2. Poll for confirmation
+      showStatus('loading', 'Waiting for payment…', 'Enter your M-Pesa PIN on your phone to complete.');
+      await pollPaymentStatus(checkoutRequestId);
+
+    } catch (err) {
+      showStatus('error', 'Payment failed', err.message || 'Please try again.');
+      document.getElementById('pay-btn').disabled = false;
+      document.getElementById('payment-form').style.display = 'block';
+      document.getElementById('status-box').style.display = 'none';
+    }
+  }
+
+  async function pollPaymentStatus(checkoutRequestId) {
+    for (let i = 0; i < POLL_MAX_ATTEMPTS; i++) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+
+      const res = await fetch(`${API_BASE}/api/mpesa/status/${checkoutRequestId}`);
+      const { status, message } = await res.json();
+
+      if (status === 'SUCCESS') {
+        showStatus('success', 'Payment received!', 'Your order has been placed. You\'ll receive a confirmation SMS shortly.');
+        return;
+      }
+      if (status === 'FAILED' || status === 'CANCELLED') {
+        throw new Error(message || 'Payment was not completed.');
+      }
+      // status === 'PENDING' → keep polling
+    }
+    throw new Error('Payment timed out. Please try again.');
+  }
+</script>
+</body>
+</html>

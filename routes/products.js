@@ -20,10 +20,14 @@ function mapRecord(record) {
   if (salePrice && price && salePrice < price) badge = 'Sale';
   else if (f['Sub-Category'] === 'Midnight Collection') badge = 'New In';
 
-  // Additional images as array
-  const additionalImages = f['Additional Image URLs']
-    ? f['Additional Image URLs'].split(',').map(u => u.trim()).filter(Boolean)
-    : [];
+  // 'Primary Image URL' is now an Airtable attachment field containing all product images.
+  // First attachment = primary (shop grid), all = gallery (product page).
+  const attachments = Array.isArray(f['Primary Image URL']) ? f['Primary Image URL'] : [];
+  const image_url = attachments[0]?.thumbnails?.large?.url || attachments[0]?.url || '';
+  const images = attachments.map(a => ({
+    thumb: a.thumbnails?.large?.url || a.url,
+    full: a.url,
+  }));
 
   return {
     id: record.id,
@@ -34,8 +38,8 @@ function mapRecord(record) {
     category: (f['Product Category'] || '').toLowerCase(),
     sub_category: f['Sub-Category'] || null,
     badge,
-    image_url: f['Primary Image URL'] || '',
-    additional_images: additionalImages,
+    image_url,
+    images,
     colour: f['Review Count'] || null,
     has_variants: f['Colour / Variant'] === 'Yes',
     in_stock: f['In Stock'] !== 'No',

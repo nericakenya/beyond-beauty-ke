@@ -23,11 +23,14 @@ const PORT = process.env.PORT || 3000;
 
 initDb()
   .then(() => {
+    console.log('✓ Database connected');
+  })
+  .catch(err => {
+    console.warn('⚠️  Database unavailable:', err.message);
+    console.warn('   Orders and payments will not work — Airtable features are unaffected.');
+  })
+  .finally(() => {
     app.listen(PORT, () => {
       console.log(`✨ Beyond Beauty KE running on port ${PORT}`);
     });
-  })
-  .catch(err => {
-    console.error('Failed to initialise database:', err.message);
-    process.exit(1);
   });

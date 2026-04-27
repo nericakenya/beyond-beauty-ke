@@ -24,9 +24,11 @@ function mapRecord(record) {
   // First attachment = primary (shop grid), all = gallery (product page).
   const attachments = Array.isArray(f['Primary Image URL']) ? f['Primary Image URL'] : [];
   const image_url = attachments[0]?.thumbnails?.large?.url || attachments[0]?.url || '';
-  const images = attachments.map(a => ({
+  const colourNames = (f['Colour Names'] || '').split(',').map(c => c.trim()).filter(Boolean);
+  const images = attachments.map((a, i) => ({
     thumb: a.thumbnails?.large?.url || a.url,
     full: a.url,
+    name: colourNames[i] || null,
   }));
 
   return {

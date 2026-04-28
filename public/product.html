@@ -18,15 +18,12 @@
   }
   body{background:#ffffff;color:var(--black);font-family:var(--font-sans);font-size:14px;line-height:1.6;overflow-x:hidden}
 
-  /* ── STICKY SHELL ── */
-  .sticky-shell{position:sticky;top:0;z-index:200;background:var(--white)}
-
   /* ── ANNOUNCE BAR ── */
   .announce-bar{background:var(--black);color:var(--white);text-align:center;font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:9px 20px;font-family:var(--font-sans)}
   .announce-bar a{color:var(--accent);text-decoration:none}
 
   /* ── HEADER ── */
-  .site-header{background:var(--white);border-bottom:1px solid var(--border)}
+  .site-header{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
   .header-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:18px 40px;gap:16px}
   .header-left{display:flex;align-items:center;gap:20px}
   .header-right{display:flex;align-items:center;justify-content:flex-end;gap:20px}
@@ -365,10 +362,10 @@
   let resolvedVariant = null;
   let selectedValues  = {};
 
-  // ── STICKY OFFSET ── measures full shell (announce + header + breadcrumb)
+  // ── STICKY OFFSET ── measures only the sticky header height
   function updateStickyOffset() {
-    const shell = document.getElementById('stickyShell');
-    if (shell) document.documentElement.style.setProperty('--header-h', shell.offsetHeight + 'px');
+    const header = document.getElementById('siteHeader');
+    if (header) document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
   }
   window.addEventListener('resize', updateStickyOffset);
 

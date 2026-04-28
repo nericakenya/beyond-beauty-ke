@@ -3,12 +3,64 @@ const router = express.Router();
 const axios = require('axios');
 const adminAuth = require('../middleware/adminAuth');
 
-const AIRTABLE_BASE = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
-const AIRTABLE_HEADERS = () => ({ Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` });
+const AIRTABLE_BASE     = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
+const AIRTABLE_VARIANTS = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_VARIANTS_TABLE_ID}`;
+const AIRTABLE_HEADERS  = () => ({ Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` });
 
 // ── In-memory cache (5-minute TTL) ──
-let cache = { data: null, fetchedAt: 0 };
 const CACHE_TTL = 5 * 60 * 1000;
+let cache         = { data: null, fetchedAt: 0 };
+let variantsCache = {}; // keyed by product record ID
+
+function mapVariantRecord(record) {
+  const f = record.fields;
+  const attachments = Array.isArray(f['Variant Image']) ? f['Variant Image'] : [];
+  return {
+    id:                         record.id,
+    sku:                        f['SKU']            || null,
+    colour:                     f['Colour']         || null,
+    size:                       f['Size']           || null,
+    length:                     f['Length']         ?? null,
+    texture:                    f['Texture']        || null,
+    price_override:             f['Price Override'] != null ? parseFloat(f['Price Override']) : null,
+    reorder_threshold_override: f['Reorder Threshold Override'] ?? null,
+    stock_quantity:             f['Stock Quantity'] ?? 0,
+    active:                     f['Active']         !== false,
+    images: attachments.map(a => ({
+      thumb: a.thumbnails?.large?.url || a.url,
+      full:  a.url,
+    })),
+  };
+}
+
+// All-variants cache — fetched once, filtered per product
+let allVariantsCache = { data: null, fetchedAt: 0 };
+
+async function fetchAllVariants() {
+  if (allVariantsCache.data && Date.now() - allVariantsCache.fetchedAt < CACHE_TTL) {
+    return allVariantsCache.data;
+  }
+  const fields = ['SKU','Colour','Size','Length','Texture','Price Override',
+                  'Reorder Threshold Override','Stock Quantity','Active','Variant Image','Products'];
+  const records = [];
+  let offset = null;
+  do {
+    const params = { pageSize: 100, 'fields[]': fields };
+    if (offset) params.offset = offset;
+    const { data } = await axios.get(AIRTABLE_VARIANTS, { headers: AIRTABLE_HEADERS(), params });
+    records.push(...data.records);
+    offset = data.offset || null;
+  } while (offset);
+  allVariantsCache = { data: records, fetchedAt: Date.now() };
+  return records;
+}
+
+async function fetchVariantsForProduct(productId) {
+  const all = await fetchAllVariants();
+  // Airtable returns linked record IDs as plain strings in the Products array
+  const records = all.filter(r => (r.fields.Products || []).includes(productId));
+  return records.map(mapVariantRecord);
+}
 
 function mapRecord(record) {
   const f = record.fields;
@@ -111,6 +163,17 @@ router.get('/all', adminAuth, async (req, res) => {
     res.json(await getProducts());
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/products/:id/variants
+router.get('/:id/variants', async (req, res) => {
+  try {
+    const variants = await fetchVariantsForProduct(req.params.id);
+    res.json(variants);
+  } catch (err) {
+    console.error('[Airtable] Variants fetch error:', err.message);
+    res.status(500).json({ error: 'Could not load variants' });
   }
 });
 

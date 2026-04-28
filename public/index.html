@@ -522,13 +522,15 @@
     showToast('Added to bag');
   }
 
-  function removeFromCart(id) {
-    cart = cart.filter(i => i.id !== id);
+  function itemKey(i) { return i.sku || String(i.id); }
+
+  function removeFromCart(key) {
+    cart = cart.filter(i => itemKey(i) !== key);
     saveCart();
   }
 
-  function changeQty(id, delta) {
-    const item = cart.find(i => i.id === id);
+  function changeQty(key, delta) {
+    const item = cart.find(i => itemKey(i) === key);
     if (!item) return;
     item.qty = Math.max(1, item.qty + delta);
     saveCart();
@@ -576,21 +578,23 @@
     document.getElementById('cartDelivery').textContent = delivery === 0 ? 'Free' : fmt(delivery);
     document.getElementById('cartGrand').textContent = fmt(grand);
     document.getElementById('cartDeliveryMsg').textContent = delivery > 0 ? `Add ${fmt(9500 - subtotal)} more for free delivery` : '✓ You qualify for free delivery';
-    el.innerHTML = cart.map(item => `
+    el.innerHTML = cart.map(item => {
+      const key = itemKey(item);
+      return `
       <div class="cart-item">
         <img class="cart-item-img" src="${item.image_url || ''}" alt="${item.name}" onerror="this.style.display='none'">
         <div class="cart-item-info">
           <div class="cart-item-name">${item.name}</div>
           <div class="cart-item-price">${fmt(item.price)}</div>
           <div class="cart-item-controls">
-            <button class="qty-btn" onclick="changeQty(${item.id}, -1)">−</button>
+            <button class="qty-btn" onclick="changeQty('${key}', -1)">−</button>
             <span class="qty-num">${item.qty}</span>
-            <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
-            <button class="cart-item-remove" onclick="removeFromCart(${item.id})">Remove</button>
+            <button class="qty-btn" onclick="changeQty('${key}', 1)">+</button>
+            <button class="cart-item-remove" onclick="removeFromCart('${key}')">Remove</button>
           </div>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   async function refreshCartImages() {

@@ -97,6 +97,13 @@
   .gallery-badge.selling-fast{background:#16a34a;color:var(--white)}
   .gallery-badge.coming-soon{background:#6b7280;color:var(--white)}
   .gallery-badge.only-x-left{background:#2563eb;color:var(--white)}
+  .also-card-badge{position:absolute;top:10px;left:10px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500;z-index:2}
+  .also-card-badge.sale{background:var(--accent);color:var(--white)}
+  .also-card-badge.new-in{background:var(--black);color:var(--white)}
+  .also-card-badge.out-of-stock{background:#dc2626;color:var(--white)}
+  .also-card-badge.selling-fast{background:#16a34a;color:var(--white)}
+  .also-card-badge.coming-soon{background:#6b7280;color:var(--white)}
+  .also-card-badge.only-x-left{background:#2563eb;color:var(--white)}
 
   /* ── PRODUCT INFO ── */
   .product-info{padding-top:4px}
@@ -727,7 +734,7 @@
       <!-- GALLERY -->
       <div class="gallery">
         <div class="gallery-main">
-          ${p.badge ? `<span class="gallery-badge ${p.badge.toLowerCase().replace(/[\s']+/g,'-').replace(/[^a-z0-9-]/g,'')}">${p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge}</span>` : ''}
+          ${p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2) ? `<span class="gallery-badge ${p.badge.toLowerCase().replace(/[\s']+/g,'-').replace(/[^a-z0-9-]/g,'')}">${p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge}</span>` : ''}
           ${hasImages
             ? `<img id="mainImg" src="${primarySrc}" alt="${p.name}">`
             : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--light);font-size:12px;letter-spacing:.06em">No photo yet</div>`
@@ -819,9 +826,14 @@
       const grid = document.getElementById('alsoLikeGrid');
       grid.innerHTML = similar.map(p => {
         const priceStr = p.price ? fmt(p.price) : 'Enquire';
+        const badgeClass = p.badge ? p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '') : '';
+        const badgeLabel = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
+        const showBadge = p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2);
+        const badgeHtml = showBadge ? `<span class="also-card-badge ${badgeClass}">${badgeLabel}</span>` : '';
         return `
           <a class="also-card" href="/product?id=${p.id}">
             <div class="also-card-img">
+              ${badgeHtml}
               <img src="${p.image_url}" alt="${p.name}" loading="lazy"
                 onerror="this.src='https://placehold.co/400x533/f0ede9/6b6560?text=Photo+Coming'">
             </div>

@@ -45,7 +45,7 @@ function computeBadge(p) {
   const status     = g('Status')?.name;
   const salePrice  = g('Sale Price');
   const price      = g('Price (KES)');
-  const threshold  = g('Reorder Threshold') ?? 2;
+  const threshold  = 2;
   const dateAdded  = new Date(p.createdTime);
 
   const productVariants = g('Variants') ?? [];

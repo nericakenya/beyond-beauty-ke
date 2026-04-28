@@ -681,7 +681,7 @@
       return `
       <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='/product?id=${p.id}'">
         <div class="product-img-wrap">
-          ${p.badge ? `<span class="product-badge ${p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '')}">${p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge}</span>` : ''}
+          ${p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2) ? `<span class="product-badge ${p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '')}">${p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge}</span>` : ''}
           <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/f0ede9/6b6560?text=Photo+Coming'">
           <button class="product-save" onclick="event.stopPropagation();toggleSave('${p.id}', this)" title="Save">${heartIcon(false)}</button>
           <div class="product-quick">

@@ -17,12 +17,15 @@
   }
   body{background:#f7f7f5;color:var(--black);font-family:var(--font-sans);font-size:14px;line-height:1.6;min-height:100vh;display:flex;flex-direction:column}
 
+  /* ── STICKY SHELL ── */
+  .sticky-shell{position:sticky;top:0;z-index:200}
+
   /* ── ANNOUNCE BAR ── */
   .announce-bar{background:var(--black);color:rgba(255,255,255,.8);text-align:center;font-size:11px;letter-spacing:.2em;text-transform:uppercase;padding:9px 20px;font-family:var(--font-sans)}
   .announce-bar a{color:var(--accent);text-decoration:none}
 
   /* ── HEADER ── */
-  .site-header{background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200}
+  .site-header{background:var(--white);border-bottom:1px solid var(--border)}
   .header-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:18px 40px;gap:16px}
   .header-left{display:flex;align-items:center;gap:20px}
   .header-right{display:flex;align-items:center;justify-content:flex-end;gap:20px}
@@ -122,11 +125,12 @@
 </head>
 <body>
 
+<div class="announce-bar">
+  Free delivery on orders over KSh 9,500 · WhatsApp: <a href="https://wa.me/14155238886" target="_blank">+1 415 523 8886</a>
+</div>
+
 <!-- ── STICKY SHELL ── -->
 <div class="sticky-shell">
-  <div class="announce-bar">
-    Free delivery on orders over KSh 9,500 · WhatsApp: <a href="https://wa.me/14155238886" target="_blank">+1 415 523 8886</a>
-  </div>
   <header class="site-header">
     <div class="header-top">
       <div class="header-left">

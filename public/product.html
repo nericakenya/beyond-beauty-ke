@@ -210,7 +210,8 @@
     .cart-panel{width:100vw;right:-100vw}
     .search-wrap span{display:none}
     .header-right{gap:12px}
-    .announce-bar{font-size:10px;padding:8px 16px;letter-spacing:.08em}
+    .announce-bar{font-size:10px;padding:8px 16px;letter-spacing:.08em;display:flex;flex-direction:column;align-items:center;gap:2px}
+    .ann-sep{display:none}
     .breadcrumb-bar{padding:10px 16px}
   }
   @media(max-width:480px){
@@ -243,7 +244,7 @@
 
 <div class="sticky-shell" id="stickyShell">
   <div class="announce-bar">
-    Free delivery on orders over KSh 9,500 · WhatsApp: <a id="waAnnounce" href="https://wa.me/14155238886" target="_blank">+254 700 000 000</a>
+    <span class="ann-line">Free delivery on orders over KSh 5,000</span><span class="ann-sep"> · </span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="https://wa.me/14155238886" target="_blank">+1 415 523 8886</a></span>
   </div>
 
   <header class="site-header" id="siteHeader">
@@ -453,7 +454,7 @@
     }
     footer && (footer.style.display = 'block');
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const delivery = subtotal >= 9500 ? 0 : 250;
+    const delivery = subtotal >= 5000 ? 0 : 250;
     const grand = subtotal + delivery;
     el.innerHTML = cart.map(i => {
       const key = itemKey(i);
@@ -478,7 +479,7 @@
     if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
     if (deliveryEl) deliveryEl.textContent = delivery === 0 ? 'Free' : fmt(delivery);
     if (grandEl)    grandEl.textContent    = fmt(grand);
-    if (msgEl)      msgEl.textContent      = delivery === 0 ? 'You qualify for free delivery!' : `Add ${fmt(9500 - subtotal)} more for free delivery`;
+    if (msgEl)      msgEl.textContent      = delivery === 0 ? 'You qualify for free delivery!' : `Add ${fmt(5000 - subtotal)} more for free delivery`;
   }
 
   function addToCart() {
@@ -782,7 +783,7 @@
             <div class="accordion-body">
               <div class="accordion-content">
                 <ul>
-                  <li>Free delivery on orders over KSh 9,500</li>
+                  <li>Free delivery on orders over KSh 5,000</li>
                   <li>Standard delivery within Nairobi: KES 250 — 1 to 3 hours</li>
                   <li>We deliver nationwide across Kenya: KES 500 — 1 to 3 working days</li>
                   <li>Exchanges accepted within 3 days of delivery</li>

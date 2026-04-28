@@ -271,7 +271,8 @@
     .site-nav { overflow-x: auto; justify-content: flex-start; padding: 0 16px; scrollbar-width: none; }
     .site-nav::-webkit-scrollbar { display: none; }
     .nav-item { padding: 12px 14px; font-size: 10px; }
-    .announce-bar { font-size: 10px; padding: 8px 16px; letter-spacing: .08em; }
+    .announce-bar { font-size: 10px; padding: 8px 16px; letter-spacing: .08em; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .ann-sep { display: none; }
     .page-hero { padding: 28px 16px 20px; }
     .filter-bar { padding: 12px 16px; }
     .shop-main { padding: 20px 16px 60px; }
@@ -303,7 +304,7 @@
 <body>
 
 <div class="announce-bar">
-  Free delivery on orders over KSh 9,500 · WhatsApp: <a id="waAnnounce" href="#" target="_blank">+254 700 000 000</a>
+  <span class="ann-line">Free delivery on orders over KSh 5,000</span><span class="ann-sep"> · </span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="#" target="_blank">+1 415 523 8886</a></span>
 </div>
 
 <header class="site-header">
@@ -572,12 +573,12 @@
     }
     footer.style.display = 'block';
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const delivery = subtotal >= 9500 ? 0 : 250;
+    const delivery = subtotal >= 5000 ? 0 : 250;
     const grand = subtotal + delivery;
     document.getElementById('cartSubtotal').textContent = fmt(subtotal);
     document.getElementById('cartDelivery').textContent = delivery === 0 ? 'Free' : fmt(delivery);
     document.getElementById('cartGrand').textContent = fmt(grand);
-    document.getElementById('cartDeliveryMsg').textContent = delivery > 0 ? `Add ${fmt(9500 - subtotal)} more for free delivery` : '✓ You qualify for free delivery';
+    document.getElementById('cartDeliveryMsg').textContent = delivery > 0 ? `Add ${fmt(5000 - subtotal)} more for free delivery` : '✓ You qualify for free delivery';
     el.innerHTML = cart.map(item => {
       const key = itemKey(item);
       return `

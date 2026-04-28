@@ -330,7 +330,7 @@
         <td><strong>${p.name}</strong>${p.sub_category ? `<br><span style="font-size:10px;color:var(--mid)">${p.sub_category}</span>` : ''}</td>
         <td>${p.category}</td>
         <td>${p.price ? fmt(p.price) : '<em style="color:var(--mid)">Enquire</em>'}${p.original_price ? `<br><span style="text-decoration:line-through;color:var(--mid);font-size:11px">${fmt(p.original_price)}</span>` : ''}</td>
-        <td>${p.badge ? `<span class="badge badge-${p.badge === 'Sale' ? 'sale' : 'new'}">${p.badge}</span>` : '—'}</td>
+        <td>${p.badge ? `<span class="badge badge-${p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '')}">${p.badge}</span>` : '—'}</td>
         <td>${p.colour || '—'}</td>
         <td><span class="badge badge-active">Live</span></td>
       </tr>

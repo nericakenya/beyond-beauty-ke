@@ -57,6 +57,10 @@
   .gallery-badge{position:absolute;top:14px;left:14px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500;z-index:2}
   .gallery-badge.sale{background:var(--accent);color:var(--white)}
   .gallery-badge.new-in{background:var(--black);color:var(--white)}
+  .gallery-badge.out-of-stock{background:#dc2626;color:var(--white)}
+  .gallery-badge.selling-fast{background:#16a34a;color:var(--white)}
+  .gallery-badge.coming-soon{background:#6b7280;color:var(--white)}
+  .gallery-badge.only-x-left{background:#2563eb;color:var(--white)}
 
   /* ── PRODUCT INFO ── */
   .product-info{padding-top:4px}
@@ -412,7 +416,7 @@
       <!-- GALLERY -->
       <div class="gallery">
         <div class="gallery-main">
-          ${p.badge ? `<span class="gallery-badge ${p.badge==='Sale'?'sale':'new-in'}">${p.badge}</span>` : ''}
+          ${p.badge ? `<span class="gallery-badge ${p.badge.toLowerCase().replace(/[\s']+/g,'-').replace(/[^a-z0-9-]/g,'')}">${p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge}</span>` : ''}
           ${hasImages
             ? `<img id="mainImg" src="${primarySrc}" alt="${p.name}">`
             : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--light);font-size:12px;letter-spacing:.06em">No photo yet</div>`

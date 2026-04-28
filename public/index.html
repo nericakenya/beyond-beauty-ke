@@ -76,6 +76,10 @@
   .product-badge { position: absolute; top: 12px; left: 12px; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; padding: 4px 9px; font-family: var(--font-sans); font-weight: 500; z-index: 2; }
   .product-badge.sale { background: var(--accent); color: var(--white); }
   .product-badge.new-in { background: var(--black); color: var(--white); }
+  .product-badge.out-of-stock { background: #dc2626; color: var(--white); }
+  .product-badge.selling-fast { background: #16a34a; color: var(--white); }
+  .product-badge.coming-soon { background: #6b7280; color: var(--white); }
+  .product-badge.only-x-left { background: #2563eb; color: var(--white); }
 
   .product-save { position: absolute; top: 10px; right: 10px; z-index: 2; background: none; border: none; cursor: pointer; color: var(--mid); padding: 6px; transition: color .2s, transform .2s; }
   .product-save:hover { color: var(--black); transform: scale(1.15); }
@@ -625,7 +629,7 @@
       return `
       <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='/product?id=${p.id}'">
         <div class="product-img-wrap">
-          ${p.badge ? `<span class="product-badge ${p.badge === 'Sale' ? 'sale' : 'new-in'}">${p.badge}</span>` : ''}
+          ${p.badge ? `<span class="product-badge ${p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '')}">${p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge}</span>` : ''}
           <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/f0ede9/6b6560?text=Photo+Coming'">
           <button class="product-save" onclick="event.stopPropagation();toggleSave('${p.id}', this)" title="Save">${heartIcon(false)}</button>
           <div class="product-quick">

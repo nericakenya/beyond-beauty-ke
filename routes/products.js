@@ -15,10 +15,7 @@ function mapRecord(record) {
   const price = f['Price (KES)'] || null;
   const salePrice = f['Sale Price'] ? parseFloat(f['Sale Price']) : null;
 
-  // Determine badge
-  let badge = null;
-  if (salePrice && price && salePrice < price) badge = 'Sale';
-  else if (f['Sub-Category'] === 'Midnight Collection') badge = 'New In';
+  const badge = f['Badge'] || null;
 
   // 'Primary Image URL' is now an Airtable attachment field containing all product images.
   // First attachment = primary (shop grid), all = gallery (product page).
@@ -40,6 +37,7 @@ function mapRecord(record) {
     category: (f['Product Category'] || '').toLowerCase(),
     sub_category: f['Sub-Category'] || null,
     badge,
+    total_stock_quantity: f['Total Stock Quantity'] ?? null,
     image_url,
     images,
     colour: f['Review Count'] || null,

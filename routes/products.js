@@ -97,6 +97,14 @@ function mapRecord(record) {
     in_stock: f['In Stock'] !== 'No',
     is_active: 1,
     created_at: record.createdTime,
+    materials:                   f['Materials']                   || null,
+    care_instructions:           f['Care Instructions']           || null,
+    dimensions:                  f['Dimensions']                  || null,
+    how_to_use:                  f['How to Use']                  || null,
+    ingredients:                 f['Ingredients']                 || null,
+    skin_concerns_and_benefits:  f['Skin Concerns & Benefits']    || null,
+    hair_care:                   f['Hair Care']                   || null,
+    returns_override:            f['Returns Override']            || null,
   };
 }
 

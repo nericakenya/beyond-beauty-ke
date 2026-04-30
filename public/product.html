@@ -141,7 +141,7 @@
   .btn-whatsapp:hover{background:#25D366;color:#fff}
 
   /* ── ACCORDION ── */
-  .accordion{margin-top:0;border-top:1px solid var(--border)}
+  .accordion{margin-top:32px}
   .accordion-item{border-bottom:1px solid var(--border)}
   .accordion-trigger{width:100%;display:flex;align-items:center;justify-content:space-between;padding:16px 0;background:none;border:none;cursor:pointer;font-family:var(--font-sans);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--black);font-weight:500;text-align:left;transition:color .2s}
   .accordion-trigger:hover{color:var(--mid)}
@@ -333,7 +333,7 @@
         <li><a href="/?cat=bags">Bags</a></li>
         <li><a href="/?cat=accessories">Accessories</a></li>
         <li><a href="/?cat=hair">Hair</a></li>
-        <li><a href="/?cat=skincare">Skincare</a></li>
+        <li><a href="/?cat=beauty">Beauty</a></li>
         <li><a href="/?cat=sale">Sale</a></li>
       </ul>
     </div>
@@ -619,12 +619,35 @@
     track.addEventListener('touchcancel', release, { passive: true });
   }
 
+  // ── ACCORDION REGISTRY ──
+  const CATEGORY_SECTIONS = {
+    bags:        ['materials_and_care', 'dimensions'],
+    accessories: ['materials_and_care', 'dimensions'],
+    hair:        ['hair_care'],
+    beauty:      ['how_to_use', 'ingredients', 'skin_concerns_and_benefits'],
+  };
+
+  const SECTION_META = {
+    materials_and_care:         { title: 'Materials & Care',          field: p => [p.materials, p.care_instructions].filter(Boolean).join('\n\n') },
+    dimensions:                 { title: 'Dimensions',                field: p => p.dimensions },
+    how_to_use:                 { title: 'How to Use',                field: p => p.how_to_use },
+    ingredients:                { title: 'Ingredients',               field: p => p.ingredients },
+    skin_concerns_and_benefits: { title: 'Skin Concerns & Benefits',  field: p => p.skin_concerns_and_benefits },
+    hair_care:                  { title: 'Hair Care',                 field: p => p.hair_care },
+  };
+
+  function sectionsFor(p) {
+    const middle = (CATEGORY_SECTIONS[p.category] || [])
+      .filter(key => {
+        const content = SECTION_META[key].field(p);
+        return content && content.trim();
+      });
+    return ['product_details', ...middle, 'delivery_and_returns'];
+  }
+
   // ── ACCORDION ──
   function toggleAccordion(el) {
-    const item = el.closest('.accordion-item');
-    const isOpen = item.classList.contains('open');
-    document.querySelectorAll('.accordion-item.open').forEach(i => i.classList.remove('open'));
-    if (!isOpen) item.classList.add('open');
+    el.closest('.accordion-item').classList.toggle('open');
   }
 
   // ── RENDER DESCRIPTION ──
@@ -643,6 +666,42 @@
     });
     if (inList) html += '</ul>';
     return html;
+  }
+
+  const DELIVERY_AND_RETURNS_HTML = `<ul>
+    <li>Free delivery on orders over KSh 5,000</li>
+    <li>Standard delivery within Nairobi: KES 250 — 1 to 3 hours</li>
+    <li>We deliver nationwide across Kenya: KES 500 — 1 to 3 working days</li>
+    <li>Exchanges accepted within 3 days of delivery</li>
+  </ul>`;
+
+  function accordionItem(key, title, contentHtml) {
+    return `
+      <div class="accordion-item" id="${key}">
+        <button class="accordion-trigger" onclick="toggleAccordion(this)">
+          ${title}
+          <span class="accordion-icon">+</span>
+        </button>
+        <div class="accordion-body">
+          <div class="accordion-content">${contentHtml}</div>
+        </div>
+      </div>`;
+  }
+
+  function renderAccordion(p) {
+    const sections = sectionsFor(p);
+    const items = sections.map(key => {
+      if (key === 'product_details') {
+        return accordionItem(key, 'Product Details', descriptionHtml(p.description));
+      }
+      if (key === 'delivery_and_returns') {
+        const body = p.returns_override ? descriptionHtml(p.returns_override) : DELIVERY_AND_RETURNS_HTML;
+        return accordionItem(key, 'Delivery & Returns', body);
+      }
+      const meta = SECTION_META[key];
+      return accordionItem(key, meta.title, descriptionHtml(meta.field(p)));
+    });
+    return `<div class="accordion">${items.join('')}</div>`;
   }
 
   // ── VARIANT LOGIC ──
@@ -851,50 +910,22 @@
           </button>
         </div>
 
-        <div class="accordion">
-          <div class="accordion-item open">
-            <button class="accordion-trigger" onclick="toggleAccordion(this)">
-              Product Details
-              <span class="accordion-icon">+</span>
-            </button>
-            <div class="accordion-body">
-              <div class="accordion-content">${descriptionHtml(p.description)}</div>
-            </div>
-          </div>
-          <div class="accordion-item">
-            <button class="accordion-trigger" onclick="toggleAccordion(this)">
-              Size &amp; Fit
-              <span class="accordion-icon">+</span>
-            </button>
-            <div class="accordion-body">
-              <div class="accordion-content">
-                <p>For sizing guidance, please WhatsApp us — we're happy to help you find the right fit.</p>
-              </div>
-            </div>
-          </div>
-          <div class="accordion-item">
-            <button class="accordion-trigger" onclick="toggleAccordion(this)">
-              Delivery &amp; Returns
-              <span class="accordion-icon">+</span>
-            </button>
-            <div class="accordion-body">
-              <div class="accordion-content">
-                <ul>
-                  <li>Free delivery on orders over KSh 5,000</li>
-                  <li>Standard delivery within Nairobi: KES 250 — 1 to 3 hours</li>
-                  <li>We deliver nationwide across Kenya: KES 500 — 1 to 3 working days</li>
-                  <li>Exchanges accepted within 3 days of delivery</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
+        ${renderAccordion(p)}
       </div>
     `;
 
     document.getElementById('waFab').onclick = openWhatsApp;
     updateStickyOffset();
     initSwipeGallery();
+
+    const hash = window.location.hash.slice(1);
+    if (hash) {
+      const target = document.getElementById(hash);
+      if (target && target.classList.contains('accordion-item')) {
+        target.classList.add('open');
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }
   }
 
   function openWhatsApp() {

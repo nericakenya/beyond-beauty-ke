@@ -199,7 +199,7 @@
     .gallery{position:static;min-width:0;overflow:hidden;width:100%}
     .gallery-main{width:100%;aspect-ratio:unset;background:#ffffff;overflow:visible}
     .gallery-main img{width:100%;height:auto;object-fit:unset}
-    .product-info{padding:20px 16px 40px;min-width:0}
+    .product-info{padding:20px 16px 0;min-width:0}
     .colour-row{padding:0}
     .colour-thumb-wrap{width:72px;height:94px}
     .colour-selector{padding:0;margin-bottom:20px}
@@ -240,9 +240,9 @@
   .pill.out-of-stock.selected{background:var(--black);color:var(--white);opacity:.7}
 
   /* ── STOCK CUE ── */
-  .stock-cue{font-size:11px;letter-spacing:.06em;min-height:20px;margin-bottom:16px}
-  .stock-cue.low{color:#2563eb}
-  .stock-cue.oos{color:#dc2626}
+  .stock-cue{font-size:11px;letter-spacing:.06em;min-height:0;margin-bottom:0}
+  .stock-cue.low{color:#2563eb;min-height:20px;margin-bottom:16px}
+  .stock-cue.oos{color:#dc2626;min-height:20px;margin-bottom:16px}
 
   /* ── DISABLED ADD TO BAG ── */
   .btn-primary:disabled{background:var(--light);cursor:not-allowed}
@@ -894,8 +894,8 @@
       <!-- INFO -->
       <div class="product-info">
         ${colourSelectorHtml}
-        <h1 class="product-title">${p.name}</h1>
         ${p.sub_category ? `<div class="product-sub">${p.sub_category}</div>` : ''}
+        <h1 class="product-title">${p.name}</h1>
         <div class="price-row" id="price-row">${priceHtml}</div>
 
         <div id="variant-selectors"></div>

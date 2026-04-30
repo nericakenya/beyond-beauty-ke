@@ -539,7 +539,11 @@
     if (!product || !product.images[idx]) return;
     activeImageIdx = idx;
     const track = document.getElementById('galleryTrack');
-    if (track) track.style.transform = `translateX(-${idx * 100}%)`;
+    if (track) {
+      const w = track.parentElement?.offsetWidth || 0;
+      track.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94)';
+      track.style.transform = w ? `translateX(${-idx * w}px)` : `translateX(-${idx * 100}%)`;
+    }
     document.querySelectorAll('.gallery-dot').forEach((el, i) => el.classList.toggle('active', i === idx));
     document.querySelectorAll('.colour-thumb-wrap').forEach((el, i) => el.classList.toggle('active', i === idx));
     const nameEl = document.getElementById('colourName');
@@ -568,12 +572,14 @@
     let startX = 0, startY = 0, startTime = 0, decided = false, dragging = false;
 
     track.addEventListener('touchstart', e => {
+      const w = track.parentElement.offsetWidth;
+      track.style.transition = 'none';
+      track.style.transform = `translateX(${-activeImageIdx * w}px)`; // snap to known px position
       startX    = e.touches[0].clientX;
       startY    = e.touches[0].clientY;
       startTime = Date.now();
       decided   = false;
       dragging  = false;
-      track.style.transition = 'none';
     }, { passive: true });
 
     track.addEventListener('touchmove', e => {

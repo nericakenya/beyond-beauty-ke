@@ -249,8 +249,8 @@
   .btn-primary:disabled:hover{background:var(--light)}
 
   /* ── SWIPE GALLERY ── */
-  .gallery-track{display:flex;height:100%;transition:transform .25s cubic-bezier(.25,.46,.45,.94);will-change:transform}
-  .gallery-slide{flex:0 0 100%;width:100%;height:100%}
+  .gallery-track{display:flex;height:100%;transition:transform .25s cubic-bezier(.25,.46,.45,.94);will-change:transform;transform:translateZ(0)}
+  .gallery-slide{flex:0 0 100%;width:100%;height:100%;transform:translateZ(0)}
   .gallery-slide img{width:100%;height:100%;object-fit:cover;display:block}
   .gallery-arrow{display:flex;position:absolute;top:50%;transform:translateY(-50%);z-index:10;background:rgba(255,255,255,.88);border:1px solid rgba(0,0,0,.1);width:36px;height:36px;border-radius:50%;cursor:pointer;align-items:center;justify-content:center;padding:0;transition:background .2s}
   .gallery-arrow:hover{background:#fff}
@@ -542,7 +542,7 @@
     if (track) {
       const w = track.parentElement?.offsetWidth || 0;
       track.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94)';
-      track.style.transform = w ? `translateX(${-idx * w}px)` : `translateX(-${idx * 100}%)`;
+      track.style.transform = w ? `translateX(${-idx * w}px) translateZ(0)` : `translateX(-${idx * 100}%) translateZ(0)`;
     }
     document.querySelectorAll('.gallery-dot').forEach((el, i) => el.classList.toggle('active', i === idx));
     document.querySelectorAll('.colour-thumb-wrap').forEach((el, i) => el.classList.toggle('active', i === idx));
@@ -569,12 +569,14 @@
     const track = document.getElementById('galleryTrack');
     if (!track || !product?.images?.length) return;
 
-    let startX = 0, startY = 0, startTime = 0, decided = false, dragging = false;
+    let startX = 0, startY = 0, startTime = 0, slideW = 0;
+    let decided = false, dragging = false, rafId = null;
 
     track.addEventListener('touchstart', e => {
-      const w = track.parentElement.offsetWidth;
+      slideW = track.parentElement.offsetWidth;          // measure once, reuse every frame
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
       track.style.transition = 'none';
-      track.style.transform = `translateX(${-activeImageIdx * w}px)`; // snap to known px position
+      track.style.transform  = `translateX(${-activeImageIdx * slideW}px) translateZ(0)`;
       startX    = e.touches[0].clientX;
       startY    = e.touches[0].clientY;
       startTime = Date.now();
@@ -585,7 +587,6 @@
     track.addEventListener('touchmove', e => {
       const dx = e.touches[0].clientX - startX;
       const dy = e.touches[0].clientY - startY;
-      // Wait for 5 px of movement before committing to an axis
       if (!decided) {
         if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
         decided = true;
@@ -594,20 +595,24 @@
       }
       if (!dragging) return;
       e.preventDefault();
-      const w = track.parentElement.offsetWidth;
-      track.style.transform = `translateX(${-activeImageIdx * w + dx}px)`;
+      if (rafId) return;                                 // already a frame queued, skip
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const currentDx = e.touches[0]?.clientX - startX || dx;
+        track.style.transform = `translateX(${-activeImageIdx * slideW + currentDx}px) translateZ(0)`;
+      });
     }, { passive: false });
 
     function release(e) {
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
       if (!decided || !dragging) { track.style.transition = ''; return; }
       const dx       = (e.changedTouches[0]?.clientX ?? startX) - startX;
-      const velocity = Math.abs(dx) / Math.max(1, Date.now() - startTime); // px/ms
+      const velocity = Math.abs(dx) / Math.max(1, Date.now() - startTime);
       const commit   = Math.abs(dx) > 30 || velocity > 0.3;
-      const w        = track.parentElement.offsetWidth;
       track.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94)';
       if      (commit && dx < 0) nextImage();
       else if (commit && dx > 0) prevImage();
-      else track.style.transform = `translateX(${-activeImageIdx * w}px)`;
+      else track.style.transform = `translateX(${-activeImageIdx * slideW}px) translateZ(0)`;
     }
 
     track.addEventListener('touchend',    release, { passive: true });

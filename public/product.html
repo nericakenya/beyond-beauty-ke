@@ -791,8 +791,9 @@
     const hasImages = p.images && p.images.length > 0;
     const primarySrc = hasImages ? p.images[0].full : '';
 
-    const showSwatches = hasImages && p.images.length > 1;
-    const firstColourName = showSwatches ? (p.images[0].name || 'Style 1') : '';
+    const showSwatches   = hasImages && p.images.length > 1;
+    const hasColourNames = showSwatches && p.images.some(img => img.name);
+    const firstColourName = hasColourNames ? p.images[0].name : '';
 
     const swatchesHtml = showSwatches
       ? p.images.map((img, i) => {
@@ -805,7 +806,7 @@
 
     const colourSelectorHtml = showSwatches ? `
       <div class="colour-selector">
-        <div class="colour-label">Colour: <strong id="colourName">${firstColourName}</strong></div>
+        ${hasColourNames ? `<div class="colour-label">Colour: <strong id="colourName">${firstColourName}</strong></div>` : ''}
         <div class="colour-row">${swatchesHtml}</div>
       </div>` : '';
 

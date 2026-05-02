@@ -8,6 +8,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-NJDHG99R');</script>
 <!-- End Google Tag Manager -->
+<script src="/js/tracking.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Beyond Beauty KE</title>
@@ -522,6 +523,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   function addToCart() {
     if (!product) return;
+    if (window.bbTrack && typeof product !== 'undefined') {
+      bbTrack('add_to_cart', {
+        product_id: product.id || product.sku || '',
+        item_name: product.name || '',
+        value: Number(product.price) || 0
+      });
+    }
     const sku = resolvedVariant?.sku || null;
     const price = resolvedVariant?.price_override ?? product.price;
     const label = resolvedVariant?.length  ? ` · ${resolvedVariant.length}"`
@@ -945,6 +953,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const variantSuffix = resolvedVariant?.length ? ` (${resolvedVariant.length}")` : resolvedVariant?.colour ? ` (${resolvedVariant.colour})` : '';
     const priceStr = price ? fmt(price) : 'price on enquiry';
     const msg = encodeURIComponent(`Hi Beyond Beauty KE! \uD83D\uDC4B\n\nI'm interested in:\n*${product.name}${variantSuffix}* \u2013 ${priceStr}\n\nIs it available?`);
+    if (window.bbTrack) {
+      bbTrack('whatsapp_lead', {
+        source: 'product_page',
+        product_id: (typeof product !== 'undefined') ? (product.id || '') : '',
+        value: (typeof product !== 'undefined') ? (Number(product.price) || 0) : 0
+      });
+    }
     window.open(`https://wa.me/${WA_NUMBER}?text=${msg}`, '_blank');
   }
 
@@ -989,6 +1004,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       if (!res.ok) throw new Error();
       const p = await res.json();
       render(p);
+      if (window.bbTrack && p) {
+        bbTrack('view_content', {
+          product_id: p.id || p.sku || '',
+          item_name: p.name || p.title || '',
+          value: Number(p.price) || 0
+        });
+      }
       initVariants(id, p.images?.length > 1); // async — fills selectors when variants arrive
       loadSimilar(p);
     } catch {

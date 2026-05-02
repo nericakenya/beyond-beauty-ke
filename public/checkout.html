@@ -8,6 +8,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-NJDHG99R');</script>
 <!-- End Google Tag Manager -->
+<script src="/js/tracking.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout · Beyond Beauty KE</title>
@@ -285,6 +286,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   const WA_NUMBER = '14155238886';
   const cart = JSON.parse(localStorage.getItem('bb_cart') || '[]');
 
+  document.addEventListener('DOMContentLoaded', function () {
+    var total = cart.reduce(function (sum, item) {
+      return sum + (Number(item.price) * (Number(item.qty) || 1));
+    }, 0);
+    if (window.bbTrack && cart.length > 0) {
+      bbTrack('initiate_checkout', {
+        value: total,
+        num_items: cart.length
+      });
+    }
+  });
 
   function fmt(p) { return 'KSh ' + p.toLocaleString('en-KE'); }
 
@@ -391,6 +403,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function sendToWhatsApp() {
     if (!cart.length) return;
     if (!validate()) return;
+    if (window.bbTrack) {
+      var total = cart.reduce(function (sum, item) {
+        return sum + (Number(item.price) * (Number(item.qty) || 1));
+      }, 0);
+      bbTrack('purchase', {
+        transaction_id: 'BB-' + Date.now(),
+        value: total,
+        num_items: cart.length
+      });
+    }
     window.open('https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(buildMessage()), '_blank');
   }
 

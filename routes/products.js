@@ -127,7 +127,7 @@ function mapRecord(record) {
     ingredients:                 f['Ingredients']                 || null,
     skin_concerns_and_benefits:  f['Skin Concerns & Benefits']    || null,
     hair_care:                   f['Hair Care']                   || null,
-    returns_override:            f['Returns Override']            || null,
+    hair_concerns_and_benefits:  f['Hair Concerns & Benefits']    || null,
   };
 }
 

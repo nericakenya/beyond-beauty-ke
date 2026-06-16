@@ -97,8 +97,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .product-section{max-width:1140px;margin:0 auto;padding:48px 40px 0;display:grid;grid-template-columns:1fr 440px;gap:64px;align-items:start}
 
   /* ── GALLERY ── */
-  .gallery{position:sticky;top:calc(var(--header-h) + 48px)}
-  .gallery-main{position:relative;aspect-ratio:3/4;background:var(--product-img-bg);overflow:hidden;touch-action:pan-y}
+  .gallery{position:sticky;top:calc(var(--header-h) + 48px);display:flex;flex-direction:row-reverse;gap:10px;align-items:flex-start}
+  .gallery-main{position:relative;flex:1;min-width:0;aspect-ratio:3/4;background:var(--product-img-bg);overflow:hidden;touch-action:pan-y}
   .gallery-main img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .3s}
   .gallery-main img.fade{opacity:0}
   .gallery-badge{position:absolute;top:14px;left:14px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500;z-index:2}
@@ -210,7 +210,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   /* ── MOBILE ── */
   @media(max-width:900px){
     .product-section{grid-template-columns:1fr;padding:0;gap:0}
-    .gallery{position:static;min-width:0;overflow:hidden;width:100%}
+    .gallery{position:static;min-width:0;overflow:hidden;width:100%;flex-direction:column}
     .gallery-main{width:100%;aspect-ratio:unset;background:#ffffff;overflow:visible}
     .gallery-main img{width:100%;height:auto;object-fit:unset}
     .product-info{padding:20px 16px 0;min-width:0}
@@ -282,10 +282,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .gallery-arrow:hover{background:#fff}
   .gallery-arrow-prev{left:10px}
   .gallery-arrow-next{right:10px}
-  .gallery-dots{display:flex;justify-content:center;gap:6px;padding:10px 0}
-  .gallery-dot{width:6px;height:6px;border-radius:50%;background:var(--light);cursor:pointer;transition:background .2s,transform .2s;border:none;padding:0;flex-shrink:0}
-  .gallery-dot.active{background:var(--black);transform:scale(1.3)}
+  .gallery-dots{display:none}
+  .gallery-thumbs{display:flex;flex-direction:column;gap:6px;overflow-y:auto;overflow-x:hidden;flex:0 0 68px;padding:0;overscroll-behavior:contain;scrollbar-width:none;-ms-overflow-style:none}
+  .gallery-thumbs::-webkit-scrollbar{display:none}
+  .gallery-thumb{flex:0 0 auto;width:100%;height:84px;border:2px solid transparent;cursor:pointer;padding:0;background:none;overflow:hidden;transition:border-color .2s}
+  .gallery-thumb.active{border-color:var(--black)}
+  .gallery-thumb:hover:not(.active){border-color:var(--light)}
+  .gallery-thumb img{width:100%;height:100%;object-fit:cover;display:block}
   @media(max-width:900px){
+    .gallery-thumbs{flex-direction:row;overflow-x:auto;overflow-y:hidden;flex:none;padding:8px 0}
+    .gallery-thumb{width:52px;height:68px}
     .gallery-main{overflow:hidden!important;position:relative}
     .gallery-track{height:auto}
     .gallery-slide{height:auto}
@@ -409,12 +415,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   const WA_NUMBER = '14155238886';
   let product        = null;
   let activeImageIdx = 0;
+  let currentImages  = [];
   let cart           = JSON.parse(localStorage.getItem('bb_cart') || '[]');
 
   // ── VARIANT STATE ──
-  let variants       = [];
+  let variants        = [];
   let resolvedVariant = null;
   let selectedValues  = {};
+  let _stripObserver  = null;
 
   // ── STICKY OFFSET ── measures full shell (announce + header + breadcrumb)
   function updateStickyOffset() {
@@ -574,7 +582,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   // ── GALLERY ──
   function switchImage(idx) {
-    if (!product || !product.images[idx]) return;
+    if (!currentImages[idx]) return;
     activeImageIdx = idx;
     const track = document.getElementById('galleryTrack');
     if (track) {
@@ -582,11 +590,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       track.style.transition = 'transform .25s cubic-bezier(.25,.46,.45,.94)';
       track.style.transform = w ? `translateX(${-idx * w}px) translateZ(0)` : `translateX(-${idx * 100}%) translateZ(0)`;
     }
-    document.querySelectorAll('.gallery-dot').forEach((el, i) => el.classList.toggle('active', i === idx));
+    document.querySelectorAll('.gallery-thumb').forEach((el, i) => {
+      el.classList.toggle('active', i === idx);
+      if (i === idx) el.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    });
     document.querySelectorAll('.colour-thumb-wrap').forEach((el, i) => el.classList.toggle('active', i === idx));
     const nameEl = document.getElementById('colourName');
-    if (nameEl) nameEl.textContent = product.images[idx].name || ('Style ' + (idx + 1));
-    const colourName = product.images[idx]?.name;
+    if (nameEl) nameEl.textContent = currentImages[idx].name || ('Style ' + (idx + 1));
+    const colourName = currentImages[idx]?.name;
     if (colourName && variants.length) {
       const match = variants.find(v => v.active && v.colour === colourName);
       if (match) { selectedValues.colour = colourName; resolvedVariant = match; updateVariantUI(); syncURL(); }
@@ -594,18 +605,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   function prevImage() {
-    if (!product?.images?.length) return;
-    switchImage((activeImageIdx - 1 + product.images.length) % product.images.length);
+    if (!currentImages.length) return;
+    switchImage((activeImageIdx - 1 + currentImages.length) % currentImages.length);
   }
 
   function nextImage() {
-    if (!product?.images?.length) return;
-    switchImage((activeImageIdx + 1) % product.images.length);
+    if (!currentImages.length) return;
+    switchImage((activeImageIdx + 1) % currentImages.length);
   }
 
   function initSwipeGallery() {
     const track = document.getElementById('galleryTrack');
-    if (!track || !product?.images?.length) return;
+    if (!track || !currentImages.length) return;
 
     let startX = 0, startY = 0, startTime = 0, slideW = 0;
     let decided = false, dragging = false, rafId = null;
@@ -657,32 +668,51 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     track.addEventListener('touchcancel', release, { passive: true });
   }
 
-  // ── ACCORDION REGISTRY ──
-  const CATEGORY_SECTIONS = {
-    bags:        ['materials_and_care', 'dimensions'],
-    accessories: ['materials_and_care', 'dimensions'],
-    hair:        ['hair_care'],
-    beauty:      ['how_to_use', 'ingredients', 'skin_concerns_and_benefits'],
-    skincare:    ['how_to_use', 'ingredients', 'skin_concerns_and_benefits'],
-    home:        ['materials_and_care'],
-  };
+  function rebuildGallery(images, startIdx = 0) {
+    currentImages  = images;
+    activeImageIdx = startIdx;
+    const track = document.getElementById('galleryTrack');
+    if (!track) return;
+    track.style.transition = '';
+    track.innerHTML = images.map((img, i) =>
+      `<div class="gallery-slide"><img src="${img.full}" alt="${product ? product.name : ''}"${i > 0 ? ' loading="lazy"' : ''}></div>`
+    ).join('');
+    const w = track.parentElement?.offsetWidth || 0;
+    track.style.transform = startIdx > 0 && w
+      ? `translateX(${-startIdx * w}px) translateZ(0)`
+      : 'translateX(0)';
+    const thumbsEl = document.getElementById('galleryThumbs');
+    if (thumbsEl) {
+      thumbsEl.innerHTML = images.map((img, i) =>
+        `<button class="gallery-thumb${i === startIdx ? ' active' : ''}" onclick="switchImage(${i})" aria-label="Image ${i + 1}"><img src="${img.thumb || img.full}" alt="${product ? product.name : ''}" loading="lazy"></button>`
+      ).join('');
+      const activeThumb = thumbsEl.children[startIdx];
+      if (activeThumb) activeThumb.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    }
+    document.querySelectorAll('.gallery-arrow').forEach(btn => {
+      btn.style.display = images.length > 1 ? '' : 'none';
+    });
+  }
 
+  // ── ACCORDION REGISTRY ──
+  // Canonical 8-section register. Sections 2–7 render only when their source field(s) have content.
+  // PRODUCT DETAILS (#1) and DELIVERY & RETURNS (#8) always render.
   const SECTION_META = {
-    materials_and_care:         { title: 'Materials & Care',          field: p => [p.materials, p.care_instructions].filter(Boolean).join('\n\n') },
-    dimensions:                 { title: 'Dimensions',                field: p => p.dimensions },
-    how_to_use:                 { title: 'How to Use',                field: p => p.how_to_use },
-    ingredients:                { title: 'Ingredients',               field: p => p.ingredients },
-    skin_concerns_and_benefits: { title: 'Skin Concerns & Benefits',  field: p => p.skin_concerns_and_benefits },
-    hair_care:                  { title: 'Hair Care',                 field: p => p.hair_care },
+    materials_and_care:    { title: 'Materials & Care',      field: p => p.materials },
+    dimensions:            { title: 'Dimensions',            field: p => p.dimensions },
+    how_to_use:            { title: 'How to Use',            field: p => p.how_to_use },
+    ingredients:           { title: 'Ingredients',           field: p => p.ingredients },
+    concerns_and_benefits: { title: 'Concerns & Benefits',   field: p => [p.skin_concerns_and_benefits, p.hair_concerns_and_benefits].filter(Boolean).join('\n\n') },
+    care_instructions:     { title: 'Care Instructions',     field: p => [p.care_instructions, p.hair_care].filter(Boolean).join('\n\n') },
   };
 
   function sectionsFor(p) {
-    const middle = (CATEGORY_SECTIONS[p.category] || [])
+    const conditional = ['materials_and_care', 'dimensions', 'how_to_use', 'ingredients', 'concerns_and_benefits', 'care_instructions']
       .filter(key => {
         const content = SECTION_META[key].field(p);
         return content && content.trim();
       });
-    return ['product_details', ...middle, 'delivery_and_returns'];
+    return ['product_details', ...conditional, 'delivery_and_returns'];
   }
 
   // ── ACCORDION ──
@@ -707,6 +737,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     });
     if (inList) html += '</ul>';
     return html;
+  }
+
+  // Renders extended content fields — preserves bullet chars (•) as text, no <ul>/<li> wrapping
+  function fieldHtml(text) {
+    if (!text || !text.trim()) return '';
+    const autoLink = s => s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2">$1</a>');
+    return text.split('\n')
+      .filter(line => line.trim())
+      .map(line => `<p>${autoLink(line.trim())}</p>`)
+      .join('');
   }
 
   const DELIVERY_AND_RETURNS_HTML = `<ul>
@@ -737,11 +777,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         return accordionItem(key, 'Product Details', descriptionHtml(p.description));
       }
       if (key === 'delivery_and_returns') {
-        const body = p.returns_override ? descriptionHtml(p.returns_override) : DELIVERY_AND_RETURNS_HTML;
+        const body = p.returns_override ? fieldHtml(p.returns_override) : DELIVERY_AND_RETURNS_HTML;
         return accordionItem(key, 'Delivery & Returns', body);
       }
       const meta = SECTION_META[key];
-      return accordionItem(key, meta.title, descriptionHtml(meta.field(p)));
+      return accordionItem(key, meta.title, fieldHtml(meta.field(p)));
     });
     return `<div class="accordion">${items.join('')}</div>`;
   }
@@ -773,7 +813,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function resolveVariant() {
     let candidates = variants.filter(v => v.active);
     for (const [axis, value] of Object.entries(selectedValues)) {
-      candidates = candidates.filter(v => v[axis] === value);
+      candidates = candidates.filter(v => String(v[axis]) === String(value));
     }
     return candidates[0] || null;
   }
@@ -786,7 +826,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const pills = values.map(val => {
         const display = axis === 'length' ? `${val}"` : val;
         const hasStock = variants.some(v => v.active && v[axis] === val && v.stock_quantity > 0);
-        const isSelected = selectedValues[axis] === val;
+        const isSelected = String(selectedValues[axis]) === String(val);
         const cls = ['pill', isSelected ? 'selected' : '', !hasStock ? 'out-of-stock' : ''].filter(Boolean).join(' ');
         return `<button class="${cls}" data-axis="${axis}" data-value="${String(val).replace(/"/g,'&quot;')}" onclick="onPillClick(this)">${display}</button>`;
       }).join('');
@@ -797,14 +837,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function onPillClick(btn) {
     const axis  = btn.dataset.axis;
     const raw   = btn.dataset.value;
-    const value = (axis === 'length' || axis === 'size') ? parseFloat(raw) : raw;
+    const value = axis === 'length' ? parseFloat(raw) : raw;
     selectValue(axis, value);
   }
 
   function selectValue(axis, value) {
     selectedValues[axis] = value;
     resolvedVariant = resolveVariant();
-    const hasColourImages = product?.images?.length > 1;
+    const hasColourImages = product?.images?.length > 1 && product?.images?.some(img => img.name);
     const axes = discoverAxes(variants.filter(v => v.active), hasColourImages);
     const container = document.getElementById('variant-selectors');
     if (container) container.innerHTML = buildSelectorsHtml(axes);
@@ -851,26 +891,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
           <div class="notify-error" id="notify-error"></div>
         </div>`;
-    } else if (stock > 0 && actionStack && existingNotify) {
-      // Restore normal buttons when a new in-stock variant is selected
+    } else if (stock > 0 && actionStack && (existingNotify || !document.getElementById('add-to-bag-btn'))) {
+      // Restore normal buttons: either after a notify-block, or on first load when product has no base price
       const waIcon2 = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
       actionStack.innerHTML = `
-        ${product.price ? `<button class="btn-primary" id="add-to-bag-btn" onclick="addToCart()">Add to Bag</button>` : ''}
-        <button class="btn-whatsapp" onclick="openWhatsApp()">${waIcon2} Order via WhatsApp</button>`;
+        ${effectivePrice ? `<button class="btn-primary" id="add-to-bag-btn" onclick="addToCart()">Add to Bag</button>` : ''}
+        <button class="btn-whatsapp" onclick="openWhatsApp()">${waIcon2} ${effectivePrice ? 'Order' : 'Enquire'} via WhatsApp</button>`;
     }
 
-    // Swap gallery image to the selected variant's image (when variant has its own photo)
-    if (resolvedVariant.images && resolvedVariant.images.length > 0) {
-      const track = document.getElementById('galleryTrack');
-      if (track) {
-        track.innerHTML = resolvedVariant.images.map((img, i) =>
-          `<div class="gallery-slide"><img src="${img.full}" alt="${product.name}"${i > 0 ? ' loading="lazy"' : ''}></div>`
-        ).join('');
-        track.style.transition = '';
-        track.style.transform  = 'translateX(0)';
-        activeImageIdx = 0;
-      }
-    }
+    // Jump hero to selected variant's image in the strip (strip is built once in initVariants)
+    const variantImg = resolvedVariant.images?.[0] || null;
+    const variantIdx = variantImg ? currentImages.indexOf(variantImg) : -1;
+    switchImage(variantIdx !== -1 ? variantIdx : 0);
   }
 
   function syncURL() {
@@ -904,11 +936,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     for (const { axis } of axes) {
       const raw = params.get(axis);
       if (raw != null) {
-        const val = (axis === 'length' || axis === 'size') ? parseFloat(raw) : raw;
-        if (active.some(v => v[axis] === val)) selectedValues[axis] = val;
+        const val = axis === 'length' ? parseFloat(raw) : raw;
+        if (active.some(v => String(v[axis]) === String(val))) selectedValues[axis] = val;
       }
     }
     resolvedVariant = resolveVariant() || def;
+
+    // Build full gallery once: product images + every active variant image
+    const variantsWithImages = active.filter(v => v.images?.length > 0);
+    if (variantsWithImages.length > 0) {
+      const allImages = [...(product.images || []), ...variantsWithImages.map(v => v.images[0])];
+      const defImg   = resolvedVariant?.images?.[0] || null;
+      const heroIdx  = defImg ? allImages.indexOf(defImg) : 0;
+      rebuildGallery(allImages, heroIdx !== -1 ? heroIdx : 0);
+    }
 
     const container = document.getElementById('variant-selectors');
     if (container) container.innerHTML = buildSelectorsHtml(axes);
@@ -917,9 +958,27 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   // ── RENDER ──
+  function initStripScroll() {
+    if (_stripObserver) { _stripObserver.disconnect(); _stripObserver = null; }
+    const heroEl  = document.querySelector('.gallery-main');
+    const stripEl = document.getElementById('galleryThumbs');
+    if (!heroEl || !stripEl) return;
+    function apply() {
+      if (window.innerWidth > 900) {
+        stripEl.style.height = heroEl.getBoundingClientRect().height + 'px';
+      } else {
+        stripEl.style.height = '';
+      }
+    }
+    apply();
+    _stripObserver = new ResizeObserver(apply);
+    _stripObserver.observe(heroEl);
+  }
+
   function render(p) {
     product = p;
     activeImageIdx = 0;
+    currentImages = p.images || [];
     document.title = `${p.name} · Beyond Beauty KE`;
 
     const categoryLabel = p.category.charAt(0).toUpperCase() + p.category.slice(1);
@@ -942,9 +1001,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         }).join('')
       : '';
 
-    const colourSelectorHtml = showSwatches ? `
+    const colourSelectorHtml = hasColourNames ? `
       <div class="colour-selector">
-        ${hasColourNames ? `<div class="colour-label">Colour: <strong id="colourName">${firstColourName}</strong></div>` : ''}
+        <div class="colour-label">Colour: <strong id="colourName">${firstColourName}</strong></div>
         <div class="colour-row">${swatchesHtml}</div>
       </div>` : '';
 
@@ -978,11 +1037,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             ? p.images.map((img, i) => `<div class="gallery-slide"><img src="${img.full}" alt="${p.name}"${i > 0 ? ' loading="lazy"' : ''}></div>`).join('')
             : `<div class="gallery-slide"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--light);font-size:12px;letter-spacing:.06em">No photo yet</div></div>`
           }</div>
-          ${hasImages && p.images.length > 1 ? `
-          <button class="gallery-arrow gallery-arrow-prev" onclick="prevImage()" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <button class="gallery-arrow gallery-arrow-next" onclick="nextImage()" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
-          <div class="gallery-dots" id="galleryDots">${p.images.map((_, i) => `<button class="gallery-dot${i === 0 ? ' active' : ''}" onclick="switchImage(${i})" aria-label="Image ${i + 1}"></button>`).join('')}</div>` : ''}
+          ${hasImages ? `
+          <button class="gallery-arrow gallery-arrow-prev"${p.images.length < 2 ? ' style="display:none"' : ''} onclick="prevImage()" aria-label="Previous image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="gallery-arrow gallery-arrow-next"${p.images.length < 2 ? ' style="display:none"' : ''} onclick="nextImage()" aria-label="Next image"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>` : ''}
         </div>
+        ${hasImages ? `<div class="gallery-thumbs" id="galleryThumbs">${p.images.map((img, i) => `<button class="gallery-thumb${i === 0 ? ' active' : ''}" onclick="switchImage(${i})" aria-label="Image ${i + 1}"><img src="${img.thumb}" alt="${p.name}" loading="lazy"></button>`).join('')}</div>` : ''}
       </div>
 
       <!-- INFO -->
@@ -1021,6 +1080,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('waFab').onclick = openWhatsApp;
     updateStickyOffset();
     initSwipeGallery();
+    initStripScroll();
 
     const hash = window.location.hash.slice(1);
     if (hash) {
@@ -1102,7 +1162,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           value: Number(p.price) || 0
         });
       }
-      initVariants(id, p.images?.length > 1); // async — fills selectors when variants arrive
+      initVariants(id, p.images?.length > 1 && p.images.some(img => img.name)); // suppress colour pills only when images are named colour swatches
       loadSimilar(p);
     } catch {
       document.getElementById('productWrap').innerHTML =

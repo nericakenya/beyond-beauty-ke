@@ -62,12 +62,33 @@ async function fetchVariantsForProduct(productId) {
   return records.map(mapVariantRecord);
 }
 
+const NEW_IN_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+
 function mapRecord(record) {
   const f = record.fields;
   const price = f['Price (KES)'] || null;
   const salePrice = f['Sale Price'] ? parseFloat(f['Sale Price']) : null;
 
-  const badge = f['Badge'] || null;
+  let badge = f['Badge'] || null;
+
+  // Server-side "New In" 14-day expiry
+  if (badge === 'New In') {
+    const startDate = f['New In Start Date']
+      ? new Date(f['New In Start Date'])
+      : new Date(record.createdTime);
+    if (Date.now() - startDate.getTime() > NEW_IN_TTL_MS) badge = null;
+  }
+
+  const totalStock = f['Total Stock Quantity'] ?? null;
+  const availabilityStatus = f['Availability Status'] || null;
+
+  // Derive sold_out: zero stock and not a coming-soon product
+  const sold_out = badge === 'Sold Out'
+    || badge === 'Out of Stock'
+    || (totalStock === 0 && badge !== 'Coming Soon' && !!price);
+
+  // Never let "Only 'X' Left" leak through when stock is 0
+  if (badge === "Only 'X' Left" && totalStock === 0) badge = null;
 
   // 'Primary Image URL' is now an Airtable attachment field containing all product images.
   // First attachment = primary (shop grid), all = gallery (product page).
@@ -89,11 +110,13 @@ function mapRecord(record) {
     category: (f['Product Category'] || '').toLowerCase(),
     sub_category: f['Sub-Category'] || null,
     badge,
-    total_stock_quantity: f['Total Stock Quantity'] ?? null,
+    total_stock_quantity: totalStock,
+    sold_out,
+    availability_status: availabilityStatus,
     image_url,
     images,
     colour: f['Review Count'] || null,
-    has_variants: f['Colour / Variant'] === 'Yes',
+    has_variants: Array.isArray(f['Variants']) && f['Variants'].length > 1,
     in_stock: f['In Stock'] !== 'No',
     is_active: 1,
     created_at: record.createdTime,

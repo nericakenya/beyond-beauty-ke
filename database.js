@@ -42,6 +42,19 @@ async function initDb() {
     )
   `);
 
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS restock_notifications (
+      id            INT AUTO_INCREMENT PRIMARY KEY,
+      phone         VARCHAR(20)   NOT NULL,
+      product_id    VARCHAR(255)  NOT NULL,
+      variant_id    VARCHAR(255)  DEFAULT NULL,
+      registered_at DATETIME      DEFAULT CURRENT_TIMESTAMP,
+      notified_at   DATETIME      DEFAULT NULL,
+      opted_out     TINYINT(1)    DEFAULT 0,
+      INDEX idx_product (product_id)
+    )
+  `);
+
   console.log('✓ Database tables ready');
 }
 

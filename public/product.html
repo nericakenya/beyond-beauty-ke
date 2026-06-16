@@ -25,6 +25,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     --font-serif:'Cormorant Garamond',Georgia,serif;
     --font-sans:'Jost',sans-serif;
     --header-h:80px;
+    --product-img-bg:#FAFBFB;
   }
   body{background:#ffffff;color:var(--black);font-family:var(--font-sans);font-size:14px;line-height:1.6;overflow-x:hidden}
 
@@ -67,7 +68,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .cart-empty{text-align:center;color:var(--mid);font-size:13px;padding:48px 0}
   .cart-empty svg{margin-bottom:12px;opacity:.4}
   .cart-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)}
-  .cart-item-img{width:72px;height:96px;object-fit:cover;flex-shrink:0;background:#f0ede9}
+  .cart-item-img{width:72px;height:96px;object-fit:cover;flex-shrink:0;background:var(--product-img-bg)}
   .cart-item-info{flex:1}
   .cart-item-name{font-size:13px;font-weight:400;margin-bottom:4px}
   .cart-item-price{font-size:12px;color:var(--mid)}
@@ -97,22 +98,24 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   /* ── GALLERY ── */
   .gallery{position:sticky;top:calc(var(--header-h) + 48px)}
-  .gallery-main{position:relative;aspect-ratio:3/4;background:#f0ede9;overflow:hidden;touch-action:pan-y}
+  .gallery-main{position:relative;aspect-ratio:3/4;background:var(--product-img-bg);overflow:hidden;touch-action:pan-y}
   .gallery-main img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .3s}
   .gallery-main img.fade{opacity:0}
   .gallery-badge{position:absolute;top:14px;left:14px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500;z-index:2}
   .gallery-badge.sale{background:var(--accent);color:var(--white)}
-  .gallery-badge.new-in{background:var(--black);color:var(--white)}
-  .gallery-badge.out-of-stock{background:#dc2626;color:var(--white)}
+  .gallery-badge.new-in{background:#A8733F;color:var(--white)}
+  .gallery-badge.out-of-stock{background:#1A1A1A;color:var(--white)}
+  .gallery-badge.sold-out{background:#1A1A1A;color:var(--white)}
   .gallery-badge.selling-fast{background:#16a34a;color:var(--white)}
-  .gallery-badge.coming-soon{background:#6b7280;color:var(--white)}
+  .gallery-badge.coming-soon{background:#B8946A;color:var(--white)}
   .gallery-badge.only-x-left{background:#2563eb;color:var(--white)}
   .also-card-badge{position:absolute;top:10px;left:10px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500;z-index:2}
   .also-card-badge.sale{background:var(--accent);color:var(--white)}
-  .also-card-badge.new-in{background:var(--black);color:var(--white)}
-  .also-card-badge.out-of-stock{background:#dc2626;color:var(--white)}
+  .also-card-badge.new-in{background:#A8733F;color:var(--white)}
+  .also-card-badge.out-of-stock{background:#1A1A1A;color:var(--white)}
+  .also-card-badge.sold-out{background:#1A1A1A;color:var(--white)}
   .also-card-badge.selling-fast{background:#16a34a;color:var(--white)}
-  .also-card-badge.coming-soon{background:#6b7280;color:var(--white)}
+  .also-card-badge.coming-soon{background:#B8946A;color:var(--white)}
   .also-card-badge.only-x-left{background:#2563eb;color:var(--white)}
 
   /* ── PRODUCT INFO ── */
@@ -165,12 +168,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .section-divider{height:8px;background:var(--grey-bg);width:100%;margin-top:0}
 
   /* ── YOU MIGHT ALSO LIKE ── */
-  .also-like{padding:48px 40px 64px;background:#ffffff}
-  .also-like-inner{max-width:1140px;margin:0 auto}
+  .also-like{padding:48px 0 64px;background:#ffffff}
+  .also-like-inner{max-width:1280px;margin:0 auto;padding:0 24px}
   .also-like-title{font-family:var(--font-serif);font-size:clamp(20px,2.5vw,28px);font-weight:400;letter-spacing:.1em;text-transform:uppercase;margin-bottom:32px;color:var(--black)}
-  .also-like-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px 18px}
+  .also-like-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 12px}
+  @media(min-width:1024px){
+    .also-like-grid{grid-template-columns:repeat(4,1fr);gap:24px 16px}
+  }
   .also-card{cursor:pointer;text-decoration:none;color:inherit;display:block}
-  .also-card-img{position:relative;aspect-ratio:3/4;background:#f0ede9;overflow:hidden;margin-bottom:12px}
+  .also-card-img{position:relative;aspect-ratio:3/4;background:var(--product-img-bg);overflow:hidden;margin-bottom:12px}
   .also-card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .55s cubic-bezier(.25,.46,.45,.94)}
   .also-card:hover .also-card-img img{transform:scale(1.04)}
   .also-card-name{font-size:13px;margin-bottom:4px;line-height:1.4;letter-spacing:.02em}
@@ -214,8 +220,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .accordion-trigger{padding:18px 0}
     .btn-primary{padding:18px}
     .btn-whatsapp{padding:16px}
-    .also-like-grid{grid-template-columns:repeat(2,1fr);gap:20px 12px}
-    .also-like{padding:36px 16px 48px}
+    .also-like{padding:36px 0 48px}
+    .also-like-inner{padding:0 16px}
     .footer-grid{grid-template-columns:1fr 1fr;gap:32px}
     .site-footer{padding:40px 16px 24px}
     .footer-bottom{flex-direction:column;text-align:center}
@@ -233,7 +239,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
   @media(max-width:480px){
     .footer-grid{grid-template-columns:1fr}
-    .also-like-grid{grid-template-columns:repeat(2,1fr)}
   }
 
   /* ── VARIANT SELECTORS ── */
@@ -255,6 +260,19 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   /* ── DISABLED ADD TO BAG ── */
   .btn-primary:disabled{background:var(--light);cursor:not-allowed}
   .btn-primary:disabled:hover{background:var(--light)}
+
+  /* ── NOTIFY ME FORM ── */
+  .notify-block{margin-bottom:0}
+  .notify-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:10px}
+  .notify-row{display:flex;gap:8px}
+  .notify-input{flex:1;padding:14px 12px;border:1px solid var(--border);font-family:var(--font-sans);font-size:13px;outline:none;transition:border-color .2s;min-width:0}
+  .notify-input:focus{border-color:var(--black)}
+  .notify-btn{background:#1A1A1A;color:#fff;border:none;padding:14px 20px;font-family:var(--font-sans);font-size:10px;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:background .2s;white-space:nowrap;flex-shrink:0}
+  .notify-btn:hover{background:#333}
+  .notify-btn:disabled{background:var(--light);cursor:not-allowed}
+  .notify-success{font-size:12px;color:#166534;background:#dcfce7;padding:12px 14px;letter-spacing:.02em;line-height:1.6;margin-top:0}
+  .notify-error{font-size:12px;color:#991b1b;margin-top:6px;min-height:16px}
+  .coming-soon-msg{font-size:12px;color:var(--mid);letter-spacing:.04em;padding:14px 0;border-top:1px solid var(--border)}
 
   /* ── SWIPE GALLERY ── */
   .gallery-track{display:flex;height:100%;transition:transform .25s cubic-bezier(.25,.46,.45,.94);will-change:transform;transform:translateZ(0)}
@@ -353,8 +371,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="footer-heading">Help</p>
       <ul class="footer-links">
         <li><a href="#">How to Order</a></li>
-        <li><a href="#">Delivery Info</a></li>
-        <li><a href="#">Returns Policy</a></li>
+        <li><a href="/policies/delivery-refund">Delivery &amp; Refund Policy</a></li>
+        <li><a href="/policies/privacy-policy">Privacy Policy</a></li>
+        <li><a href="/policies/terms-of-service">Terms of Service</a></li>
         <li><a href="#">Size Guide</a></li>
         <li><a href="https://wa.me/14155238886" target="_blank">Contact Us</a></li>
       </ul>
@@ -644,6 +663,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     accessories: ['materials_and_care', 'dimensions'],
     hair:        ['hair_care'],
     beauty:      ['how_to_use', 'ingredients', 'skin_concerns_and_benefits'],
+    skincare:    ['how_to_use', 'ingredients', 'skin_concerns_and_benefits'],
+    home:        ['materials_and_care'],
   };
 
   const SECTION_META = {
@@ -672,6 +693,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   // ── RENDER DESCRIPTION ──
   function descriptionHtml(text) {
     if (!text) return '<p>No details available.</p>';
+    const autoLink = s => s.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2">$1</a>');
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
     const isBullet = l => /^[-•*]/.test(l);
     let html = '';
@@ -680,8 +702,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const bullet = isBullet(line);
       if (bullet && !inList) { html += '<ul>'; inList = true; }
       if (!bullet && inList) { html += '</ul>'; inList = false; }
-      if (bullet) html += `<li>${line.replace(/^[-•*]\s*/,'')}</li>`;
-      else html += `<p>${line}</p>`;
+      if (bullet) html += `<li>${autoLink(line.replace(/^[-•*]\s*/,''))}</li>`;
+      else html += `<p>${autoLink(line)}</p>`;
     });
     if (inList) html += '</ul>';
     return html;
@@ -691,7 +713,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <li>Free delivery on orders over KSh 5,000</li>
     <li>Standard delivery within Nairobi: KES 250 — 1 to 3 hours</li>
     <li>We deliver nationwide across Kenya: KES 500 — 1 to 3 working days</li>
-    <li>Exchanges accepted within 3 days of delivery</li>
+    <li>Exchanges accepted within 24 hours of delivery</li>
+    <li>For full details, see our <a href="/policies/delivery-refund">Delivery &amp; Refund Policy</a></li>
   </ul>`;
 
   function accordionItem(key, title, contentHtml) {
@@ -810,7 +833,44 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     const addBtn = document.getElementById('add-to-bag-btn');
-    if (addBtn) { addBtn.disabled = stock <= 0; addBtn.textContent = stock <= 0 ? 'Out of Stock' : 'Add to Bag'; }
+    if (addBtn) {
+      addBtn.disabled = stock <= 0;
+      addBtn.textContent = stock <= 0 ? 'Out of Stock' : 'Add to Bag';
+    }
+
+    // Swap between Notify Me form and normal action buttons for variant-level sold out
+    const actionStack = document.querySelector('.action-stack');
+    const existingNotify = document.getElementById('notify-block');
+    if (stock <= 0 && product && actionStack && !existingNotify) {
+      actionStack.innerHTML = `
+        <div class="notify-block" id="notify-block">
+          <div class="notify-label">Notify me when back in stock</div>
+          <div class="notify-row">
+            <input class="notify-input" id="notify-phone" type="tel" placeholder="+254 7XX XXX XXX" maxlength="16">
+            <button class="notify-btn" id="notify-btn" onclick="submitNotify('${product.id}')">Notify Me</button>
+          </div>
+          <div class="notify-error" id="notify-error"></div>
+        </div>`;
+    } else if (stock > 0 && actionStack && existingNotify) {
+      // Restore normal buttons when a new in-stock variant is selected
+      const waIcon2 = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+      actionStack.innerHTML = `
+        ${product.price ? `<button class="btn-primary" id="add-to-bag-btn" onclick="addToCart()">Add to Bag</button>` : ''}
+        <button class="btn-whatsapp" onclick="openWhatsApp()">${waIcon2} Order via WhatsApp</button>`;
+    }
+
+    // Swap gallery image to the selected variant's image (when variant has its own photo)
+    if (resolvedVariant.images && resolvedVariant.images.length > 0) {
+      const track = document.getElementById('galleryTrack');
+      if (track) {
+        track.innerHTML = resolvedVariant.images.map((img, i) =>
+          `<div class="gallery-slide"><img src="${img.full}" alt="${product.name}"${i > 0 ? ' loading="lazy"' : ''}></div>`
+        ).join('');
+        track.style.transition = '';
+        track.style.transform  = 'translateX(0)';
+        activeImageIdx = 0;
+      }
+    }
   }
 
   function syncURL() {
@@ -888,6 +948,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="colour-row">${swatchesHtml}</div>
       </div>` : '';
 
+    const soldOut    = p.sold_out || (p.total_stock_quantity === 0 && !!p.price && p.badge !== 'Coming Soon');
+    const comingSoon = p.badge === 'Coming Soon' || p.availability_status === 'coming_soon';
+    const unavailable = soldOut || comingSoon;
+
+    // Badge: show Out of Stock when sold out; never show "Only 0 Left"
+    let galleryBadgeHtml = '';
+    if (soldOut) {
+      galleryBadgeHtml = `<span class="gallery-badge out-of-stock">Out of Stock</span>`;
+    } else if (p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) <= 0)
+                       && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2)) {
+      const bc = p.badge.toLowerCase().replace(/[\s']+/g,'-').replace(/[^a-z0-9-]/g,'');
+      const bl = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
+      galleryBadgeHtml = `<span class="gallery-badge ${bc}">${bl}</span>`;
+    }
+
     const priceHtml = p.price
       ? `<span class="price ${p.original_price ? 'sale' : ''}">${fmt(p.price)}</span>${p.original_price ? `<span class="price original">${fmt(p.original_price)}</span>` : ''}`
       : `<span class="price enquire">Enquire for price</span>`;
@@ -898,7 +973,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <!-- GALLERY -->
       <div class="gallery">
         <div class="gallery-main">
-          ${p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2) ? `<span class="gallery-badge ${p.badge.toLowerCase().replace(/[\s']+/g,'-').replace(/[^a-z0-9-]/g,'')}">${p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge}</span>` : ''}
+          ${galleryBadgeHtml}
           <div class="gallery-track" id="galleryTrack">${hasImages
             ? p.images.map((img, i) => `<div class="gallery-slide"><img src="${img.full}" alt="${p.name}"${i > 0 ? ' loading="lazy"' : ''}></div>`).join('')
             : `<div class="gallery-slide"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--light);font-size:12px;letter-spacing:.06em">No photo yet</div></div>`
@@ -922,11 +997,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div id="stock-cue" class="stock-cue"></div>
 
         <div class="action-stack">
+          ${soldOut ? `
+          <div class="notify-block" id="notify-block">
+            <div class="notify-label">Notify me when back in stock</div>
+            <div class="notify-row">
+              <input class="notify-input" id="notify-phone" type="tel" placeholder="+254 7XX XXX XXX" maxlength="16">
+              <button class="notify-btn" id="notify-btn" onclick="submitNotify('${p.id}')">Notify Me</button>
+            </div>
+            <div class="notify-error" id="notify-error"></div>
+          </div>` : comingSoon ? `
+          <p class="coming-soon-msg">This product is coming soon — check back shortly or follow us on Instagram for launch updates.</p>` : `
           ${p.price ? `<button class="btn-primary" id="add-to-bag-btn" onclick="addToCart()">Add to Bag</button>` : ''}
           <button class="btn-whatsapp" onclick="openWhatsApp()">
             ${waIcon}
             ${p.price ? 'Order via WhatsApp' : 'Enquire via WhatsApp'}
-          </button>
+          </button>`}
         </div>
 
         ${renderAccordion(p)}
@@ -974,16 +1059,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const grid = document.getElementById('alsoLikeGrid');
       grid.innerHTML = similar.map(p => {
         const priceStr = p.price ? fmt(p.price) : 'Enquire';
-        const badgeClass = p.badge ? p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '') : '';
-        const badgeLabel = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
-        const showBadge = p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2);
-        const badgeHtml = showBadge ? `<span class="also-card-badge ${badgeClass}">${badgeLabel}</span>` : '';
+        const alsoSoldOut = p.sold_out || (p.total_stock_quantity === 0 && !!p.price && p.badge !== 'Coming Soon');
+        let badgeHtml = '';
+        if (alsoSoldOut) {
+          badgeHtml = `<span class="also-card-badge out-of-stock">Out of Stock</span>`;
+        } else if (p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) <= 0)
+                           && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2)) {
+          const bc = p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '');
+          const bl = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
+          badgeHtml = `<span class="also-card-badge ${bc}">${bl}</span>`;
+        }
         return `
           <a class="also-card" href="/product?id=${p.id}">
             <div class="also-card-img">
               ${badgeHtml}
               <img src="${p.image_url}" alt="${p.name}" loading="lazy"
-                onerror="this.src='https://placehold.co/400x533/f0ede9/6b6560?text=Photo+Coming'">
+                onerror="this.src='https://placehold.co/400x533/FAFBFB/6b6560?text=Photo+Coming'">
             </div>
             <div class="also-card-name">${p.name}</div>
             <div class="also-card-price">${priceStr}</div>
@@ -1016,6 +1107,37 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     } catch {
       document.getElementById('productWrap').innerHTML =
         '<p style="padding:60px 0;text-align:center;color:var(--mid)">Product not found. <a href="/" style="color:var(--black)">\u2190 Back to shop</a></p>';
+    }
+  }
+
+  // ── NOTIFY ME WHEN IN STOCK ──
+  async function submitNotify(productId) {
+    const input = document.getElementById('notify-phone');
+    const btn   = document.getElementById('notify-btn');
+    const errEl = document.getElementById('notify-error');
+    if (!input || !btn) return;
+
+    const phone = input.value.trim();
+    if (!phone) { errEl.textContent = 'Please enter your phone number.'; return; }
+
+    btn.disabled = true;
+    errEl.textContent = '';
+
+    const variantId = resolvedVariant?.id || null;
+    try {
+      const res = await fetch('/api/notifications/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product_id: productId, variant_id: variantId, phone }),
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Could not save — please try again.'; btn.disabled = false; return; }
+
+      const block = document.getElementById('notify-block');
+      if (block) block.innerHTML = `<div class="notify-success">✓ You're on the list! We'll WhatsApp you as soon as this is back in stock.</div>`;
+    } catch {
+      errEl.textContent = 'Network error — please try again.';
+      btn.disabled = false;
     }
   }
 

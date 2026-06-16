@@ -146,6 +146,7 @@
   <div class="tabs">
     <button class="tab-btn active" onclick="switchTab('products')">Products</button>
     <button class="tab-btn" onclick="switchTab('orders')">Orders</button>
+    <button class="tab-btn" onclick="switchTab('notifications')">Restock Notifications</button>
   </div>
 
   <!-- PRODUCTS TAB -->
@@ -162,6 +163,23 @@
         <th></th><th>Name</th><th>Category</th><th>Price</th><th>Badge</th><th>Colour</th><th>Status</th>
       </tr></thead>
       <tbody id="productsTbody"><tr><td colspan="8" class="loading">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- NOTIFICATIONS TAB -->
+  <div class="tab-panel" id="tab-notifications">
+    <div class="table-header">
+      <span class="table-title">Restock Waitlist <span style="font-size:10px;color:var(--mid);font-weight:400;letter-spacing:.04em">· customers waiting for sold-out products</span></span>
+      <div style="display:flex;gap:8px">
+        <a id="exportCsvLink" href="/api/notifications/export" class="add-btn" style="text-decoration:none">↓ Export CSV</a>
+        <button class="add-btn" style="background:#555" onclick="loadNotifications()">↻ Refresh</button>
+      </div>
+    </div>
+    <table class="data-table" id="notificationsTable">
+      <thead><tr>
+        <th>Phone</th><th>Product ID</th><th>Variant</th><th>Registered</th><th>Notified</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="notificationsTbody"><tr><td colspan="6" class="loading">Loading…</td></tr></tbody>
     </table>
   </div>
 
@@ -298,10 +316,11 @@
 
   // ── TABS ──
   function switchTab(name) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['products','orders'][i] === name));
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['products','orders','notifications'][i] === name));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`tab-${name}`).classList.add('active');
     if (name === 'orders') loadOrders();
+    if (name === 'notifications') loadNotifications();
   }
 
   // ── LOAD ALL ──
@@ -440,6 +459,63 @@
     if (!confirm(`Archive "${name}"? It will be hidden from the shop.`)) return;
     const res = await fetch(`/api/products/${id}`, { method: 'DELETE', headers: authHeaders() });
     if (res.ok) loadProducts();
+  }
+
+  // ── NOTIFICATIONS ──
+  let notifications = [];
+
+  async function loadNotifications() {
+    const res = await fetch('/api/notifications', { headers: { 'x-admin-key': ADMIN_KEY } });
+    notifications = await res.json();
+    renderNotifications();
+    // Pass key to CSV export link
+    document.getElementById('exportCsvLink').href = `/api/notifications/export?key=${encodeURIComponent(ADMIN_KEY)}`;
+  }
+
+  function renderNotifications() {
+    const tbody = document.getElementById('notificationsTbody');
+    if (!notifications.length) { tbody.innerHTML = '<tr><td colspan="6" class="loading">No subscribers yet.</td></tr>'; return; }
+
+    // Group by product for trigger buttons
+    const byProduct = {};
+    notifications.forEach(n => {
+      if (!byProduct[n.product_id]) byProduct[n.product_id] = [];
+      byProduct[n.product_id].push(n);
+    });
+
+    tbody.innerHTML = notifications.map(n => {
+      const pending = !n.notified_at && !n.opted_out;
+      return `<tr>
+        <td>${n.phone}</td>
+        <td style="font-size:11px;color:var(--mid)">${n.product_id}</td>
+        <td style="font-size:11px;color:var(--mid)">${n.variant_id || '—'}</td>
+        <td style="font-size:11px;color:var(--mid)">${(n.registered_at||'').slice(0,16).replace('T',' ')}</td>
+        <td>${n.notified_at ? `<span class="badge badge-active">${(n.notified_at||'').slice(0,10)}</span>` : (n.opted_out ? '<span class="badge badge-cancelled">Opted out</span>' : '<span class="badge badge-pending">Pending</span>')}</td>
+        <td>
+          ${pending ? `<button class="action-btn" onclick="triggerNotify('${n.product_id}')">Send WA</button>` : ''}
+          <button class="action-btn danger" onclick="clearProductNotifications('${n.product_id}')">Clear</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function triggerNotify(productId) {
+    const productName = prompt('Enter product name for the WhatsApp message:', productId);
+    if (!productName) return;
+    const res = await fetch(`/api/notifications/${productId}/trigger`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ product_name: productName }),
+    });
+    const data = await res.json();
+    alert(data.message || (res.ok ? 'Sent!' : 'Error sending'));
+    loadNotifications();
+  }
+
+  async function clearProductNotifications(productId) {
+    if (!confirm(`Clear all waitlist entries for product ${productId}?`)) return;
+    await fetch(`/api/notifications/${productId}`, { method: 'DELETE', headers: authHeaders() });
+    loadNotifications();
   }
 
   // Close modal on overlay click

@@ -26,6 +26,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     --border: #e8e4df;
     --font-serif: 'Cormorant Garamond', Georgia, serif;
     --font-sans: 'Jost', sans-serif;
+    --product-img-bg: #FAFBFB;
   }
 
   html { scroll-behavior: smooth; }
@@ -81,20 +82,24 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .sort-select { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--mid); background: none; border: none; cursor: pointer; font-family: var(--font-sans); outline: none; appearance: none; padding-right: 14px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6560' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0 center; }
 
   /* ── PRODUCT GRID ── */
-  .shop-main { padding: 32px 40px 80px; }
-  .product-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 32px 20px; }
+  .shop-main { max-width: 1280px; margin: 0 auto; padding: 32px 24px 80px; }
+  .product-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px 12px; }
+  @media (min-width: 1024px) {
+    .product-grid { grid-template-columns: repeat(4,1fr); gap: 24px 16px; }
+  }
 
   .product-card { cursor: pointer; position: relative; text-decoration: none; color: inherit; display: block; }
-  .product-img-wrap { position: relative; overflow: hidden; aspect-ratio: 3/4; background: #f0ede9; margin-bottom: 14px; }
+  .product-img-wrap { position: relative; overflow: hidden; aspect-ratio: 3/4; background: var(--product-img-bg); margin-bottom: 14px; }
   .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .55s cubic-bezier(.25,.46,.45,.94); }
   .product-card:hover .product-img-wrap img { transform: scale(1.04); }
 
   .product-badge { position: absolute; top: 12px; left: 12px; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; padding: 4px 9px; font-family: var(--font-sans); font-weight: 500; z-index: 2; }
   .product-badge.sale { background: var(--accent); color: var(--white); }
-  .product-badge.new-in { background: var(--black); color: var(--white); }
-  .product-badge.out-of-stock { background: #dc2626; color: var(--white); }
+  .product-badge.new-in { background: #A8733F; color: var(--white); }
+  .product-badge.out-of-stock { background: #1A1A1A; color: var(--white); }
+  .product-badge.sold-out { background: #1A1A1A; color: var(--white); }
   .product-badge.selling-fast { background: #16a34a; color: var(--white); }
-  .product-badge.coming-soon { background: #6b7280; color: var(--white); }
+  .product-badge.coming-soon { background: #B8946A; color: var(--white); }
   .product-badge.only-x-left { background: #2563eb; color: var(--white); }
 
   .product-save { position: absolute; top: 10px; right: 10px; z-index: 2; background: none; border: none; cursor: pointer; color: var(--mid); padding: 6px; transition: color .2s, transform .2s; }
@@ -132,7 +137,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .cart-empty svg { margin-bottom: 12px; opacity: .4; }
 
   .cart-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
-  .cart-item-img { width: 72px; height: 96px; object-fit: cover; flex-shrink: 0; background: #f0ede9; }
+  .cart-item-img { width: 72px; height: 96px; object-fit: cover; flex-shrink: 0; background: var(--product-img-bg); }
   .cart-item-info { flex: 1; }
   .cart-item-name { font-size: 13px; font-weight: 400; margin-bottom: 4px; }
   .cart-item-price { font-size: 12px; color: var(--mid); }
@@ -204,7 +209,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .thriftly-section-title{font-family:var(--font-serif);font-size:clamp(18px,2vw,24px);font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--black);margin-bottom:24px}
   .thriftly-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px 20px}
   .thriftly-card{display:flex;flex-direction:column;background:var(--white);border:1px solid var(--border)}
-  .thriftly-card-img{aspect-ratio:3/4;overflow:hidden;background:#f0ede9;position:relative}
+  .thriftly-card-img{aspect-ratio:3/4;overflow:hidden;background:var(--product-img-bg);position:relative}
   .thriftly-card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s cubic-bezier(.25,.46,.45,.94)}
   .thriftly-card:hover .thriftly-card-img img{transform:scale(1.04)}
   .thriftly-card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1}
@@ -286,7 +291,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .page-hero { padding: 28px 16px 20px; }
     .filter-bar { padding: 12px 16px; }
     .shop-main { padding: 20px 16px 60px; }
-    .product-grid { grid-template-columns: repeat(2,1fr); gap: 20px 12px; }
     .thriftly-banner-inner{grid-template-columns:1fr;padding:0 16px;gap:0;min-height:auto}
     .thriftly-banner-left{padding:32px 0 24px}
     .thriftly-banner-right{min-height:220px}
@@ -353,7 +357,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <button class="nav-item" data-cat="bags">Bags</button>
     <button class="nav-item" data-cat="accessories">Accessories</button>
     <button class="nav-item" data-cat="hair">Hair</button>
+    <button class="nav-item" data-cat="skincare">Skincare</button>
     <button class="nav-item" data-cat="beauty">Beauty</button>
+    <button class="nav-item" data-cat="home">Home</button>
     <button class="nav-item" data-cat="sale">Sale</button>
     <button class="nav-item" data-cat="thrift" style="color:var(--accent)">Thriftly ✦</button>
   </nav>
@@ -430,7 +436,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <li><a href="#" onclick="filterCat('bags')">Bags</a></li>
         <li><a href="#" onclick="filterCat('accessories')">Accessories</a></li>
         <li><a href="#" onclick="filterCat('hair')">Hair</a></li>
+        <li><a href="#" onclick="filterCat('skincare')">Skincare</a></li>
         <li><a href="#" onclick="filterCat('beauty')">Beauty</a></li>
+        <li><a href="#" onclick="filterCat('home')">Home</a></li>
         <li><a href="#" onclick="filterCat('sale')">Sale</a></li>
       </ul>
     </div>
@@ -438,8 +446,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="footer-heading">Help</p>
       <ul class="footer-links">
         <li><a href="#">How to Order</a></li>
-        <li><a href="#">Delivery Info</a></li>
-        <li><a href="#">Returns Policy</a></li>
+        <li><a href="/policies/delivery-refund">Delivery &amp; Refund Policy</a></li>
+        <li><a href="/policies/privacy-policy">Privacy Policy</a></li>
+        <li><a href="/policies/terms-of-service">Terms of Service</a></li>
         <li><a href="#">Size Guide</a></li>
         <li><a href="#" id="waContact">Contact Us</a></li>
       </ul>
@@ -699,22 +708,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       return;
     }
     grid.innerHTML = list.map((p, i) => {
+      const soldOut    = p.sold_out || (p.total_stock_quantity === 0 && !!p.price && p.badge !== 'Coming Soon');
+      const comingSoon = p.badge === 'Coming Soon' || p.availability_status === 'coming_soon';
+      const unavailable = soldOut || comingSoon;
+
+      // Badge logic: show Out of Stock when sold out; never show "Only 0 Left"
+      let badgeLabel = null, badgeClass = null;
+      if (soldOut) {
+        badgeLabel = 'Out of Stock'; badgeClass = 'out-of-stock';
+      } else if (p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) <= 0)
+                         && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2)) {
+        badgeLabel = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
+        badgeClass = p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '');
+      }
+
       const priceHtml = p.price
         ? `<span class="product-price ${p.original_price ? 'sale-price' : ''}">${fmt(p.price)}</span>${p.original_price ? `<span class="product-price original">${fmt(p.original_price)}</span>` : ''}`
         : `<span class="product-price" style="color:var(--accent);font-style:italic">Enquire for price</span>`;
       return `
       <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='/product?id=${p.id}'">
         <div class="product-img-wrap">
-          ${p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2) ? `<span class="product-badge ${p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '')}">${p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge}</span>` : ''}
-          <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/f0ede9/6b6560?text=Photo+Coming'">
+          ${badgeLabel ? `<span class="product-badge ${badgeClass}">${badgeLabel}</span>` : ''}
+          <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/FAFBFB/6b6560?text=Photo+Coming'">
           <button class="product-save" onclick="event.stopPropagation();toggleSave('${p.id}', this)" title="Save">${heartIcon(false)}</button>
-          <div class="product-quick">
+          ${!unavailable ? `<div class="product-quick">
             ${p.price ? `<button class="quick-btn" onclick="event.stopPropagation();addToCartByIndex(${i})">Add to Bag</button>` : ''}
             <a href="#" onclick="event.stopPropagation();if(window.bbTrack)bbTrack('whatsapp_lead',{source:'product_card'});window.open(waLinkByIndex(${i}),'_blank');return false;" class="quick-whatsapp">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
               ${p.price ? 'Order via WhatsApp' : 'Enquire via WhatsApp'}
             </a>
-          </div>
+          </div>` : ''}
         </div>
         <div class="product-info">
           <div class="product-name">${p.name}</div>
@@ -747,7 +770,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   function filterCat(cat) {
     activeCategory = cat;
-    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', sale: 'Sale', thrift: 'Thriftly' };
+    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', home: 'Home', sale: 'Sale', thrift: 'Thriftly' };
 
     const isThrift = cat === 'thrift';
     document.getElementById('heroTitle').textContent = titles[cat] || 'All Products';

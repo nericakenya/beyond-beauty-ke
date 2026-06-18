@@ -14,12 +14,16 @@ app.use('/api/products',      require('./routes/products'));
 app.use('/api/orders',        require('./routes/orders'));
 app.use('/api/payments',      require('./routes/payments'));
 app.use('/api/thriftly',      require('./routes/thriftly'));
+app.use('/api/mpesa',         require('./routes/mpesa-thriftly'));
 app.use('/api/notifications', require('./routes/notifications'));
 
 app.get('/checkout', (req, res) => res.sendFile(path.join(__dirname, 'public/checkout.html')));
 app.get('/api/config/public', (req, res) => res.json({ mpesa_shortcode: process.env.MPESA_SHORTCODE || '174379' }));
 app.get('/admin',    (req, res) => res.sendFile(path.join(__dirname, 'public/admin.html')));
 app.get('/product',  (req, res) => res.sendFile(path.join(__dirname, 'public/product.html')));
+app.get('/thriftly/item',     (req, res) => res.sendFile(path.join(__dirname, 'public/thriftly/item.html')));
+app.get('/thriftly/dispatch', (req, res) => res.sendFile(path.join(__dirname, 'public/thriftly/dispatch.html')));
+app.get('/thriftly/confirm',  (req, res) => res.sendFile(path.join(__dirname, 'public/thriftly/confirm.html')));
 
 app.get('/policies/delivery-refund',  (req, res) => res.sendFile(path.join(__dirname, 'public/policies/delivery-refund.html')));
 app.get('/policies/privacy-policy',   (req, res) => res.sendFile(path.join(__dirname, 'public/policies/privacy-policy.html')));

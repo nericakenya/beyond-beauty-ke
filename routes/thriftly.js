@@ -1,33 +1,102 @@
 const express  = require('express');
 const multer   = require('multer');
-const axios    = require('axios');
 const router   = express.Router();
-const { listActiveListings, createListing, updateListingStatus, createPayment, getListing } = require('../thriftly/airtable');
+const { v4: uuid } = require('uuid');
+const fs       = require('fs');
+const path     = require('path');
+const { pool }   = require('../database');
+const { listActiveListings, createListing, updateListingStatus, getListing } = require('../thriftly/airtable');
+const { notify } = require('../lib/thriftly-notify');
+
+const UPLOAD_DIR = path.join(__dirname, '../public/uploads/thriftly');
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
-const DARAJA_BASE = process.env.MPESA_ENV === 'production'
-  ? 'https://api.safaricom.co.ke'
-  : 'https://sandbox.safaricom.co.ke';
-
-// in-memory map: checkoutRequestId -> { recordId, phone }
-const pendingPayments = new Map();
-
-async function getMpesaToken() {
-  const creds = Buffer.from(`${process.env.MPESA_CONSUMER_KEY}:${process.env.MPESA_CONSUMER_SECRET}`).toString('base64');
-  const { data } = await axios.get(`${DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials`, {
-    headers: { Authorization: `Basic ${creds}` },
+// Save multer buffers to public/uploads/thriftly/ and return { url, filename } objects.
+// Files are deleted 60 s after createListing resolves (enough time for Airtable to fetch them).
+function saveAndGetUrls(files) {
+  return files.map(f => {
+    const ext      = path.extname(f.originalname) || '.jpg';
+    const name     = `${uuid()}${ext}`;
+    const filepath = path.join(UPLOAD_DIR, name);
+    fs.writeFileSync(filepath, f.buffer);
+    return { filepath, url: `${process.env.BASE_URL}/uploads/thriftly/${name}`, filename: f.originalname || name };
   });
-  return data.access_token;
 }
 
-function formatPhone(raw) {
-  let p = raw.toString().replace(/\s/g, '').replace(/^\+/, '');
-  if (p.startsWith('07') || p.startsWith('01')) p = '254' + p.slice(1);
-  return p;
+function cleanupFiles(filePaths) {
+  setTimeout(() => {
+    filePaths.forEach(p => fs.unlink(p, () => {}));
+  }, 60_000);
 }
 
-// GET /api/thriftly/listings
+// ── State machine: valid next states ─────────────────────────────────────────
+const VALID_TRANSITIONS = {
+  pending_payment:      ['paid_held', 'payment_failed'],
+  payment_failed:       ['pending_payment'],
+  paid_held:            ['dispatched'],
+  dispatched:           ['confirmed', 'auto_release_pending', 'disputed'],
+  confirmed:            ['payout_queued'],
+  auto_release_pending: ['payout_queued'],
+  disputed:             ['payout_queued', 'refunded'],
+  payout_queued:        ['payout_sent', 'payout_failed'],
+  payout_sent:          ['completed'],
+  payout_failed:        ['payout_queued'],
+  completed:            [],
+};
+
+async function transition(txId, toStatus, actorType, actorId, note, conn) {
+  const db = conn || pool;
+  const [[tx]] = await db.execute('SELECT * FROM thriftly_transactions WHERE id = ?', [txId]);
+  if (!tx) throw new Error(`Transaction ${txId} not found`);
+  const allowed = VALID_TRANSITIONS[tx.status] || [];
+  if (!allowed.includes(toStatus)) {
+    await db.execute(
+      `INSERT INTO thriftly_transaction_events (id, transaction_id, from_status, to_status, actor_type, actor_id, note)
+       VALUES (?,?,?,?,?,?,?)`,
+      [uuid(), txId, tx.status, toStatus, actorType, actorId || null, `INVALID TRANSITION: ${note || ''}`]
+    );
+    throw new Error(`Invalid transition: ${tx.status} → ${toStatus}`);
+  }
+  await db.execute(
+    'UPDATE thriftly_transactions SET status = ?, updated_at = NOW() WHERE id = ?',
+    [toStatus, txId]
+  );
+  await db.execute(
+    `INSERT INTO thriftly_transaction_events (id, transaction_id, from_status, to_status, actor_type, actor_id, note)
+     VALUES (?,?,?,?,?,?,?)`,
+    [uuid(), txId, tx.status, toStatus, actorType, actorId || null, note || null]
+  );
+  return { ...tx, status: toStatus };
+}
+
+// ── GET /api/thriftly/listings/:id — single listing detail ──────────────────
+router.get('/listings/:id', async (req, res) => {
+  try {
+    const record = await getListing(req.params.id);
+    if (record.error) return res.status(404).json({ error: 'Listing not found' });
+    const f = record.fields || {};
+    res.json({
+      id:               record.id,
+      item_title:       f.item_title       || '',
+      item_category:    f.item_category    || '',
+      item_description: f.item_description || '',
+      item_condition:   f.item_condition   || '',
+      item_price_kes:   f.item_price_kes   || 0,
+      seller_location:  f.seller_location  || '',
+      status:           f.status           || '',
+      photos: ['photo_1','photo_2','photo_3','photo_4','photo_5']
+        .map(k => f[k]?.[0]?.url || null)
+        .filter(Boolean),
+    });
+  } catch (err) {
+    console.error('[Thriftly] listing detail error:', err.message);
+    res.status(500).json({ error: 'Failed to load listing' });
+  }
+});
+
+// ── GET /api/thriftly/listings ──────────────────────────────────────────────
 router.get('/listings', async (req, res) => {
   try {
     const records  = await listActiveListings();
@@ -50,15 +119,15 @@ router.get('/listings', async (req, res) => {
   }
 });
 
-// POST /api/thriftly/listings — create listing, photos uploaded to Airtable
+// ── POST /api/thriftly/listings — free listing creation ─────────────────────
 router.post('/listings', upload.array('photos', 5), async (req, res) => {
+  if (!req.files || req.files.length < 3) {
+    return res.status(400).json({ error: 'Please upload at least 3 photos of your item.' });
+  }
+  const savedFiles = saveAndGetUrls(req.files || []);
   try {
     const b      = req.body;
-    const photos = (req.files || []).map((f, i) => ({
-      buffer:      f.buffer,
-      filename:    f.originalname || `photo_${i + 1}.jpg`,
-      contentType: f.mimetype || 'image/jpeg',
-    }));
+    const photos = savedFiles.map(f => ({ url: f.url, filename: f.filename }));
 
     const record = await createListing({
       seller_name:        b.seller_name        || '',
@@ -73,133 +142,324 @@ router.post('/listings', upload.array('photos', 5), async (req, res) => {
       item_category:      b.item_category      || '',
       item_price_kes:     Number(b.item_price_kes) || 0,
       submission_channel: b.submission_channel || 'website',
-      listing_fee_paid:   false,
+      listing_fee_paid:   true,
       status:             'pending_review',
     }, photos);
 
-    res.json({ id: record.id, status: 'pending_review' });
+    cleanupFiles(savedFiles.map(f => f.filepath));
+
+    res.status(201).json({ id: record.id, status: 'pending_review' });
   } catch (err) {
     console.error('[Thriftly] create listing error:', err.message);
+    cleanupFiles(savedFiles.map(f => f.filepath));
     res.status(500).json({ error: err.message || 'Failed to create listing' });
   }
 });
 
-// POST /api/thriftly/pay/stk-push — trigger KES 250 M-Pesa STK push for listing fee
-router.post('/pay/stk-push', async (req, res) => {
-  const { record_id, phone } = req.body;
-  if (!record_id || !phone) return res.status(400).json({ error: 'record_id and phone required' });
-
+// ── POST /api/thriftly/dispatch-by-token — seller confirms dispatch via token link ─
+router.post('/dispatch-by-token', async (req, res) => {
+  const { seller_token } = req.body;
+  if (!seller_token) return res.status(400).json({ error: 'seller_token required' });
   try {
-    const token      = await getMpesaToken();
-    const shortcode  = process.env.MPESA_SHORTCODE;
-    const passkey    = process.env.MPESA_PASSKEY;
-    const timestamp  = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
-    const password   = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
-    const fmtPhone   = formatPhone(phone);
-    const listingFee = Number(process.env.THRIFTLY_LISTING_FEE) || 250;
-
-    const { data } = await axios.post(`${DARAJA_BASE}/mpesa/stkpush/v1/processrequest`, {
-      BusinessShortCode: shortcode,
-      Password:          password,
-      Timestamp:         timestamp,
-      TransactionType:   process.env.MPESA_TRANSACTION_TYPE || 'CustomerPayBillOnline',
-      Amount:            listingFee,
-      PartyA:            fmtPhone,
-      PartyB:            shortcode,
-      PhoneNumber:       fmtPhone,
-      CallBackURL:       `${process.env.BASE_URL}/api/thriftly/pay/callback`,
-      AccountReference:  'THRIFTLY',
-      TransactionDesc:   'Thriftly listing fee',
-    }, { headers: { Authorization: `Bearer ${token}` } });
-
-    if (data.ResponseCode === '0') {
-      pendingPayments.set(data.CheckoutRequestID, { recordId: record_id, phone: fmtPhone });
-      res.json({ success: true, checkout_request_id: data.CheckoutRequestID });
-    } else {
-      res.status(400).json({ error: data.ResponseDescription || 'STK push failed' });
+    const [[tx]] = await pool.execute('SELECT * FROM thriftly_transactions WHERE seller_token = ?', [seller_token]);
+    if (!tx) return res.status(404).json({ error: 'Invalid or expired dispatch link' });
+    if (tx.status !== 'paid_held') {
+      if (tx.status === 'dispatched') return res.json({ ok: true, status: 'dispatched', already: true });
+      return res.status(400).json({ error: `Cannot dispatch from status: ${tx.status}` });
     }
-  } catch (err) {
-    console.error('[Thriftly STK]', err.response?.data || err.message);
-    res.status(500).json({ error: 'Payment initiation failed. Please try again.' });
-  }
-});
-
-// POST /api/thriftly/pay/callback — Safaricom callback after payment
-router.post('/pay/callback', async (req, res) => {
-  const callback = req.body?.Body?.stkCallback;
-  if (!callback) return res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-
-  const { CheckoutRequestID, ResultCode, CallbackMetadata } = callback;
-  const pending = pendingPayments.get(CheckoutRequestID);
-
-  if (pending && ResultCode === 0) {
-    const items      = CallbackMetadata?.Item || [];
-    const mpesaCode  = items.find(i => i.Name === 'MpesaReceiptNumber')?.Value || '';
-    const amount     = items.find(i => i.Name === 'Amount')?.Value || 250;
-    try {
-      await updateListingStatus(pending.recordId, 'pending_review', {
-        listing_fee_paid:       true,
-        mpesa_confirmation_code: mpesaCode,
-        mpesa_phone_used:       pending.phone,
-      });
-      await createPayment({
-        listingRecordId: pending.recordId,
-        amount,
-        mpesaCode,
-        phone: pending.phone,
-      });
-      console.log(`[Thriftly] Fee paid for record ${pending.recordId} — ${mpesaCode}`);
-    } catch (e) {
-      console.error('[Thriftly] post-payment Airtable update failed:', e.message);
-    }
-    pendingPayments.delete(CheckoutRequestID);
-  } else if (pending) {
-    pendingPayments.delete(CheckoutRequestID);
-  }
-
-  res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-});
-
-// POST /api/thriftly/pay/status — frontend polls this to detect payment confirmation
-router.post('/pay/status', async (req, res) => {
-  const { checkout_request_id, record_id } = req.body;
-  if (!checkout_request_id || !record_id) return res.status(400).json({ error: 'Missing params' });
-
-  // If it's no longer in pendingPayments, callback has fired — check Airtable
-  if (!pendingPayments.has(checkout_request_id)) {
-    try {
-      const record = await getListing(record_id);
-      if (record?.fields?.listing_fee_paid) {
-        return res.json({ status: 'paid', mpesa_code: record.fields.mpesa_confirmation_code || '' });
+    const updated = await transition(tx.id, 'dispatched', 'seller', null, 'Seller confirmed dispatch via link');
+    await pool.execute('UPDATE thriftly_transactions SET dispatched_at = NOW() WHERE id = ?', [tx.id]);
+    notify('buyer_dispatched', {
+      buyer_phone: tx.buyer_phone,
+      item_title:  tx.item_title,
+      confirm_url: `${process.env.BASE_URL}/thriftly/confirm?token=${tx.buyer_token}`,
+    });
+    setTimeout(async () => {
+      const [[current]] = await pool.execute('SELECT status FROM thriftly_transactions WHERE id = ?', [tx.id]);
+      if (current?.status === 'dispatched') {
+        await pool.execute('UPDATE thriftly_transactions SET confirmation_prompt_sent_at = NOW() WHERE id = ?', [tx.id]);
+        notify('buyer_confirm_prompt', {
+          buyer_phone: tx.buyer_phone,
+          item_title:  tx.item_title,
+          confirm_url: `${process.env.BASE_URL}/thriftly/confirm?token=${tx.buyer_token}`,
+        });
       }
-    } catch (_) {}
-    return res.json({ status: 'pending' });
+    }, 48 * 60 * 60 * 1000);
+    setTimeout(async () => {
+      const [[current]] = await pool.execute('SELECT status FROM thriftly_transactions WHERE id = ?', [tx.id]);
+      if (current?.status === 'dispatched') {
+        await transition(tx.id, 'auto_release_pending', 'system', null, 'Auto-release: 7 days elapsed with no buyer confirmation');
+        notify('admin_auto_release', { transaction_id: tx.id, amount: tx.amount, item_title: tx.item_title });
+      }
+    }, 7 * 24 * 60 * 60 * 1000);
+    res.json({ ok: true, status: updated.status });
+  } catch (err) {
+    console.error('[Thriftly dispatch-by-token]', err.message);
+    res.status(400).json({ error: err.message });
   }
-
-  // Still in map — query Daraja directly to catch any missed callbacks
-  try {
-    const token     = await getMpesaToken();
-    const shortcode = process.env.MPESA_SHORTCODE;
-    const passkey   = process.env.MPESA_PASSKEY;
-    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
-    const password  = Buffer.from(`${shortcode}${passkey}${timestamp}`).toString('base64');
-
-    const { data } = await axios.post(`${DARAJA_BASE}/mpesa/stkpushquery/v1/query`, {
-      BusinessShortCode: shortcode,
-      Password:          password,
-      Timestamp:         timestamp,
-      CheckoutRequestID: checkout_request_id,
-    }, { headers: { Authorization: `Bearer ${token}` } });
-
-    if (data.ResultCode === '0' || data.ResultCode === 0) {
-      return res.json({ status: 'paid', mpesa_code: '' });
-    } else if (data.ResultCode !== undefined && data.ResultCode !== '1032') {
-      pendingPayments.delete(checkout_request_id);
-      return res.json({ status: 'failed' });
-    }
-  } catch (_) {}
-
-  res.json({ status: 'pending' });
 });
+
+// ── POST /api/thriftly/transactions/:id/dispatch — seller confirms dispatch ─
+router.post('/transactions/:id/dispatch', async (req, res) => {
+  const { id } = req.params;
+  const { seller_token } = req.body;
+  try {
+    const [[tx]] = await pool.execute('SELECT * FROM thriftly_transactions WHERE id = ?', [id]);
+    if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+    if (tx.seller_token !== seller_token) return res.status(403).json({ error: 'Invalid seller token' });
+
+    const updated = await transition(id, 'dispatched', 'seller', null, 'Seller confirmed dispatch');
+    await pool.execute('UPDATE thriftly_transactions SET dispatched_at = NOW() WHERE id = ?', [id]);
+
+    // Notify buyer
+    notify('buyer_dispatched', {
+      buyer_phone: tx.buyer_phone,
+      item_title:  tx.item_title,
+      confirm_url: `${process.env.BASE_URL}/thriftly/confirm?token=${tx.buyer_token}`,
+    });
+
+    // Schedule delivery confirmation prompt at T+48h
+    setTimeout(async () => {
+      const [[current]] = await pool.execute('SELECT status FROM thriftly_transactions WHERE id = ?', [id]);
+      if (current?.status === 'dispatched') {
+        await pool.execute('UPDATE thriftly_transactions SET confirmation_prompt_sent_at = NOW() WHERE id = ?', [id]);
+        notify('buyer_confirm_prompt', {
+          buyer_phone: tx.buyer_phone,
+          item_title:  tx.item_title,
+          confirm_url: `${process.env.BASE_URL}/thriftly/confirm?token=${tx.buyer_token}`,
+        });
+      }
+    }, 48 * 60 * 60 * 1000);
+
+    // Schedule auto-release check at T+7d
+    setTimeout(async () => {
+      const [[current]] = await pool.execute('SELECT status FROM thriftly_transactions WHERE id = ?', [id]);
+      if (current?.status === 'dispatched' || current?.status === 'confirmed') {
+        await transition(id, 'auto_release_pending', 'system', null, 'Auto-release: 7 days elapsed with no buyer confirmation');
+        notify('admin_auto_release', { transaction_id: id, amount: tx.amount, item_title: tx.item_title });
+      }
+    }, 7 * 24 * 60 * 60 * 1000);
+
+    res.json({ ok: true, status: updated.status });
+  } catch (err) {
+    console.error('[Thriftly dispatch]', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── POST /api/thriftly/confirm-by-token — buyer confirms delivery via token link ─
+router.post('/confirm-by-token', async (req, res) => {
+  const { buyer_token } = req.body;
+  if (!buyer_token) return res.status(400).json({ error: 'buyer_token required' });
+  try {
+    const [[tx]] = await pool.execute('SELECT * FROM thriftly_transactions WHERE buyer_token = ?', [buyer_token]);
+    if (!tx) return res.status(404).json({ error: 'Invalid or expired confirmation link' });
+    if (tx.status === 'confirmed' || tx.status === 'payout_queued' || tx.status === 'completed') {
+      return res.json({ ok: true, status: tx.status, already: true });
+    }
+    if (tx.status !== 'dispatched' && tx.status !== 'auto_release_pending') {
+      return res.status(400).json({ error: `Cannot confirm from status: ${tx.status}` });
+    }
+    const updated = await transition(tx.id, 'confirmed', 'buyer', null, 'Buyer confirmed delivery via link');
+    await pool.execute('UPDATE thriftly_transactions SET confirmed_at = NOW() WHERE id = ?', [tx.id]);
+    notify('buyer_confirmed_ack',    { buyer_phone: tx.buyer_phone, item_title: tx.item_title });
+    notify('seller_payout_initiated', { seller_phone: tx.seller_phone, item_title: tx.item_title });
+    await triggerPayout(tx.id, tx);
+    res.json({ ok: true, status: updated.status });
+  } catch (err) {
+    console.error('[Thriftly confirm-by-token]', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── POST /api/thriftly/dispute-by-token — buyer raises dispute via token link ─
+router.post('/dispute-by-token', async (req, res) => {
+  const { buyer_token, reason } = req.body;
+  if (!buyer_token) return res.status(400).json({ error: 'buyer_token required' });
+  try {
+    const [[tx]] = await pool.execute('SELECT * FROM thriftly_transactions WHERE buyer_token = ?', [buyer_token]);
+    if (!tx) return res.status(404).json({ error: 'Invalid or expired link' });
+    if (tx.status === 'disputed') return res.json({ ok: true, status: 'disputed', already: true });
+    if (!['dispatched', 'auto_release_pending'].includes(tx.status)) {
+      return res.status(400).json({ error: `Cannot dispute from status: ${tx.status}` });
+    }
+    const updated = await transition(tx.id, 'disputed', 'buyer', null, `Buyer raised dispute via link: ${reason || 'no reason given'}`);
+    notify('admin_dispute',      { transaction_id: tx.id, buyer_phone: tx.buyer_phone, seller_phone: tx.seller_phone, amount: tx.amount, item_title: tx.item_title, reason });
+    notify('buyer_dispute_ack',  { buyer_phone: tx.buyer_phone });
+    notify('seller_dispute_ack', { seller_phone: tx.seller_phone, item_title: tx.item_title });
+    res.json({ ok: true, status: updated.status });
+  } catch (err) {
+    console.error('[Thriftly dispute-by-token]', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── POST /api/thriftly/transactions/:id/confirm — buyer confirms delivery ───
+router.post('/transactions/:id/confirm', async (req, res) => {
+  const { id } = req.params;
+  const { buyer_token } = req.body;
+  try {
+    const [[tx]] = await pool.execute('SELECT * FROM thriftly_transactions WHERE id = ?', [id]);
+    if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+    if (tx.buyer_token !== buyer_token) return res.status(403).json({ error: 'Invalid buyer token' });
+
+    const updated = await transition(id, 'confirmed', 'buyer', null, 'Buyer confirmed delivery');
+    await pool.execute('UPDATE thriftly_transactions SET confirmed_at = NOW() WHERE id = ?', [id]);
+
+    notify('buyer_confirmed_ack', { buyer_phone: tx.buyer_phone, item_title: tx.item_title });
+    notify('seller_payout_initiated', { seller_phone: tx.seller_phone, item_title: tx.item_title });
+
+    // Trigger payout
+    await triggerPayout(id, tx);
+
+    res.json({ ok: true, status: updated.status });
+  } catch (err) {
+    console.error('[Thriftly confirm]', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── POST /api/thriftly/transactions/:id/dispute — buyer raises dispute ──────
+router.post('/transactions/:id/dispute', async (req, res) => {
+  const { id } = req.params;
+  const { buyer_token, reason } = req.body;
+  try {
+    const [[tx]] = await pool.execute('SELECT * FROM thriftly_transactions WHERE id = ?', [id]);
+    if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+    if (tx.buyer_token !== buyer_token) return res.status(403).json({ error: 'Invalid buyer token' });
+
+    const updated = await transition(id, 'disputed', 'buyer', null, `Buyer raised dispute: ${reason || 'no reason given'}`);
+
+    notify('admin_dispute', { transaction_id: id, buyer_phone: tx.buyer_phone, seller_phone: tx.seller_phone, amount: tx.amount, item_title: tx.item_title, reason });
+    notify('buyer_dispute_ack', { buyer_phone: tx.buyer_phone });
+    notify('seller_dispute_ack', { seller_phone: tx.seller_phone, item_title: tx.item_title });
+
+    res.json({ ok: true, status: updated.status });
+  } catch (err) {
+    console.error('[Thriftly dispute]', err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── POST /api/thriftly/admin/transactions/:id/release — admin releases payout
+router.post('/admin/transactions/:id/release', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'] || req.query.key;
+  if (adminKey !== process.env.ADMIN_KEY) return res.status(403).json({ error: 'Forbidden' });
+  const { id } = req.params;
+  try {
+    const [[tx]] = await pool.execute('SELECT * FROM thriftly_transactions WHERE id = ?', [id]);
+    if (!tx) return res.status(404).json({ error: 'Transaction not found' });
+    if (!['auto_release_pending', 'disputed'].includes(tx.status)) {
+      return res.status(400).json({ error: `Cannot release from status: ${tx.status}` });
+    }
+    await transition(id, 'payout_queued', 'admin', null, 'Admin manual payout release');
+    await triggerPayout(id, tx);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// ── GET /api/thriftly/admin/transactions — admin list ───────────────────────
+router.get('/admin/transactions', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'] || req.query.key;
+  if (adminKey !== process.env.ADMIN_KEY) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const { status, page = 1 } = req.query;
+    const offset = (Number(page) - 1) * 50;
+    const where  = status ? 'WHERE status = ?' : '';
+    const params = status ? [status, 50, offset] : [50, offset];
+    const [rows] = await pool.execute(
+      `SELECT * FROM thriftly_transactions ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+      params
+    );
+    const [[{ total }]] = await pool.execute(
+      `SELECT COUNT(*) AS total FROM thriftly_transactions ${where}`,
+      status ? [status] : []
+    );
+    res.json({ transactions: rows, total, page: Number(page) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/thriftly/admin/transactions/:id — transaction detail + events ──
+router.get('/admin/transactions/:id', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'] || req.query.key;
+  if (adminKey !== process.env.ADMIN_KEY) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const [[tx]] = await pool.execute('SELECT * FROM thriftly_transactions WHERE id = ?', [req.params.id]);
+    if (!tx) return res.status(404).json({ error: 'Not found' });
+    const [events] = await pool.execute(
+      'SELECT * FROM thriftly_transaction_events WHERE transaction_id = ? ORDER BY created_at ASC',
+      [req.params.id]
+    );
+    res.json({ transaction: tx, events });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/thriftly/admin/stats ───────────────────────────────────────────
+router.get('/admin/stats', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'] || req.query.key;
+  if (adminKey !== process.env.ADMIN_KEY) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const heldStatuses = ['paid_held','dispatched','confirmed','auto_release_pending','payout_queued','payout_sent'];
+    const [[{ held }]] = await pool.execute(
+      `SELECT COALESCE(SUM(amount),0) AS held FROM thriftly_transactions WHERE status IN (${heldStatuses.map(()=>'?').join(',')})`,
+      heldStatuses
+    );
+    const [[{ disbursed }]] = await pool.execute(
+      `SELECT COALESCE(SUM(amount),0) AS disbursed FROM thriftly_transactions WHERE status = 'completed' AND MONTH(completed_at) = MONTH(NOW()) AND YEAR(completed_at) = YEAR(NOW())`
+    );
+    const [[{ disputed }]] = await pool.execute(
+      `SELECT COUNT(*) AS disputed FROM thriftly_transactions WHERE status = 'disputed'`
+    );
+    const [[{ auto_release }]] = await pool.execute(
+      `SELECT COUNT(*) AS auto_release FROM thriftly_transactions WHERE status = 'auto_release_pending'`
+    );
+    res.json({ held_kes: held, disbursed_this_month_kes: disbursed, disputed_count: disputed, auto_release_count: auto_release });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/thriftly/admin/transactions/:id/note ──────────────────────────
+router.post('/admin/transactions/:id/note', async (req, res) => {
+  const adminKey = req.headers['x-admin-key'] || req.query.key;
+  if (adminKey !== process.env.ADMIN_KEY) return res.status(403).json({ error: 'Forbidden' });
+  try {
+    const [[tx]] = await pool.execute('SELECT status FROM thriftly_transactions WHERE id = ?', [req.params.id]);
+    if (!tx) return res.status(404).json({ error: 'Not found' });
+    await pool.execute(
+      `INSERT INTO thriftly_transaction_events (id, transaction_id, from_status, to_status, actor_type, actor_id, note)
+       VALUES (?,?,?,?,?,?,?)`,
+      [uuid(), req.params.id, tx.status, tx.status, 'admin', null, req.body.note || '']
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Payout helper (called from confirm + admin release) ──────────────────────
+async function triggerPayout(txId, tx, attempt = 1) {
+  const { initiatePayout } = require('./mpesa-thriftly');
+  try {
+    await transition(txId, 'payout_queued', 'system', null, `Payout queued (attempt ${attempt})`);
+    await pool.execute('UPDATE thriftly_transactions SET payout_queued_at = NOW() WHERE id = ?', [txId]);
+    await initiatePayout(txId, tx);
+  } catch (err) {
+    console.error('[Thriftly payout]', err.message);
+    if (attempt < 3) {
+      setTimeout(() => triggerPayout(txId, tx, attempt + 1), 2 * 60 * 60 * 1000);
+    } else {
+      await transition(txId, 'payout_failed', 'system', null, `Payout failed after ${attempt} attempts: ${err.message}`);
+      notify('admin_payout_failed', { transaction_id: txId, amount: tx.amount, seller_phone: tx.seller_phone, error: err.message });
+    }
+  }
+}
 
 module.exports = router;
+module.exports.transition = transition;

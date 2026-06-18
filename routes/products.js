@@ -162,7 +162,7 @@ router.get('/', async (req, res) => {
     const { category } = req.query;
     if (category && category !== 'all') {
       if (category === 'sale') {
-        products = products.filter(p => p.badge === 'Sale');
+        products = products.filter(p => p.badge === 'Sale' || p.original_price != null);
       } else if (category === 'new') {
         products = products.filter(p => p.badge === 'New In');
       } else {

@@ -789,9 +789,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   // ── VARIANT LOGIC ──
   const AXES_ORDER = ['colour', 'texture', 'size', 'length'];
 
-  function discoverAxes(activeVariants, hasColourImages) {
+  function discoverAxes(activeVariants) {
     return AXES_ORDER
-      .filter(axis => !(axis === 'colour' && hasColourImages))
       .map(axis => {
         const vals = [...new Set(activeVariants.filter(v => v[axis] != null).map(v => v[axis]))];
         return vals.length >= 2 ? { axis, values: sortValues(axis, vals) } : null;
@@ -821,8 +820,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function buildSelectorsHtml(axes) {
     return axes.map(({ axis, values }) => {
       const label = axis.charAt(0).toUpperCase() + axis.slice(1);
-      const selectedVal  = selectedValues[axis];
-      const selectedDisplay = axis === 'length' && selectedVal != null ? `${selectedVal}"` : (selectedVal ?? '');
       const pills = values.map(val => {
         const display = axis === 'length' ? `${val}"` : val;
         const hasStock = variants.some(v => v.active && v[axis] === val && v.stock_quantity > 0);
@@ -830,7 +827,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         const cls = ['pill', isSelected ? 'selected' : '', !hasStock ? 'out-of-stock' : ''].filter(Boolean).join(' ');
         return `<button class="${cls}" data-axis="${axis}" data-value="${String(val).replace(/"/g,'&quot;')}" onclick="onPillClick(this)">${display}</button>`;
       }).join('');
-      return `<div class="selector-block" id="sel-${axis}"><div class="selector-label">${label}: <strong id="sel-val-${axis}">${selectedDisplay}</strong></div><div class="pills-row">${pills}</div></div>`;
+      return `<div class="selector-block" id="sel-${axis}"><div class="selector-label">${label}</div><div class="pills-row">${pills}</div></div>`;
     }).join('');
   }
 
@@ -844,8 +841,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function selectValue(axis, value) {
     selectedValues[axis] = value;
     resolvedVariant = resolveVariant();
-    const hasColourImages = product?.images?.length > 1 && product?.images?.some(img => img.name);
-    const axes = discoverAxes(variants.filter(v => v.active), hasColourImages);
+    const axes = discoverAxes(variants.filter(v => v.active));
     const container = document.getElementById('variant-selectors');
     if (container) container.innerHTML = buildSelectorsHtml(axes);
     updateVariantUI();
@@ -913,7 +909,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     history.replaceState(null, '', `${location.pathname}?${params}`);
   }
 
-  async function initVariants(productId, hasColourImages) {
+  async function initVariants(productId) {
     try {
       const res = await fetch(`/api/products/${productId}/variants`);
       if (!res.ok) return;
@@ -923,7 +919,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const active = variants.filter(v => v.active);
     if (!active.length) return;
 
-    const axes = discoverAxes(active, hasColourImages);
+    const axes = discoverAxes(active);
     if (!axes.length) return;
 
     // Parse URL for pre-selected values
@@ -988,25 +984,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const hasImages = p.images && p.images.length > 0;
     const primarySrc = hasImages ? p.images[0].full : '';
 
-    const showSwatches   = hasImages && p.images.length > 1;
-    const hasColourNames = showSwatches && p.images.some(img => img.name);
-    const firstColourName = hasColourNames ? p.images[0].name : '';
-
-    const swatchesHtml = showSwatches
-      ? p.images.map((img, i) => {
-          const colName = img.name || ('Style ' + (i + 1));
-          return `<div class="colour-thumb-wrap ${i===0?'active':''}" onclick="switchImage(${i})" title="${colName}">
-            <img src="${img.thumb}" alt="${colName}" loading="lazy">
-          </div>`;
-        }).join('')
-      : '';
-
-    const colourSelectorHtml = hasColourNames ? `
-      <div class="colour-selector">
-        <div class="colour-label">Colour: <strong id="colourName">${firstColourName}</strong></div>
-        <div class="colour-row">${swatchesHtml}</div>
-      </div>` : '';
-
     const soldOut    = p.sold_out || (p.total_stock_quantity === 0 && !!p.price && p.badge !== 'Coming Soon');
     const comingSoon = p.badge === 'Coming Soon' || p.availability_status === 'coming_soon';
     const unavailable = soldOut || comingSoon;
@@ -1046,7 +1023,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <!-- INFO -->
       <div class="product-info">
-        ${colourSelectorHtml}
         ${p.sub_category ? `<div class="product-sub">${p.sub_category}</div>` : ''}
         <h1 class="product-title">${p.name}</h1>
         <div class="price-row" id="price-row">${priceHtml}</div>
@@ -1162,7 +1138,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           value: Number(p.price) || 0
         });
       }
-      initVariants(id, p.images?.length > 1 && p.images.some(img => img.name)); // suppress colour pills only when images are named colour swatches
+      initVariants(id);
       loadSimilar(p);
     } catch {
       document.getElementById('productWrap').innerHTML =

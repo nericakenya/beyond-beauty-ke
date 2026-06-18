@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Dispatch — Thriftly</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f8f5f2; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { background: #fff; border-radius: 16px; padding: 40px 32px; max-width: 440px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,.08); text-align: center; }
+    .logo { font-size: 22px; font-weight: 700; letter-spacing: -.5px; color: #1a1a1a; margin-bottom: 8px; }
+    .logo span { color: #c9956e; }
+    h1 { font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 24px 0 8px; }
+    p { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 16px; }
+    .item-box { background: #f8f5f2; border-radius: 10px; padding: 16px; margin: 20px 0; text-align: left; }
+    .item-box .label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #999; margin-bottom: 4px; }
+    .item-box .value { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+    .checklist { text-align: left; margin: 20px 0; }
+    .checklist li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #444; margin-bottom: 10px; list-style: none; }
+    .checklist li::before { content: '✓'; color: #c9956e; font-weight: 700; flex-shrink: 0; }
+    button { display: block; width: 100%; padding: 15px; border: none; border-radius: 10px; background: #1a1a1a; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 24px; transition: background .2s; }
+    button:hover:not(:disabled) { background: #333; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .status { margin-top: 16px; font-size: 14px; font-weight: 600; }
+    .status.success { color: #2e7d32; }
+    .status.error   { color: #c62828; }
+    .spinner { display: none; width: 18px; height: 18px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; margin: 0 auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <div class="logo">Thriftly <span>·</span> Beyond Beauty</div>
+
+    <div id="loadingState">
+      <p style="margin-top:32px;color:#999;">Loading transaction details…</p>
+    </div>
+
+    <div id="mainState" style="display:none">
+      <h1>Confirm You've Dispatched</h1>
+      <p>Once you confirm, the buyer will be notified and we'll ask them to confirm receipt within 48 hours — then release your payment.</p>
+
+      <div class="item-box">
+        <div class="label">Item</div>
+        <div class="value" id="itemTitle">—</div>
+        <div class="label" style="margin-top:12px">Sale Amount</div>
+        <div class="value" id="itemAmount">—</div>
+      </div>
+
+      <ul class="checklist">
+        <li>Package the item securely before dispatching</li>
+        <li>Use a reliable courier or meet-up arrangement</li>
+        <li>Only tap confirm after you have actually sent or handed over the item</li>
+      </ul>
+
+      <button id="confirmBtn" onclick="confirmDispatch()">
+        <span id="btnText">I Have Dispatched the Item</span>
+        <div class="spinner" id="btnSpinner"></div>
+      </button>
+      <div class="status" id="statusMsg"></div>
+    </div>
+
+    <div id="doneState" style="display:none">
+      <div style="font-size:48px;margin:24px 0">✅</div>
+      <h1>Dispatch Confirmed!</h1>
+      <p>The buyer has been notified. We'll prompt them to confirm delivery within 48 hours and release your payment as soon as they do.</p>
+      <p style="margin-top:12px;color:#999;font-size:13px">You can close this page.</p>
+    </div>
+
+    <div id="errorState" style="display:none">
+      <div style="font-size:48px;margin:24px 0">⚠️</div>
+      <h1 id="errorTitle">Something went wrong</h1>
+      <p id="errorMsg">Please contact Beyond Beauty KE for assistance.</p>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const token  = params.get('token');
+    let txId = null;
+
+    async function init() {
+      if (!token) { showError('Invalid Link', 'This dispatch link is invalid or has already been used.'); return; }
+      // We'll identify the transaction by seller_token via the confirm endpoint — no lookup needed.
+      // Just show the UI and let the confirm action do the work.
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('mainState').style.display    = 'block';
+      document.getElementById('itemTitle').textContent  = 'Your listed item';
+      document.getElementById('itemAmount').textContent = '';
+    }
+
+    async function confirmDispatch() {
+      const btn     = document.getElementById('confirmBtn');
+      const spinner = document.getElementById('btnSpinner');
+      const btnText = document.getElementById('btnText');
+      const status  = document.getElementById('statusMsg');
+
+      btn.disabled       = true;
+      btnText.style.display  = 'none';
+      spinner.style.display  = 'block';
+      status.textContent = '';
+
+      // We need to find the tx ID from the token — we call dispatch with the token
+      // and the server resolves it by seller_token match. But our API uses :id in URL.
+      // So we POST to a token-based lookup endpoint.
+      try {
+        const res  = await fetch('/api/thriftly/dispatch-by-token', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ seller_token: token }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to confirm dispatch');
+
+        document.getElementById('mainState').style.display = 'none';
+        document.getElementById('doneState').style.display = 'block';
+      } catch (err) {
+        btn.disabled          = false;
+        btnText.style.display = 'block';
+        spinner.style.display = 'none';
+        status.textContent    = err.message;
+        status.className      = 'status error';
+      }
+    }
+
+    function showError(title, msg) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display   = 'block';
+      document.getElementById('errorTitle').textContent     = title;
+      document.getElementById('errorMsg').textContent       = msg;
+    }
+
+    init();
+  </script>
+</body>
+</html>

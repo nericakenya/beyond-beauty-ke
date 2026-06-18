@@ -78,6 +78,36 @@
   .badge-paid{background:#dcfce7;color:#166534}
   .badge-stk_sent{background:#fef9c3;color:#713f12}
   .badge-failed{background:#fee2e2;color:#991b1b}
+  .badge-pending_payment{background:#fef9c3;color:#713f12}
+  .badge-payment_failed{background:#fee2e2;color:#991b1b}
+  .badge-paid_held{background:#e0f2fe;color:#075985}
+  .badge-dispatched{background:#dbeafe;color:#1e40af}
+  .badge-confirmed{background:#dcfce7;color:#166534}
+  .badge-auto_release_pending{background:#fef3c7;color:#92400e}
+  .badge-disputed{background:#fee2e2;color:#991b1b}
+  .badge-payout_queued{background:#f3e8ff;color:#581c87}
+  .badge-payout_sent{background:#d1fae5;color:#065f46}
+  .badge-payout_failed{background:#fee2e2;color:#991b1b}
+  .badge-completed{background:#dcfce7;color:#166534}
+  .badge-refunded{background:#f5f5f5;color:#555}
+
+  /* THRIFTLY */
+  .tl-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  @media(max-width:760px){.tl-stats{grid-template-columns:repeat(2,1fr)}}
+  .tl-filter-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .tl-filter-row select{padding:7px 10px;border:1px solid var(--border);font-family:var(--font);font-size:11px;background:var(--white);cursor:pointer;outline:none}
+  .tl-detail{background:#faf8f5;border:1px solid var(--border);padding:16px;margin-top:8px;font-size:12px}
+  .tl-detail h4{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin:12px 0 6px}
+  .tl-detail .field-row{display:flex;gap:8px;margin-bottom:4px}
+  .tl-detail .field-label{color:var(--mid);min-width:130px;flex-shrink:0}
+  .tl-event{border-left:2px solid var(--border);padding-left:10px;margin-bottom:6px}
+  .tl-event .ev-ts{font-size:10px;color:var(--mid)}
+  .tl-release-btn{background:#1a1a1a;color:#fff;border:none;padding:6px 14px;font-family:var(--font);font-size:10px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;margin-right:6px}
+  .tl-release-btn:hover{background:#444}
+  .tl-note-row{display:flex;gap:6px;margin-top:10px}
+  .tl-note-row input{flex:1;padding:7px 10px;border:1px solid var(--border);font-family:var(--font);font-size:12px;outline:none}
+  .tl-note-row input:focus{border-color:var(--black)}
+  .tl-pagination{display:flex;gap:8px;align-items:center;margin-top:16px;font-size:12px}
 
   .action-btn{background:none;border:1px solid var(--border);padding:5px 10px;font-family:var(--font);font-size:10px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all .2s;margin-right:4px}
   .action-btn:hover{border-color:var(--black)}
@@ -147,6 +177,7 @@
     <button class="tab-btn active" onclick="switchTab('products')">Products</button>
     <button class="tab-btn" onclick="switchTab('orders')">Orders</button>
     <button class="tab-btn" onclick="switchTab('notifications')">Restock Notifications</button>
+    <button class="tab-btn" onclick="switchTab('thriftly')">Thriftly</button>
   </div>
 
   <!-- PRODUCTS TAB -->
@@ -181,6 +212,45 @@
       </tr></thead>
       <tbody id="notificationsTbody"><tr><td colspan="6" class="loading">Loading…</td></tr></tbody>
     </table>
+  </div>
+
+  <!-- THRIFTLY TAB -->
+  <div class="tab-panel" id="tab-thriftly">
+    <div class="tl-stats" id="tlStats">
+      <div class="stat-card"><div class="stat-label">Held Funds (KSh)</div><div class="stat-value accent" id="tlHeld">—</div></div>
+      <div class="stat-card"><div class="stat-label">Disbursed This Month</div><div class="stat-value" id="tlDisbursed">—</div></div>
+      <div class="stat-card"><div class="stat-label">Disputed</div><div class="stat-value" id="tlDisputed">—</div></div>
+      <div class="stat-card"><div class="stat-label">Pending Auto-Release</div><div class="stat-value" id="tlAutoRelease">—</div></div>
+    </div>
+
+    <div class="tl-filter-row">
+      <span class="table-title">Transactions</span>
+      <select id="tlStatusFilter" onchange="loadThriftlyTxns(1)">
+        <option value="">All statuses</option>
+        <option value="pending_payment">Pending Payment</option>
+        <option value="paid_held">Paid – Held</option>
+        <option value="dispatched">Dispatched</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="disputed">Disputed</option>
+        <option value="auto_release_pending">Auto-Release Pending</option>
+        <option value="payout_queued">Payout Queued</option>
+        <option value="payout_sent">Payout Sent</option>
+        <option value="payout_failed">Payout Failed</option>
+        <option value="completed">Completed</option>
+      </select>
+      <button class="add-btn" style="background:#555" onclick="loadThriftlyStats();loadThriftlyTxns(1)">↻ Refresh</button>
+    </div>
+
+    <table class="data-table" id="tlTable">
+      <thead><tr>
+        <th>ID</th><th>Item</th><th>Buyer</th><th>Seller</th><th>Amount</th><th>Status</th><th>Created</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="tlTbody"><tr><td colspan="8" class="loading">Loading…</td></tr></tbody>
+    </table>
+
+    <div class="tl-pagination" id="tlPagination"></div>
+
+    <div id="tlDetail" style="display:none"></div>
   </div>
 
   <!-- ORDERS TAB -->
@@ -315,12 +385,14 @@
   }
 
   // ── TABS ──
+  const TAB_NAMES = ['products','orders','notifications','thriftly'];
   function switchTab(name) {
-    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['products','orders','notifications'][i] === name));
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', TAB_NAMES[i] === name));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.getElementById(`tab-${name}`).classList.add('active');
     if (name === 'orders') loadOrders();
     if (name === 'notifications') loadNotifications();
+    if (name === 'thriftly') { loadThriftlyStats(); loadThriftlyTxns(1); }
   }
 
   // ── LOAD ALL ──
@@ -522,6 +594,139 @@
   document.getElementById('productModal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
   });
+
+  // ── THRIFTLY ──
+  let tlPage = 1, tlTotal = 0;
+
+  function tlFmt(kes) { return 'KSh ' + Number(kes || 0).toLocaleString('en-KE'); }
+  function tlBadge(s) { return `<span class="badge badge-${s}">${s.replace(/_/g, ' ')}</span>`; }
+
+  async function loadThriftlyStats() {
+    try {
+      const res  = await fetch('/api/thriftly/admin/stats', { headers: { 'x-admin-key': ADMIN_KEY } });
+      const data = await res.json();
+      document.getElementById('tlHeld').textContent        = Number(data.held_kes || 0).toLocaleString('en-KE');
+      document.getElementById('tlDisbursed').textContent   = Number(data.disbursed_this_month_kes || 0).toLocaleString('en-KE');
+      document.getElementById('tlDisputed').textContent    = data.disputed_count ?? '—';
+      document.getElementById('tlAutoRelease').textContent = data.auto_release_count ?? '—';
+    } catch (e) { console.error('[Admin] Thriftly stats error:', e.message); }
+  }
+
+  async function loadThriftlyTxns(page) {
+    tlPage = page || 1;
+    const status = document.getElementById('tlStatusFilter').value;
+    const qs     = `page=${tlPage}${status ? '&status=' + encodeURIComponent(status) : ''}`;
+    try {
+      const res  = await fetch(`/api/thriftly/admin/transactions?${qs}`, { headers: { 'x-admin-key': ADMIN_KEY } });
+      const data = await res.json();
+      tlTotal    = data.total || 0;
+      renderTlTxns(data.transactions || []);
+      renderTlPagination();
+    } catch (e) {
+      document.getElementById('tlTbody').innerHTML = `<tr><td colspan="8" class="loading">Error loading transactions.</td></tr>`;
+    }
+  }
+
+  function renderTlTxns(txns) {
+    const tbody = document.getElementById('tlTbody');
+    if (!txns.length) { tbody.innerHTML = '<tr><td colspan="8" class="loading">No transactions.</td></tr>'; return; }
+    tbody.innerHTML = txns.map(t => `
+      <tr>
+        <td style="font-size:10px;color:var(--mid)">${t.id.slice(0,8)}…</td>
+        <td><strong style="font-size:12px">${t.item_title}</strong></td>
+        <td style="font-size:11px">${t.buyer_phone}</td>
+        <td style="font-size:11px">${t.seller_phone}</td>
+        <td>${tlFmt(t.amount)}</td>
+        <td>${tlBadge(t.status)}</td>
+        <td style="font-size:11px;color:var(--mid)">${(t.created_at||'').slice(0,16).replace('T',' ')}</td>
+        <td>
+          <button class="action-btn" onclick="viewTlDetail('${t.id}')">Detail</button>
+          ${['auto_release_pending','disputed'].includes(t.status) ? `<button class="tl-release-btn" onclick="releaseTlPayout('${t.id}')">Release</button>` : ''}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderTlPagination() {
+    const pages = Math.ceil(tlTotal / 50);
+    const el    = document.getElementById('tlPagination');
+    if (pages <= 1) { el.innerHTML = ''; return; }
+    el.innerHTML = `
+      <button class="action-btn" onclick="loadThriftlyTxns(${tlPage - 1})" ${tlPage <= 1 ? 'disabled' : ''}>← Prev</button>
+      <span>Page ${tlPage} of ${pages} (${tlTotal} total)</span>
+      <button class="action-btn" onclick="loadThriftlyTxns(${tlPage + 1})" ${tlPage >= pages ? 'disabled' : ''}>Next →</button>
+    `;
+  }
+
+  async function viewTlDetail(id) {
+    const el = document.getElementById('tlDetail');
+    el.style.display = 'block';
+    el.innerHTML = '<div class="tl-detail" style="color:var(--mid)">Loading detail…</div>';
+    try {
+      const res  = await fetch(`/api/thriftly/admin/transactions/${id}`, { headers: { 'x-admin-key': ADMIN_KEY } });
+      const data = await res.json();
+      const t    = data.transaction;
+      const evs  = data.events || [];
+      const canRelease = ['auto_release_pending','disputed'].includes(t.status);
+      el.innerHTML = `
+        <div class="tl-detail">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <strong>Transaction Detail — ${t.id}</strong>
+            <button class="action-btn" onclick="document.getElementById('tlDetail').style.display='none'">✕ Close</button>
+          </div>
+          <h4>Details</h4>
+          <div class="field-row"><span class="field-label">Item</span><span>${t.item_title}</span></div>
+          <div class="field-row"><span class="field-label">Amount</span><span>${tlFmt(t.amount)}</span></div>
+          <div class="field-row"><span class="field-label">Status</span><span>${tlBadge(t.status)}</span></div>
+          <div class="field-row"><span class="field-label">Buyer</span><span>${t.buyer_phone}</span></div>
+          <div class="field-row"><span class="field-label">Seller</span><span>${t.seller_phone}</span></div>
+          <div class="field-row"><span class="field-label">M-Pesa Receipt</span><span>${t.mpesa_receipt || '—'}</span></div>
+          <div class="field-row"><span class="field-label">Payout Receipt</span><span>${t.payout_receipt || '—'}</span></div>
+          <div class="field-row"><span class="field-label">Dispatched At</span><span>${(t.dispatched_at||'—').toString().slice(0,16)}</span></div>
+          <div class="field-row"><span class="field-label">Confirmed At</span><span>${(t.confirmed_at||'—').toString().slice(0,16)}</span></div>
+          <div class="field-row"><span class="field-label">Completed At</span><span>${(t.completed_at||'—').toString().slice(0,16)}</span></div>
+          ${canRelease ? `<div style="margin-top:12px"><button class="tl-release-btn" onclick="releaseTlPayout('${t.id}')">Release Payout to Seller</button></div>` : ''}
+          <h4>Audit Trail</h4>
+          ${evs.length ? evs.map(e => `
+            <div class="tl-event">
+              <div class="ev-ts">${(e.created_at||'').toString().slice(0,16).replace('T',' ')} · ${e.actor_type}</div>
+              <div>${e.from_status} → <strong>${e.to_status}</strong>${e.note ? ` — ${e.note}` : ''}</div>
+            </div>
+          `).join('') : '<div style="color:var(--mid);font-size:12px">No events yet.</div>'}
+          <h4>Add Note</h4>
+          <div class="tl-note-row">
+            <input id="tlNoteInput_${t.id}" placeholder="Add an admin note to the audit log…">
+            <button class="action-btn" onclick="addTlNote('${t.id}')">Add</button>
+          </div>
+        </div>
+      `;
+    } catch (e) {
+      el.innerHTML = `<div class="tl-detail" style="color:var(--red)">Failed to load detail: ${e.message}</div>`;
+    }
+  }
+
+  async function releaseTlPayout(id) {
+    if (!confirm('Release payout to seller now? This will initiate an M-Pesa B2C payment.')) return;
+    const res  = await fetch(`/api/thriftly/admin/transactions/${id}/release`, { method: 'POST', headers: authHeaders() });
+    const data = await res.json();
+    alert(res.ok ? 'Payout initiated!' : (data.error || 'Release failed'));
+    loadThriftlyStats();
+    loadThriftlyTxns(tlPage);
+    document.getElementById('tlDetail').style.display = 'none';
+  }
+
+  async function addTlNote(id) {
+    const input = document.getElementById(`tlNoteInput_${id}`);
+    const note  = (input?.value || '').trim();
+    if (!note) return;
+    const res = await fetch(`/api/thriftly/admin/transactions/${id}/note`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ note }),
+    });
+    if (res.ok) { input.value = ''; viewTlDetail(id); }
+    else { alert('Failed to add note'); }
+  }
 </script>
 </body>
 </html>

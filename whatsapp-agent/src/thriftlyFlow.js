@@ -1,11 +1,9 @@
-require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const path = require('path');
-const { createListing, uploadPhotoFromUrl } = require(path.join(__dirname, '../../thriftly/airtable'));
+const { createListing } = require(path.join(__dirname, '../../thriftly/airtable'));
 
-const LISTING_FEE  = Number(process.env.THRIFTLY_LISTING_FEE) || 250;
-const SHORTCODE    = process.env.MPESA_SHORTCODE || '174379';
-const MIN_PHOTOS   = Number(process.env.THRIFTLY_MIN_PHOTOS) || 3;
-const MAX_PHOTOS   = Number(process.env.THRIFTLY_MAX_PHOTOS) || 5;
+const MIN_PHOTOS = Number(process.env.THRIFTLY_MIN_PHOTOS) || 3;
+const MAX_PHOTOS = Number(process.env.THRIFTLY_MAX_PHOTOS) || 5;
 
 const CATEGORIES = ['Bags', 'Shoes', 'Clothing', 'Jewellery', 'Accessories', 'Hair', 'Skincare & Beauty', 'Other'];
 
@@ -20,12 +18,6 @@ const CONDITIONS = [
 ];
 
 const TRIGGERS = ['sell', 'list', 'thriftly', 'thrift'];
-
-const STATES = [
-  'COLLECT_NAME', 'COLLECT_PHONE', 'COLLECT_ID', 'COLLECT_LOCATION',
-  'COLLECT_TITLE', 'COLLECT_CONDITION', 'COLLECT_DESC', 'COLLECT_CATEGORY', 'COLLECT_PRICE',
-  'COLLECT_PHOTOS', 'AWAIT_PAYMENT', 'COMPLETE',
-];
 
 // ── Active sessions: from -> { state, data, photos: [{url, filename}] }
 const tlSessions = new Map();
@@ -47,10 +39,10 @@ function normalisePhone(raw) {
 function prompt(state, data) {
   switch (state) {
     case 'COLLECT_NAME':
-      return `Welcome to *Thriftly* by Beyond Beauty KE!\n\nYou can list a preloved fashion or beauty item and reach thousands of shoppers.\n\nListing fee: *KES ${LISTING_FEE}* (paid at the end)\n\nLet's get started. What is your *full name*?`;
+      return `Welcome to *Thriftly* by Beyond Beauty KE!\n\nList your preloved fashion or beauty item and reach thousands of shoppers — for *free*.\n\nLet's get started. What is your *full name*?`;
 
     case 'COLLECT_PHONE':
-      return `Thanks ${data.seller_name}! What is your *M-Pesa phone number*? (This is where buyers' payments will be confirmed)`;
+      return `Thanks ${data.seller_name}! What is your *M-Pesa phone number*? (This is where we'll send your payout when your item sells)`;
 
     case 'COLLECT_ID':
       return `What is your *National ID number*? (Required for seller verification)`;
@@ -75,9 +67,6 @@ function prompt(state, data) {
 
     case 'COLLECT_PHOTOS':
       return `Almost there! Please send your item photos — *at least ${MIN_PHOTOS}*, up to ${MAX_PHOTOS}.\n\nSend them *one at a time*. When you're done, type *DONE*.`;
-
-    case 'AWAIT_PAYMENT':
-      return `Your listing is saved! Last step — pay the *KES ${LISTING_FEE} listing fee*:\n\n*Paybill:* ${SHORTCODE}\n*Account:* THRIFTLY\n*Amount:* KES ${LISTING_FEE}\n\nOnce paid, send your *M-Pesa confirmation code* here (e.g. _QBR7X2ABCD_) and your listing will go live within 24 hours.`;
 
     default:
       return null;
@@ -117,10 +106,9 @@ async function handle(from, messageText, mediaItems) {
       if (session.photos.length < MIN_PHOTOS) {
         return { reply: `You've added ${session.photos.length} photo${session.photos.length === 1 ? '' : 's'}. Please send at least ${MIN_PHOTOS} before typing DONE.` };
       }
-      session.state = 'AWAIT_PAYMENT';
-      // Create Airtable record now
+      // Create Airtable record — listing is free
       try {
-        const record = await createListing({
+        await createListing({
           seller_name:        session.data.seller_name,
           seller_phone:       session.data.seller_phone,
           seller_id_number:   session.data.seller_id,
@@ -132,15 +120,17 @@ async function handle(from, messageText, mediaItems) {
           item_category:      session.data.item_category,
           item_price_kes:     session.data.item_price,
           submission_channel: 'whatsapp',
-          listing_fee_paid:   false,
+          listing_fee_paid:   true,
           status:             'pending_review',
         }, session.photos.map((p, i) => ({ url: p.url, filename: `photo_${i + 1}.jpg` })));
-        session.data.recordId = record.id;
       } catch (err) {
         console.error('[ThriftlyFlow] Airtable create failed:', err.message);
         return { reply: 'Sorry, there was an issue saving your listing. Please try again later or contact us directly.' };
       }
-      return { reply: prompt('AWAIT_PAYMENT', session.data) };
+      tlSessions.delete(from);
+      return {
+        reply: `🎉 *Your listing is live — and it did not cost you a thing.*\n\nWe'll review it and have it published within 24 hours. You'll get a WhatsApp notification when it goes live.\n\nWhen your item sells, we'll collect payment on your behalf and send it straight to your M-Pesa once the buyer confirms delivery.\n\n_Thank you for listing on *Thriftly* — Beyond Beauty KE_`,
+      };
     }
 
     // Incoming photo
@@ -158,32 +148,6 @@ async function handle(from, messageText, mediaItems) {
     }
 
     return { reply: `Please send a photo, or type *DONE* if you've finished (minimum ${MIN_PHOTOS} required — you have ${session.photos.length} so far).` };
-  }
-
-  // ── PAYMENT WAIT STATE ─────────────────────────────────────────────────────
-  if (state === 'AWAIT_PAYMENT') {
-    // Expect an M-Pesa confirmation code (uppercase alphanumeric, 10 chars)
-    const mpesaCode = text.match(/\b([A-Z0-9]{10})\b/)?.[1] || (text.length >= 8 && text.length <= 14 && /^[A-Z0-9]+$/i.test(text) ? text.toUpperCase() : null);
-    if (!mpesaCode) {
-      return { reply: `Please send your *M-Pesa confirmation code* (e.g. _QBR7X2ABCD_) to activate your listing.\n\nIf you haven't paid yet:\n*Paybill:* ${SHORTCODE}\n*Account:* THRIFTLY\n*Amount:* KES ${LISTING_FEE}` };
-    }
-    // Update Airtable
-    try {
-      const { updateListingStatus } = require(path.join(__dirname, '../../thriftly/airtable'));
-      await updateListingStatus(session.data.recordId, 'pending_review', {
-        listing_fee_paid:        true,
-        mpesa_confirmation_code: mpesaCode,
-        mpesa_phone_used:        session.data.seller_phone,
-      });
-    } catch (err) {
-      console.error('[ThriftlyFlow] payment update failed:', err.message);
-      return { reply: `Got your code *${mpesaCode}*! We'll verify it manually and activate your listing within 24 hours. Thank you!` };
-    }
-    session.state = 'COMPLETE';
-    tlSessions.delete(from);
-    return {
-      reply: `Your listing is submitted! We'll review it and have it live within *24 hours*.\n\nYou'll get a WhatsApp notification when it goes live.\n\nThank you for listing on *Thriftly* — Beyond Beauty KE`,
-    };
   }
 
   // ── DATA COLLECTION STATES ─────────────────────────────────────────────────

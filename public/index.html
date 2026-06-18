@@ -204,22 +204,42 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .thriftly-tag{position:absolute;bottom:10px;left:10px;background:var(--white);font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 8px;font-family:var(--font-sans);color:var(--black)}
 
   /* ── THRIFTLY LISTINGS GRID ── */
-  .thriftly-section{display:none;padding:32px 40px 80px}
+  .thriftly-section{display:none;padding:32px 24px 80px;max-width:1280px;margin:0 auto}
   .thriftly-section.visible{display:block}
   .thriftly-section-title{font-family:var(--font-serif);font-size:clamp(18px,2vw,24px);font-weight:400;letter-spacing:.08em;text-transform:uppercase;color:var(--black);margin-bottom:24px}
-  .thriftly-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:32px 20px}
-  .thriftly-card{display:flex;flex-direction:column;background:var(--white);border:1px solid var(--border)}
-  .thriftly-card-img{aspect-ratio:3/4;overflow:hidden;background:var(--product-img-bg);position:relative}
-  .thriftly-card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s cubic-bezier(.25,.46,.45,.94)}
-  .thriftly-card:hover .thriftly-card-img img{transform:scale(1.04)}
-  .thriftly-card-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:4px;flex:1}
-  .thriftly-card-title{font-size:13px;line-height:1.4;color:var(--black);letter-spacing:.02em}
-  .thriftly-card-price{font-size:14px;color:var(--mid);font-weight:400}
+  .thriftly-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px 12px}
+  @media(min-width:1024px){.thriftly-grid{grid-template-columns:repeat(4,1fr);gap:24px 16px}}
   .thriftly-card-location{font-size:11px;color:var(--light);letter-spacing:.04em;text-transform:uppercase;margin-top:2px}
-  .thriftly-card-btn{margin-top:auto;padding-top:12px}
-  .thriftly-msg-btn{width:100%;background:none;border:1px solid #25D366;color:#25D366;padding:10px;font-family:var(--font-sans);font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:background .2s,color .2s;display:flex;align-items:center;justify-content:center;gap:7px}
-  .thriftly-msg-btn:hover{background:#25D366;color:#fff}
   .thriftly-empty{text-align:center;padding:60px 20px;color:var(--mid);font-size:13px}
+
+  /* BUY MODAL */
+  .buy-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:20px}
+  .buy-overlay.open{display:flex}
+  .buy-modal{background:#fff;border-radius:16px;padding:0;max-width:400px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)}
+  .buy-modal-head{padding:20px 24px 0;display:flex;justify-content:space-between;align-items:flex-start}
+  .buy-modal-head h3{font-family:var(--font-serif,serif);font-size:18px;font-weight:400;color:var(--black,#1a1a1a);line-height:1.3;max-width:280px}
+  .buy-modal-close{background:none;border:none;font-size:22px;color:#999;cursor:pointer;padding:0 0 0 12px;flex-shrink:0;line-height:1}
+  .buy-modal-body{padding:16px 24px 24px}
+  .buy-escrow-box{background:#f8f5f2;border-radius:10px;padding:14px 16px;margin-bottom:16px}
+  .buy-escrow-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#c9956e;margin-bottom:8px}
+  .buy-escrow-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#555;margin-bottom:6px;line-height:1.5}
+  .buy-escrow-item::before{content:'✓';color:#c9956e;font-weight:700;flex-shrink:0;margin-top:1px}
+  .buy-amount-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #eee;border-bottom:1px solid #eee;margin-bottom:16px}
+  .buy-amount-label{font-size:12px;color:#888}
+  .buy-amount-value{font-size:18px;font-weight:700;color:#1a1a1a}
+  .buy-phone-label{font-size:12px;font-weight:600;color:#444;margin-bottom:6px;display:block}
+  .buy-phone-input{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:8px;font-size:14px;font-family:inherit;outline:none;margin-bottom:4px}
+  .buy-phone-input:focus{border-color:#1a1a1a}
+  .buy-phone-error{color:#c62828;font-size:12px;margin-bottom:10px;display:none}
+  .buy-pay-btn{width:100%;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:10px;transition:background .2s}
+  .buy-pay-btn:hover:not(:disabled){background:#333}
+  .buy-pay-btn:disabled{background:#ccc;cursor:not-allowed}
+  .buy-waiting{text-align:center;padding:20px 0}
+  .buy-spinner{width:48px;height:48px;border:3px solid #eee;border-top-color:#c9956e;border-radius:50%;animation:tlSpin 1s linear infinite;margin:0 auto 16px}
+  .buy-success{text-align:center;padding:16px 0}
+  .buy-success-icon{width:60px;height:60px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .buy-error{text-align:center;padding:16px 0}
+  .buy-retry-btn{margin-top:12px;padding:10px 20px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
 
   /* ── THRIFTLY FORM MODAL ── */
   .tl-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;padding:16px}
@@ -296,7 +316,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .thriftly-banner-right{min-height:220px}
     .thriftly-collage{height:220px}
     .thriftly-section{padding:20px 16px 60px}
-    .thriftly-grid{grid-template-columns:repeat(2,1fr);gap:20px 12px}
+    .thriftly-grid{gap:16px 12px}
     .tl-overlay{padding:0;align-items:flex-end}
     .tl-modal{max-height:96vh;border-radius:0}
     .tl-row{grid-template-columns:1fr}
@@ -388,7 +408,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="thriftly-eyebrow">Thriftly by Beyond Beauty KE</p>
       <h2 class="thriftly-headline">Sell Your<br>Preloved Pieces</h2>
       <p class="thriftly-sub">Give your wardrobe a second life — and earn from it.</p>
-      <p class="thriftly-body">List any fashion or beauty item on Thriftly for just KES 250. Reach thousands of Beyond Beauty shoppers and get paid directly to your M-Pesa.</p>
+      <p class="thriftly-body">List any fashion or beauty item on Thriftly — for free. Reach thousands of Beyond Beauty shoppers and get paid directly to your M-Pesa when it sells.</p>
       <button class="thriftly-cta" onclick="openThriftlyForm()">
         List Your Item
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -805,25 +825,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         grid.innerHTML = '<div class="thriftly-empty">No listings yet — be the first to list!</div>';
         return;
       }
-      grid.innerHTML = data.map(item => {
+      grid.innerHTML = data.map((item, i) => {
         const img   = item.photo_1 ? `<img src="${item.photo_1}" alt="${item.item_title}" loading="lazy">` : '';
         const price = `KES ${Number(item.item_price_kes).toLocaleString()}`;
-        const loc   = item.seller_location ? `<p class="thriftly-card-location">${item.seller_location}</p>` : '';
-        const waNum = item.whatsapp_number || '254722474866';
-        const msg   = encodeURIComponent(`Hi, I'm interested in your listing: ${item.item_title} (${price})`);
+        const loc   = item.seller_location ? `<div class="thriftly-card-location">${item.seller_location}</div>` : '';
+        const url   = `/thriftly/item?id=${item.id}`;
         return `
-          <div class="thriftly-card">
-            <div class="thriftly-card-img">${img}</div>
-            <div class="thriftly-card-body">
-              <p class="thriftly-card-title">${item.item_title}</p>
-              <p class="thriftly-card-price">${price}</p>
-              ${loc}
-              <div class="thriftly-card-btn">
-                <button class="thriftly-msg-btn" onclick="window.open('https://wa.me/${waNum}?text=${msg}','_blank')">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.997 2C6.48 2 2 6.48 2 12c0 1.833.497 3.552 1.362 5.029L2 22l5.1-1.338A9.947 9.947 0 0011.997 22C17.515 22 22 17.52 22 12S17.515 2 11.997 2zm0 18.182a8.16 8.16 0 01-4.156-1.133l-.299-.178-3.027.795.808-2.96-.194-.304A8.2 8.2 0 013.818 12c0-4.517 3.672-8.182 8.179-8.182S20.18 7.483 20.18 12c0 4.517-3.662 8.182-8.183 8.182z"/></svg>
-                  Message Seller
-                </button>
+          <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='${url}'">
+            <div class="product-img-wrap">
+              ${img}
+              <div class="product-quick">
+                <button class="quick-btn" onclick="event.stopPropagation();location.href='${url}'">Buy Securely</button>
               </div>
+            </div>
+            <div class="product-info">
+              <div class="product-name">${item.item_title}</div>
+              <div class="product-price-row"><span class="product-price">${price}</span></div>
+              ${loc}
             </div>
           </div>`;
       }).join('');
@@ -857,12 +875,70 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </script>
 
 <!-- ── THRIFTLY LISTING FORM MODAL ── -->
+<!-- BUY SECURELY MODAL -->
+<div class="buy-overlay" id="buyOverlay">
+  <div class="buy-modal">
+    <div class="buy-modal-head">
+      <h3 id="buyModalTitle">Item Title</h3>
+      <button class="buy-modal-close" onclick="closeBuyModal()">&times;</button>
+    </div>
+    <div class="buy-modal-body">
+
+      <div id="buyStateIdle">
+        <div class="buy-escrow-box">
+          <div class="buy-escrow-title">Secure Escrow Purchase</div>
+          <div class="buy-escrow-item">Your payment is held safely by Beyond Beauty — not released until you confirm delivery</div>
+          <div class="buy-escrow-item">Seller dispatches only after payment is confirmed</div>
+          <div class="buy-escrow-item">If anything goes wrong, raise a dispute within 7 days for a full refund</div>
+        </div>
+        <div class="buy-amount-row">
+          <span class="buy-amount-label">Total to pay</span>
+          <span class="buy-amount-value" id="buyModalAmount">KES 0</span>
+        </div>
+        <label class="buy-phone-label" for="buyPhoneInput">Your M-Pesa Number</label>
+        <input class="buy-phone-input" id="buyPhoneInput" type="tel" placeholder="0712 345 678" inputmode="numeric">
+        <div class="buy-phone-error" id="buyPhoneError">Please enter a valid phone number</div>
+        <button class="buy-pay-btn" id="buyPayBtn" onclick="triggerBuySTK()">Pay via M-Pesa</button>
+      </div>
+
+      <div id="buyStateWaiting" style="display:none">
+        <div class="buy-waiting">
+          <div class="buy-spinner"></div>
+          <p style="font-size:15px;font-weight:600;margin-bottom:8px">Check your phone</p>
+          <p style="font-size:13px;color:#666;line-height:1.6">An M-Pesa prompt has been sent to <strong id="buyWaitPhone"></strong>. Enter your PIN to complete payment.</p>
+          <button class="buy-retry-btn" style="background:#f5f5f5;color:#333;margin-top:16px" onclick="setBuyState('idle')">Use a different number</button>
+        </div>
+      </div>
+
+      <div id="buyStateSuccess" style="display:none">
+        <div class="buy-success">
+          <div class="buy-success-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <p style="font-size:17px;font-weight:700;margin-bottom:8px">Payment Received!</p>
+          <p style="font-size:13px;color:#666;line-height:1.6">Your funds are held securely. The seller has been notified to dispatch your item. We'll message you on WhatsApp when it's on its way.</p>
+          <button class="buy-retry-btn" onclick="closeBuyModal()">Close</button>
+        </div>
+      </div>
+
+      <div id="buyStateError" style="display:none">
+        <div class="buy-error">
+          <p style="font-size:15px;font-weight:600;color:#c62828;margin-bottom:8px">Payment Not Completed</p>
+          <p id="buyErrorMsg" style="font-size:13px;color:#666;line-height:1.6"></p>
+          <button class="buy-retry-btn" onclick="setBuyState('idle')">Try Again</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <div class="tl-overlay" id="tlOverlay">
   <div class="tl-modal" role="dialog" aria-modal="true" aria-labelledby="tlModalTitle">
     <div class="tl-modal-head">
       <div>
         <div class="tl-modal-title" id="tlModalTitle">List Your Item</div>
-        <div class="tl-modal-sub">Thriftly by Beyond Beauty KE &mdash; KES 250 listing fee</div>
+        <div class="tl-modal-sub">Thriftly by Beyond Beauty KE &mdash; Free to list</div>
       </div>
       <button class="tl-close" onclick="closeTlForm()" aria-label="Close">&times;</button>
     </div>
@@ -880,10 +956,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="tl-step-ind" data-step="3">
         <div class="tl-step-dot">3</div>
         <span class="tl-step-label">Photos</span>
-      </div>
-      <div class="tl-step-ind" data-step="4">
-        <div class="tl-step-dot">4</div>
-        <span class="tl-step-label">Payment</span>
       </div>
     </div>
 
@@ -986,33 +1058,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <input type="file" id="tlFileInput" accept="image/*" style="display:none">
     </div>
 
-    <!-- ── STEP 4: payment ── -->
-    <div class="tl-body" id="tlStep4" style="display:none">
-      <!-- state: idle -->
-      <div id="tlPayIdle">
-        <div style="text-align:center;padding:8px 0 24px">
-          <div style="font-family:var(--font-serif);font-size:38px;font-weight:400;letter-spacing:.04em;color:var(--black);margin-bottom:6px">KES 250</div>
-          <div style="font-size:12px;color:var(--mid);letter-spacing:.06em;text-transform:uppercase">One-time listing fee</div>
-        </div>
-        <div style="background:#f7f7f5;padding:16px 18px;margin-bottom:22px;font-size:12px;color:var(--mid);line-height:1.8">
-          Your listing will be reviewed and activated within <strong style="color:var(--black)">24 hours</strong> of payment. You'll be notified on WhatsApp once it's live.
-        </div>
-        <div class="tl-field" id="fld-pay_phone">
-          <label class="tl-label" for="tl-pay-phone">M-Pesa Phone Number *</label>
-          <input class="tl-input" id="tl-pay-phone" type="tel" placeholder="0712 345 678" inputmode="numeric">
-          <p class="tl-hint">We'll send an M-Pesa prompt to this number</p>
-          <span class="tl-error">Please enter a valid phone number</span>
-        </div>
-      </div>
-      <!-- state: waiting for payment -->
-      <div id="tlPayWaiting" style="display:none;text-align:center;padding:24px 0">
-        <div style="width:56px;height:56px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;margin:0 auto 20px;animation:tlSpin 1s linear infinite"></div>
-        <p style="font-size:15px;font-weight:500;margin-bottom:8px">Check your phone</p>
-        <p style="font-size:13px;color:var(--mid);line-height:1.7;max-width:300px;margin:0 auto 20px">An M-Pesa prompt has been sent to <strong id="tlPayPhoneDisplay"></strong>. Enter your PIN to pay <strong>KES 250</strong>.</p>
-        <button class="tl-back" style="visibility:visible;margin:0 auto" onclick="tlCancelPayment()">Use a different number</button>
-      </div>
-    </div>
-
     <div class="tl-footer">
       <button class="tl-back" id="tlBack" onclick="tlPrev()" style="visibility:hidden">Back</button>
       <button class="tl-next" id="tlNext" onclick="tlNext()">
@@ -1026,25 +1071,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <script>
 // ── THRIFTLY FORM ──
 let tlCurrentStep = 1;
-const TL_TOTAL_STEPS = 4;
+const TL_TOTAL_STEPS = 3;
 const tlPhotos = []; // { file, dataUrl }
 let tlActiveSlot = null;
 let tlRecordId   = null;
-let tlCheckoutId = null;
-let tlPollTimer  = null;
 
 function openThriftlyForm() {
   tlCurrentStep = 1;
   tlPhotos.length = 0;
   tlRecordId = null;
-  tlCheckoutId = null;
-  clearInterval(tlPollTimer);
   document.getElementById('tlOverlay').classList.add('open');
   tlRenderStep();
   document.body.style.overflow = 'hidden';
 }
 function closeTlForm() {
-  clearInterval(tlPollTimer);
   document.getElementById('tlOverlay').classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -1065,18 +1105,16 @@ function tlRenderStep() {
   const nextBtn = document.getElementById('tlNext');
   const backBtn = document.getElementById('tlBack');
 
-  // Step 4 footer is managed separately by payment state
-  footer.style.display = tlCurrentStep === 4 ? 'none' : '';
-  backBtn.style.visibility = tlCurrentStep > 1 && tlCurrentStep < 4 ? 'visible' : 'hidden';
+  footer.style.display = '';
+  backBtn.style.visibility = tlCurrentStep > 1 ? 'visible' : 'hidden';
 
   if (tlCurrentStep === 3) {
-    nextBtn.innerHTML = 'Save & Continue to Payment <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+    nextBtn.innerHTML = 'Submit Listing — Free <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
   } else {
     nextBtn.innerHTML = 'Continue <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
   }
   nextBtn.disabled = false;
   if (tlCurrentStep === 3) tlRenderPhotoSlots();
-  if (tlCurrentStep === 4) tlInitPayStep();
 }
 
 function tlValidateStep() {
@@ -1136,15 +1174,15 @@ function tlRequired(fieldId, condition, msg) {
 
 function tlNext() {
   if (!tlValidateStep()) return;
-  if (tlCurrentStep === 3) {
+  if (tlCurrentStep === TL_TOTAL_STEPS) {
     tlSubmitListing();
-  } else if (tlCurrentStep < TL_TOTAL_STEPS) {
+  } else {
     tlCurrentStep++;
     tlRenderStep();
   }
 }
 function tlPrev() {
-  if (tlCurrentStep > 1 && tlCurrentStep < 4) { tlCurrentStep--; tlRenderStep(); }
+  if (tlCurrentStep > 1) { tlCurrentStep--; tlRenderStep(); }
 }
 
 // ── PHOTO SLOTS ──
@@ -1214,7 +1252,7 @@ async function tlSubmitListing() {
   fd.append('item_category',    document.getElementById('tl-item-cat').value);
   fd.append('item_price_kes',   document.getElementById('tl-item-price').value);
   fd.append('submission_channel', 'website');
-  fd.append('listing_fee_paid', 'false');
+  fd.append('listing_fee_paid', 'true');
   tlPhotos.forEach((p, i) => fd.append('photos', p.file, `photo_${i+1}_${p.file.name}`));
 
   try {
@@ -1222,104 +1260,15 @@ async function tlSubmitListing() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Submission failed');
     tlRecordId = data.id;
-    tlCurrentStep = 4;
-    tlRenderStep();
+    tlShowSuccess();
   } catch (err) {
     alert('Sorry, something went wrong: ' + err.message);
     nextBtn.disabled = false;
-    nextBtn.innerHTML = 'Save & Continue to Payment <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+    nextBtn.innerHTML = 'Submit Listing — Free <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
   }
 }
 
-// ── PAYMENT STEP ──
-function tlInitPayStep() {
-  // pre-fill phone from seller phone
-  const sellerPhone = document.getElementById('tl-seller-phone').value.trim();
-  document.getElementById('tl-pay-phone').value = sellerPhone;
-  tlSetPayState('idle');
-}
-
-function tlSetPayState(state) {
-  document.getElementById('tlPayIdle').style.display    = state === 'idle'    ? '' : 'none';
-  document.getElementById('tlPayWaiting').style.display = state === 'waiting' ? '' : 'none';
-
-  // rebuild footer buttons based on state
-  const footer = document.querySelector('.tl-footer');
-  footer.style.display = '';
-  if (state === 'idle') {
-    footer.innerHTML = `
-      <span></span>
-      <button class="tl-next" onclick="tlTriggerSTK()">
-        Pay KES 250 via M-Pesa
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>`;
-  } else {
-    footer.innerHTML = '';
-  }
-}
-
-async function tlTriggerSTK() {
-  const phone = document.getElementById('tl-pay-phone').value.trim();
-  const ok = tlRequired('fld-pay_phone', phone && /\d{9,}/.test(phone.replace(/\s/g,'')), 'Please enter a valid phone number');
-  if (!ok) return;
-
-  const btn = document.querySelector('.tl-footer .tl-next');
-  if (btn) { btn.disabled = true; btn.textContent = 'Sending prompt…'; }
-
-  try {
-    const res  = await fetch('/api/thriftly/pay/stk-push', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ record_id: tlRecordId, phone }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'STK push failed');
-    tlCheckoutId = data.checkout_request_id;
-    document.getElementById('tlPayPhoneDisplay').textContent = phone;
-    tlSetPayState('waiting');
-    tlStartPolling();
-  } catch (err) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Pay KES 250 via M-Pesa'; }
-    alert('Could not send M-Pesa prompt: ' + err.message);
-  }
-}
-
-function tlCancelPayment() {
-  clearInterval(tlPollTimer);
-  tlCheckoutId = null;
-  tlSetPayState('idle');
-}
-
-function tlStartPolling() {
-  let attempts = 0;
-  tlPollTimer = setInterval(async () => {
-    attempts++;
-    if (attempts > 24) { // 2 min timeout
-      clearInterval(tlPollTimer);
-      tlSetPayState('idle');
-      alert('Payment timed out. Please try again.');
-      return;
-    }
-    try {
-      const res  = await fetch('/api/thriftly/pay/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ checkout_request_id: tlCheckoutId, record_id: tlRecordId }),
-      });
-      const data = await res.json();
-      if (data.status === 'paid') {
-        clearInterval(tlPollTimer);
-        tlShowSuccess(data.mpesa_code);
-      } else if (data.status === 'failed') {
-        clearInterval(tlPollTimer);
-        tlSetPayState('idle');
-        alert('Payment was not completed. Please try again.');
-      }
-    } catch (_) {}
-  }, 5000);
-}
-
-function tlShowSuccess(mpesaCode) {
+function tlShowSuccess() {
   const modal = document.querySelector('.tl-modal');
   modal.innerHTML = `
     <div class="tl-success">
@@ -1327,11 +1276,100 @@ function tlShowSuccess(mpesaCode) {
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
       <div class="tl-success-title">Listing Submitted!</div>
-      <p class="tl-success-body">Your item has been received and is under review. We'll notify you on WhatsApp once it's live — usually within 24 hours.</p>
-      ${mpesaCode ? `<div class="tl-success-ref">M-Pesa Ref: ${mpesaCode}</div>` : ''}
+      <p class="tl-success-body">Your item has been received and is under review. We'll notify you on WhatsApp once it's live — usually within 24 hours. When it sells, your payment goes straight to your M-Pesa.</p>
       <button class="tl-next" style="margin:0 auto" onclick="closeTlForm()">Done</button>
     </div>`;
 }
+
+// ── BUY SECURELY MODAL ──────────────────────────────────────────────────────
+let buyListingId   = null;
+let buyTxId        = null;
+let buyPollTimer   = null;
+
+function openBuyModal(listingId, itemTitle, priceKes) {
+  buyListingId = listingId;
+  buyTxId      = null;
+  clearInterval(buyPollTimer);
+  document.getElementById('buyModalTitle').textContent   = itemTitle;
+  document.getElementById('buyModalAmount').textContent  = 'KES ' + Number(priceKes).toLocaleString();
+  document.getElementById('buyPhoneInput').value         = '';
+  setBuyState('idle');
+  document.getElementById('buyOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeBuyModal() {
+  clearInterval(buyPollTimer);
+  document.getElementById('buyOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function setBuyState(state) {
+  document.getElementById('buyStateIdle').style.display    = state === 'idle'    ? '' : 'none';
+  document.getElementById('buyStateWaiting').style.display = state === 'waiting' ? '' : 'none';
+  document.getElementById('buyStateSuccess').style.display = state === 'success' ? '' : 'none';
+  document.getElementById('buyStateError').style.display   = state === 'error'   ? '' : 'none';
+}
+
+async function triggerBuySTK() {
+  const phone = document.getElementById('buyPhoneInput').value.trim();
+  if (!phone || !/\d{9,}/.test(phone.replace(/\s/g, ''))) {
+    document.getElementById('buyPhoneError').style.display = 'block';
+    return;
+  }
+  document.getElementById('buyPhoneError').style.display = 'none';
+  const btn = document.getElementById('buyPayBtn');
+  btn.disabled    = true;
+  btn.textContent = 'Sending prompt…';
+
+  try {
+    const res  = await fetch('/api/mpesa/stk-push', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listing_id: buyListingId, buyer_phone: phone, amount: document.getElementById('buyModalAmount').textContent.replace(/[^0-9]/g,'') }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'STK push failed');
+    buyTxId = data.transaction_id;
+    document.getElementById('buyWaitPhone').textContent = phone;
+    setBuyState('waiting');
+    pollBuyPayment();
+  } catch (err) {
+    btn.disabled    = false;
+    btn.textContent = 'Pay via M-Pesa';
+    document.getElementById('buyErrorMsg').textContent = err.message;
+    setBuyState('error');
+  }
+}
+
+function pollBuyPayment() {
+  let attempts = 0;
+  buyPollTimer = setInterval(async () => {
+    attempts++;
+    if (attempts > 24) {
+      clearInterval(buyPollTimer);
+      document.getElementById('buyErrorMsg').textContent = 'Payment timed out. Please try again.';
+      setBuyState('error');
+      return;
+    }
+    try {
+      const res  = await fetch(`/api/mpesa/transaction-status/${buyTxId}`);
+      const data = await res.json();
+      if (data.status === 'paid_held' || data.status === 'dispatched' || data.status === 'confirmed' || data.status === 'completed') {
+        clearInterval(buyPollTimer);
+        setBuyState('success');
+      } else if (data.status === 'payment_failed') {
+        clearInterval(buyPollTimer);
+        document.getElementById('buyErrorMsg').textContent = 'Payment was not completed. Please try again.';
+        setBuyState('error');
+      }
+    } catch (_) {}
+  }, 5000);
+}
+
+document.getElementById('buyOverlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeBuyModal();
+});
 </script>
 </body>
 </html>

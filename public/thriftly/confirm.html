@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm Delivery — Thriftly</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: #f8f5f2; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .card { background: #fff; border-radius: 16px; padding: 40px 32px; max-width: 440px; width: 100%; box-shadow: 0 4px 24px rgba(0,0,0,.08); text-align: center; }
+    .logo { font-size: 22px; font-weight: 700; letter-spacing: -.5px; color: #1a1a1a; margin-bottom: 8px; }
+    .logo span { color: #c9956e; }
+    h1 { font-size: 20px; font-weight: 700; color: #1a1a1a; margin: 24px 0 8px; }
+    p { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 16px; }
+    .item-box { background: #f8f5f2; border-radius: 10px; padding: 16px; margin: 20px 0; text-align: left; }
+    .item-box .label { font-size: 11px; text-transform: uppercase; letter-spacing: .6px; color: #999; margin-bottom: 4px; }
+    .item-box .value { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+    .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+    button { flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background .2s; }
+    .btn-confirm { background: #1a1a1a; color: #fff; }
+    .btn-confirm:hover:not(:disabled) { background: #333; }
+    .btn-dispute { background: #fff; color: #c62828; border: 2px solid #c62828; }
+    .btn-dispute:hover:not(:disabled) { background: #fdf2f2; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    .dispute-form { display: none; margin-top: 20px; text-align: left; }
+    .dispute-form label { font-size: 13px; font-weight: 600; color: #444; display: block; margin-bottom: 6px; }
+    .dispute-form textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; resize: vertical; min-height: 80px; font-family: inherit; }
+    .dispute-form textarea:focus { outline: none; border-color: #c9956e; }
+    .btn-submit-dispute { width: 100%; padding: 14px; margin-top: 12px; background: #c62828; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .btn-submit-dispute:hover:not(:disabled) { background: #b71c1c; }
+    .status { margin-top: 16px; font-size: 14px; font-weight: 600; }
+    .status.success { color: #2e7d32; }
+    .status.error   { color: #c62828; }
+    .spinner { display: none; width: 18px; height: 18px; border: 2px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin .6s linear infinite; margin: 0 auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">Thriftly <span>·</span> Beyond Beauty</div>
+
+    <div id="loadingState">
+      <p style="margin-top:32px;color:#999;">Loading…</p>
+    </div>
+
+    <div id="mainState" style="display:none">
+      <h1>Has Your Item Arrived?</h1>
+      <p>Confirm receipt to release the seller's payment. If something is wrong, raise a dispute and our team will help.</p>
+
+      <div class="item-box">
+        <div class="label">Item</div>
+        <div class="value" id="itemTitle">—</div>
+        <div class="label" style="margin-top:12px">Amount Paid</div>
+        <div class="value" id="itemAmount">—</div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-confirm" onclick="confirmDelivery()">
+          <span id="confirmText">Yes, I received it</span>
+          <div class="spinner" id="confirmSpinner" style="color:#fff"></div>
+        </button>
+        <button class="btn-dispute" onclick="toggleDispute()">Raise a dispute</button>
+      </div>
+
+      <div class="dispute-form" id="disputeForm">
+        <label for="disputeReason">What went wrong?</label>
+        <textarea id="disputeReason" placeholder="Describe the issue (item not received, wrong item, damaged, etc.)"></textarea>
+        <button class="btn-submit-dispute" onclick="submitDispute()">
+          <span id="disputeText">Submit Dispute</span>
+          <div class="spinner" id="disputeSpinner" style="color:#fff"></div>
+        </button>
+      </div>
+
+      <div class="status" id="statusMsg"></div>
+    </div>
+
+    <div id="confirmedState" style="display:none">
+      <div style="font-size:48px;margin:24px 0">🎉</div>
+      <h1>Delivery Confirmed!</h1>
+      <p>Thank you for confirming. The seller's payment has been released.</p>
+      <p style="margin-top:12px;color:#999;font-size:13px">You can close this page.</p>
+    </div>
+
+    <div id="disputedState" style="display:none">
+      <div style="font-size:48px;margin:24px 0">🔍</div>
+      <h1>Dispute Submitted</h1>
+      <p>We've received your dispute and will contact you within 24 hours to resolve it.</p>
+      <p style="margin-top:12px;color:#999;font-size:13px">You can close this page.</p>
+    </div>
+
+    <div id="errorState" style="display:none">
+      <div style="font-size:48px;margin:24px 0">⚠️</div>
+      <h1 id="errorTitle">Something went wrong</h1>
+      <p id="errorMsg">Please contact Beyond Beauty KE for assistance.</p>
+    </div>
+  </div>
+
+  <script>
+    const params      = new URLSearchParams(location.search);
+    const buyerToken  = params.get('token');
+
+    async function init() {
+      if (!buyerToken) { showError('Invalid Link', 'This confirmation link is invalid or has already been used.'); return; }
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('mainState').style.display    = 'block';
+    }
+
+    async function confirmDelivery() {
+      const btn     = document.getElementById('confirmText');
+      const spinner = document.getElementById('confirmSpinner');
+      const status  = document.getElementById('statusMsg');
+      document.querySelectorAll('button').forEach(b => b.disabled = true);
+      btn.style.display     = 'none';
+      spinner.style.display = 'block';
+
+      try {
+        const res  = await fetch('/api/thriftly/confirm-by-token', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ buyer_token: buyerToken }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to confirm delivery');
+        document.getElementById('mainState').style.display     = 'none';
+        document.getElementById('confirmedState').style.display = 'block';
+      } catch (err) {
+        document.querySelectorAll('button').forEach(b => b.disabled = false);
+        btn.style.display     = 'block';
+        spinner.style.display = 'none';
+        status.textContent    = err.message;
+        status.className      = 'status error';
+      }
+    }
+
+    function toggleDispute() {
+      const form = document.getElementById('disputeForm');
+      form.style.display = form.style.display === 'block' ? 'none' : 'block';
+    }
+
+    async function submitDispute() {
+      const reason  = document.getElementById('disputeReason').value.trim();
+      const btn     = document.getElementById('disputeText');
+      const spinner = document.getElementById('disputeSpinner');
+      const status  = document.getElementById('statusMsg');
+
+      if (!reason) { status.textContent = 'Please describe the issue.'; status.className = 'status error'; return; }
+
+      document.querySelectorAll('button').forEach(b => b.disabled = true);
+      btn.style.display     = 'none';
+      spinner.style.display = 'block';
+
+      try {
+        const res  = await fetch('/api/thriftly/dispute-by-token', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ buyer_token: buyerToken, reason }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed to submit dispute');
+        document.getElementById('mainState').style.display    = 'none';
+        document.getElementById('disputedState').style.display = 'block';
+      } catch (err) {
+        document.querySelectorAll('button').forEach(b => b.disabled = false);
+        btn.style.display     = 'block';
+        spinner.style.display = 'none';
+        status.textContent    = err.message;
+        status.className      = 'status error';
+      }
+    }
+
+    function showError(title, msg) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display   = 'block';
+      document.getElementById('errorTitle').textContent     = title;
+      document.getElementById('errorMsg').textContent       = msg;
+    }
+
+    init();
+  </script>
+</body>
+</html>

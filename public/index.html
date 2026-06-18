@@ -373,15 +373,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 
   <nav class="site-nav">
-    <button class="nav-item new active" data-cat="all">All Products</button>
-    <button class="nav-item" data-cat="bags">Bags</button>
-    <button class="nav-item" data-cat="accessories">Accessories</button>
-    <button class="nav-item" data-cat="hair">Hair</button>
-    <button class="nav-item" data-cat="skincare">Skincare</button>
-    <button class="nav-item" data-cat="beauty">Beauty</button>
-    <button class="nav-item" data-cat="home">Home</button>
-    <button class="nav-item" data-cat="sale">Sale</button>
-    <button class="nav-item" data-cat="thrift" style="color:var(--accent)">Thriftly ✦</button>
+    <a href="/"            class="nav-item new" data-cat="all">All Products</a>
+    <a href="/bags"        class="nav-item"     data-cat="bags">Bags</a>
+    <a href="/accessories" class="nav-item"     data-cat="accessories">Accessories</a>
+    <a href="/hair"        class="nav-item"     data-cat="hair">Hair</a>
+    <a href="/skincare"    class="nav-item"     data-cat="skincare">Skincare</a>
+    <a href="/beauty"      class="nav-item"     data-cat="beauty">Beauty</a>
+    <a href="/home"        class="nav-item"     data-cat="home">Home</a>
+    <a href="/sale"        class="nav-item"     data-cat="sale">Sale</a>
+    <a href="/thriftly"    class="nav-item"     data-cat="thrift" style="color:var(--accent)">Thriftly ✦</a>
   </nav>
 </header>
 
@@ -452,14 +452,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div>
       <p class="footer-heading">Shop</p>
       <ul class="footer-links">
-        <li><a href="#" onclick="filterCat('all')">All Products</a></li>
-        <li><a href="#" onclick="filterCat('bags')">Bags</a></li>
-        <li><a href="#" onclick="filterCat('accessories')">Accessories</a></li>
-        <li><a href="#" onclick="filterCat('hair')">Hair</a></li>
-        <li><a href="#" onclick="filterCat('skincare')">Skincare</a></li>
-        <li><a href="#" onclick="filterCat('beauty')">Beauty</a></li>
-        <li><a href="#" onclick="filterCat('home')">Home</a></li>
-        <li><a href="#" onclick="filterCat('sale')">Sale</a></li>
+        <li><a href="/">All Products</a></li>
+        <li><a href="/bags">Bags</a></li>
+        <li><a href="/accessories">Accessories</a></li>
+        <li><a href="/hair">Hair</a></li>
+        <li><a href="/skincare">Skincare</a></li>
+        <li><a href="/beauty">Beauty</a></li>
+        <li><a href="/home">Home</a></li>
+        <li><a href="/sale">Sale</a></li>
       </ul>
     </div>
     <div>
@@ -788,9 +788,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     renderProducts(list);
   }
 
-  function filterCat(cat) {
+  function filterCat(cat, skipPushState) {
     activeCategory = cat;
-    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', home: 'Home', sale: 'Sale', thrift: 'Thriftly' };
+    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', beauty: 'Beauty', home: 'Home', sale: 'Sale', thrift: 'Thriftly' };
+
+    if (!skipPushState) {
+      const url = cat === 'all' ? '/' : cat === 'thrift' ? '/thriftly' : '/' + cat;
+      if (window.location.pathname !== url) history.pushState({ cat }, '', url);
+    }
+    document.title = (titles[cat] || 'All Products') + ' — Beyond Beauty KE';
 
     const isThrift = cat === 'thrift';
     document.getElementById('heroTitle').textContent = titles[cat] || 'All Products';
@@ -859,19 +865,35 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   // ── NAV ──
-  document.querySelectorAll('.nav-item').forEach(btn => {
-    btn.addEventListener('click', () => {
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.addEventListener('click', e => {
+      e.preventDefault();
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      btn.classList.add('active');
-      filterCat(btn.dataset.cat);
+      el.classList.add('active');
+      filterCat(el.dataset.cat);
     });
   });
 
   document.getElementById('sortSelect').addEventListener('change', sortAndRender);
 
+  function catFromPath() {
+    const p = window.location.pathname;
+    return p === '/thriftly' ? 'thrift' : (p.replace(/^\//, '') || 'all');
+  }
+
+  window.addEventListener('popstate', () => {
+    const cat = catFromPath();
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
+    filterCat(cat, true);
+  });
+
   // ── INIT ──
   updateCartUI();
-  loadProducts('all');
+  (function () {
+    const cat = catFromPath();
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
+    filterCat(cat, true);
+  })();
 </script>
 
 <!-- ── THRIFTLY LISTING FORM MODAL ── -->

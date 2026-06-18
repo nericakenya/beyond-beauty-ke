@@ -366,11 +366,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p class="footer-heading">Shop</p>
       <ul class="footer-links">
         <li><a href="/">All Products</a></li>
-        <li><a href="/?cat=bags">Bags</a></li>
-        <li><a href="/?cat=accessories">Accessories</a></li>
-        <li><a href="/?cat=hair">Hair</a></li>
-        <li><a href="/?cat=beauty">Beauty</a></li>
-        <li><a href="/?cat=sale">Sale</a></li>
+        <li><a href="/bags">Bags</a></li>
+        <li><a href="/accessories">Accessories</a></li>
+        <li><a href="/hair">Hair</a></li>
+        <li><a href="/beauty">Beauty</a></li>
+        <li><a href="/sale">Sale</a></li>
       </ul>
     </div>
     <div>
@@ -979,7 +979,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     const categoryLabel = p.category.charAt(0).toUpperCase() + p.category.slice(1);
     document.getElementById('breadcrumb').innerHTML =
-      `<a href="/">Shop</a><span>›</span><a href="/?cat=${p.category}">${categoryLabel}</a><span>›</span>${p.name}`;
+      `<a href="/">Shop</a><span>›</span><a href="/${p.category}">${categoryLabel}</a><span>›</span>${p.name}`;
 
     const hasImages = p.images && p.images.length > 0;
     const primarySrc = hasImages ? p.images[0].full : '';

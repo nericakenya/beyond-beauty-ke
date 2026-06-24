@@ -333,6 +333,113 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   /* ── ANIMATIONS ── */
   .product-card { opacity: 0; transform: translateY(20px); animation: fadeUp .5s forwards; }
   @keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
+
+  /* ── MEGA NAV ── */
+  .mega-nav { border-top: 1px solid var(--border); background: var(--white); display: flex; justify-content: center; padding: 0 40px; }
+  .mega-nav__list { display: flex; list-style: none; margin: 0; padding: 0; align-items: stretch; }
+  .mega-nav__list > li { display: flex; align-items: stretch; }
+  .mega-nav__label {
+    font-family: var(--font-sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    font-weight: 500; color: var(--mid); padding: 14px 20px; background: none; border: none;
+    cursor: pointer; position: relative; display: flex; align-items: center; gap: 5px;
+    text-decoration: none; white-space: nowrap; transition: color .2s;
+  }
+  .mega-nav__label:hover { color: var(--black); }
+  .mega-nav__label[aria-expanded="true"],
+  .mega-nav__label.active { color: var(--accent); }
+  .mega-nav__label[aria-expanded="true"]::after,
+  .mega-nav__label.active::after {
+    content: ''; position: absolute; bottom: 0; left: 20px; right: 20px; height: 2px; background: var(--black);
+  }
+  .mega-nav__label--thriftly { color: var(--accent); }
+  .mega-nav__label--thriftly:hover { color: var(--accent); }
+  .mega-nav__label--thriftly .thriftly-icon { font-size: 13px; }
+  .coming-soon-badge { display: inline-block; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; background: #f0ede9; color: var(--mid); padding: 1px 5px; margin-left: 5px; vertical-align: middle; }
+  .mega-coming-soon { font-size: 12px; color: var(--light); letter-spacing: .02em; display: block; cursor: default; padding: 1px 0; }
+  .mega-panel__col-header--soon { color: var(--light) !important; cursor: default; pointer-events: none; }
+  .drawer-row--soon { opacity: 0.5; pointer-events: none; }
+
+  /* ── MEGA PANEL ── */
+  .mega-panel {
+    position: absolute; left: 0; right: 0;
+    background: #f9f7f5; border-top: 1px solid var(--border);
+    box-shadow: 0 8px 32px rgba(0,0,0,.08); z-index: 99;
+  }
+  .mega-panel[hidden] { display: none; }
+  .mega-panel__inner { max-width: 1280px; margin: 0 auto; padding: 36px 40px; display: flex; gap: 48px; align-items: flex-start; }
+  .mega-panel__img-col { width: 200px; flex-shrink: 0; }
+  .mega-panel__img-col img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
+  .mega-panel__content { flex: 1; min-width: 0; }
+  .mega-panel__grid {
+    display: grid; grid-template-columns: repeat(5, minmax(140px, 1fr)); gap: 32px;
+  }
+  .mega-panel__shop-all {
+    display: block; font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--black); text-decoration: none;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border); margin-bottom: 16px; transition: color .2s;
+  }
+  .mega-panel__shop-all:hover { color: var(--accent); }
+  .mega-panel__col-header {
+    display: block; font-family: var(--font-sans); font-size: 11px; font-weight: 500;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--black); text-decoration: none; margin-bottom: 10px; transition: color .2s;
+  }
+  .mega-panel__col-header:hover { color: var(--accent); }
+  .mega-panel__col-links { list-style: none; display: flex; flex-direction: column; gap: 7px; }
+  .mega-panel__col-links a { font-size: 12px; color: var(--mid); text-decoration: none; letter-spacing: .02em; transition: color .2s; display: block; }
+  .mega-panel__col-links a:hover { color: var(--black); }
+  .mega-panel__shop-all:focus-visible,
+  .mega-panel__col-header:focus-visible,
+  .mega-panel__col-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* ── HAMBURGER ── */
+  .menu-toggle {
+    display: none; background: none; border: none; cursor: pointer; color: var(--mid);
+    min-height: 44px; min-width: 44px; align-items: center; justify-content: center; transition: color .2s; padding: 0;
+  }
+  .menu-toggle:hover { color: var(--black); }
+
+  /* ── DRAWER ── */
+  .drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 400; }
+  .drawer-overlay.open { display: block; }
+  .drawer {
+    position: fixed; top: 0; left: -100%; width: min(320px, 100%); height: 100%;
+    background: var(--white); z-index: 401; transition: left .25s ease-out; overflow: hidden;
+  }
+  @media (prefers-reduced-motion: reduce) { .drawer { transition: none; } }
+  .drawer.open { left: 0; }
+  .drawer-screens { display: flex; width: 300%; height: 100%; transition: transform .2s ease-out; }
+  @media (prefers-reduced-motion: reduce) { .drawer-screens { transition: none; } }
+  .drawer-screen { width: calc(100% / 3); flex-shrink: 0; display: flex; flex-direction: column; }
+  .drawer-hd {
+    display: grid; grid-template-columns: 44px 1fr 44px; align-items: center;
+    border-bottom: 1px solid var(--border); min-height: 56px; flex-shrink: 0;
+  }
+  .drawer-back, .drawer-x {
+    background: none; border: none; cursor: pointer; color: var(--mid);
+    min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; transition: color .2s;
+  }
+  .drawer-back:hover, .drawer-x:hover { color: var(--black); }
+  .drawer-title { font-family: var(--font-sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 500; color: var(--black); text-align: center; }
+  .drawer-body { flex: 1; overflow-y: auto; }
+  .drawer-list { list-style: none; }
+  .drawer-row {
+    display: flex; align-items: center; justify-content: space-between; width: 100%;
+    padding: 0 20px; min-height: 52px; font-size: 13px; font-family: var(--font-sans); color: var(--black);
+    background: none; border: none; border-bottom: 1px solid var(--border); cursor: pointer; text-align: left; transition: background .15s;
+  }
+  .drawer-row:hover { background: #f9f7f5; }
+  .drawer-row.drawer-shop-all { font-weight: 500; }
+  .drawer-chev { color: var(--light); font-size: 18px; flex-shrink: 0; }
+
+  /* ── RESPONSIVE MEGA / DRAWER ── */
+  @media (max-width: 1023px) {
+    .mega-nav { display: none; }
+    .mega-panel { display: none !important; }
+    .menu-toggle { display: flex; }
+  }
+  @media (min-width: 1024px) {
+    .drawer-overlay, .drawer { display: none !important; }
+  }
 </style>
 </head>
 <body>
@@ -348,6 +455,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <header class="site-header">
   <div class="header-top">
     <div class="header-left">
+      <button class="menu-toggle" id="menuToggle" onclick="openDrawer()" aria-label="Open navigation menu" aria-expanded="false" aria-controls="drawer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <div class="search-wrap" onclick="toggleSearch()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="17" y1="17" x2="22" y2="22"/></svg>
         <span>Search</span>
@@ -372,18 +482,70 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </div>
 
-  <nav class="site-nav">
-    <a href="/"            class="nav-item new" data-cat="all">All Products</a>
-    <a href="/bags"        class="nav-item"     data-cat="bags">Bags</a>
-    <a href="/accessories" class="nav-item"     data-cat="accessories">Accessories</a>
-    <a href="/hair"        class="nav-item"     data-cat="hair">Hair</a>
-    <a href="/skincare"    class="nav-item"     data-cat="skincare">Skincare</a>
-    <a href="/beauty"      class="nav-item"     data-cat="beauty">Beauty</a>
-    <a href="/home"        class="nav-item"     data-cat="home">Home</a>
-    <a href="/sale"        class="nav-item"     data-cat="sale">Sale</a>
-    <a href="/thriftly"    class="nav-item"     data-cat="thrift" style="color:var(--accent)">Thriftly ✦</a>
+  <nav class="mega-nav" id="megaNav" aria-label="Shop by category">
+    <ul class="mega-nav__list" id="megaNavList"></ul>
   </nav>
+  <div class="mega-panel" id="megaPanel" hidden role="region" aria-label="Category submenu">
+    <div class="mega-panel__inner">
+      <div class="mega-panel__img-col">
+        <img id="megaPanelImg" src="" alt="" loading="lazy">
+      </div>
+      <div class="mega-panel__content">
+        <div class="mega-panel__grid" id="megaPanelGrid"></div>
+      </div>
+    </div>
+  </div>
 </header>
+
+<!-- Mobile drawer overlay -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+
+<!-- Mobile drawer -->
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Navigation menu">
+  <div class="drawer-screens" id="drawerScreens">
+
+    <!-- Level 0: root categories -->
+    <div class="drawer-screen">
+      <div class="drawer-hd">
+        <span></span>
+        <span class="drawer-title">Menu</span>
+        <button class="drawer-x" onclick="closeDrawer()" aria-label="Close menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="drawer-body"><ul class="drawer-list" id="drawerL0List"></ul></div>
+    </div>
+
+    <!-- Level 1: sub-categories -->
+    <div class="drawer-screen">
+      <div class="drawer-hd">
+        <button class="drawer-back" onclick="setDrawerLevel(0)" aria-label="Back to main menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span class="drawer-title" id="drawerL1Title"></span>
+        <button class="drawer-x" onclick="closeDrawer()" aria-label="Close menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="drawer-body"><ul class="drawer-list" id="drawerL1List"></ul></div>
+    </div>
+
+    <!-- Level 2: secondary sub-categories -->
+    <div class="drawer-screen">
+      <div class="drawer-hd">
+        <button class="drawer-back" onclick="setDrawerLevel(1)" aria-label="Back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span class="drawer-title" id="drawerL2Title"></span>
+        <button class="drawer-x" onclick="closeDrawer()" aria-label="Close menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="drawer-body"><ul class="drawer-list" id="drawerL2List"></ul></div>
+    </div>
+
+  </div>
+</aside>
 
 <div class="page-hero">
   <h1 id="heroTitle">All Products</h1>
@@ -768,9 +930,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   // ── FETCH & FILTER ──
-  async function loadProducts(category = 'all') {
+  async function loadProducts(params = 'all') {
     try {
-      const url = `/api/products${category !== 'all' ? `?category=${category}` : ''}`;
+      let url;
+      if (typeof params === 'string') {
+        const cat = params;
+        if (cat === 'all')  url = '/api/products';
+        else if (cat === 'sale') url = '/api/products?category=sale';
+        else url = `/api/products?cat=${encodeURIComponent(cat)}`;
+      } else {
+        const qs = new URLSearchParams();
+        if (params.cat) qs.set('cat', params.cat);
+        if (params.sub) qs.set('sub', params.sub);
+        if (params.sec) qs.set('sec', params.sec);
+        url = '/api/products' + (qs.toString() ? '?' + qs.toString() : '');
+      }
       const res = await fetch(url);
       allProducts = await res.json();
       sortAndRender();
@@ -790,7 +964,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   function filterCat(cat, skipPushState) {
     activeCategory = cat;
-    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', beauty: 'Beauty', home: 'Home', sale: 'Sale', thrift: 'Thriftly' };
+    const titles = { all: 'All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', beauty: 'Beauty', home: 'Home', sale: 'Sale', thrift: 'Thriftly', fashion: 'Fashion' };
 
     if (!skipPushState) {
       const url = cat === 'all' ? '/' : cat === 'thrift' ? '/thriftly' : '/' + cat;
@@ -864,35 +1038,369 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('heroTitle').textContent = `Results for "${q}"`;
   }
 
-  // ── NAV ──
-  document.querySelectorAll('.nav-item').forEach(el => {
-    el.addEventListener('click', e => {
-      e.preventDefault();
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      el.classList.add('active');
-      filterCat(el.dataset.cat);
-    });
-  });
-
   document.getElementById('sortSelect').addEventListener('change', sortAndRender);
 
+  // ── CATEGORY TREE ──
+  // Populated async from /api/menu; fallback keeps the nav functional if the API is slow
+  let CATEGORY_TREE = [
+    { name: 'Fashion', slug: 'fashion', image: 'https://placehold.co/400x600/e8e4df/6b6560?text=Fashion', subs: [
+      { name: 'Clothing', slug: 'clothing', sec: ['Dresses','Tops & T-Shirts','Pants & Jeans','Skirts','Jackets & Coats','Knitwear','Suits & Co-ords','Activewear','Swimwear','Maternity','Multi-packs'] },
+      { name: 'Lingerie & Sleepwear', slug: 'lingerie-sleepwear', sec: ['Bras','Underwear','Shapewear','Sleepwear','Socks & Hosiery','Multi-packs'] },
+      { name: 'Accessories', slug: 'accessories', sec: ['Jewellery','Bags & Wallets','Belts','Sunglasses','Scarves & Hats','Watches','Multi-packs'] },
+      { name: 'Shoes', slug: 'shoes', sec: ['Boots & Ankle Boots','Heels & Wedges','Flats & Loafers','Sneakers','Sandals','Multi-packs'] },
+    ]},
+    { name: 'Beauty', slug: 'beauty', image: 'https://placehold.co/400x600/f0ede9/6b6560?text=Beauty', subs: [
+      { name: 'Skincare', slug: 'skincare', sec: ['Face Moisturisers','Cleansers & Toners','Serums & Treatments','Eye Care','Body Moisturisers','Sun Care','Multi-packs'] },
+      { name: 'Makeup', slug: 'makeup', sec: ['Foundation & Primer','Blush & Bronzer','Eye Makeup','Lip Colour','Nail Colour','Multi-packs'] },
+      { name: 'Hair Care', slug: 'hair-care', sec: ['Shampoo & Conditioner','Hair Treatments & Masks','Styling Products','Multi-packs'] },
+      { name: 'Hair Extensions', slug: 'hair-extensions', sec: ['Body Wave','Silky Straight','Deep Curly','Kinky Curly','Multi-packs'] },
+      { name: 'Bath & Body', slug: 'bath-body', sec: ['Body Washes & Soaps','Body Moisturisers','Scrubs & Exfoliants','Hand Care','Multi-packs'] },
+      { name: 'Fragrance', slug: 'fragrance', sec: ["Women's Fragrance","Men's Fragrance","Fragrance Mists & Wands","Deodorants & Antiperspirants","Gift Sets","Multi-packs"] },
+      { name: 'Accessories & Tools', slug: 'accessories-tools', sec: ['Makeup Brushes & Sponges','Hair Tools','Skincare Tools','Hair Accessories','Multi-packs'] },
+    ]},
+    { name: 'Accessories', slug: 'accessories', image: 'https://placehold.co/400x600/ddd8d0/6b6560?text=Accessories', subs: [
+      { name: 'Jewellery', slug: 'jewellery', sec: ['Necklaces','Earrings','Bracelets','Rings','Multi-packs'] },
+      { name: 'Bags & Handbags', slug: 'bags-handbags', sec: ['Tote Bags','Shoulder Bags','Crossbody Bags','Clutches','Backpacks'] },
+      { name: 'Belts', slug: 'belts', sec: [] },
+      { name: 'Sunglasses', slug: 'sunglasses', sec: [] },
+      { name: 'Scarves & Hats', slug: 'scarves-hats', sec: [] },
+      { name: 'Watches', slug: 'watches', sec: [] },
+    ]},
+    { name: 'Home', slug: 'home', image: 'https://placehold.co/400x600/e8e4df/6b6560?text=Home', subs: [
+      { name: 'Bedding', slug: 'bedding', sec: ['Duvet Covers & Sets','Pillowcases','Blankets & Throws','Mattress Protectors'] },
+      { name: 'Bath', slug: 'bath', sec: ['Towels','Bath Mats & Accessories','Robes'] },
+      { name: 'Kitchen & Dining', slug: 'kitchen-dining', sec: ['Cookware','Bakeware','Dinnerware','Glassware','Kitchen Accessories'] },
+      { name: 'Décor', slug: 'decor', sec: ['Candles & Diffusers','Vases & Planters','Frames & Art','Cushions & Throws'] },
+      { name: 'Living', slug: 'living', sec: ['Rugs','Lighting','Storage & Organisation','Multi-packs'] },
+    ]},
+    { name: 'Sale', slug: 'sale', subs: [] },
+    { name: 'Thriftly', slug: 'thriftly', subs: [] },
+  ];
+
+  // Normalise sec items: API returns objects; fallback tree uses strings
+  function normalizeSec(s) {
+    return typeof s === 'string' ? { name: s, slug: toSlug(s), status: 'Enabled' } : s;
+  }
+
+  function toSlug(s) {
+    return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  }
+
+
+  function getDisplayName(catSlug, subSlug, secSlug) {
+    const cat = CATEGORY_TREE.find(c => c.slug === catSlug);
+    if (!cat) return catSlug;
+    if (!subSlug) return cat.name;
+    const sub = cat.subs.find(s => s.slug === subSlug);
+    if (!sub) return cat.name;
+    if (!secSlug) return sub.name;
+    const match = sub.sec.map(normalizeSec).find(s => s.slug === secSlug);
+    return match ? match.name : sub.name;
+  }
+
+  // ── MEGA NAV ──
+  let megaOpenCat = null;
+  let megaCloseTimer = null;
+  let megaNavBuilt = false;
+
+  function buildMegaNav() {
+    if (megaNavBuilt) {
+      document.getElementById('megaNavList').innerHTML = '';
+    }
+    megaNavBuilt = true;
+    const list = document.getElementById('megaNavList');
+    const panel = document.getElementById('megaPanel');
+
+    CATEGORY_TREE.forEach(cat => {
+      const li = document.createElement('li');
+      if (!cat.subs.length) {
+        const a = document.createElement('a');
+        a.className = 'mega-nav__label' + (cat.slug === 'thriftly' ? ' mega-nav__label--thriftly' : '');
+        a.href = '/shop/' + cat.slug;
+        a.dataset.cat = cat.slug;
+        if (cat.slug === 'thriftly') {
+          a.innerHTML = `${cat.name} <span class="thriftly-icon" aria-hidden="true">✦</span>`;
+        } else {
+          a.textContent = cat.name;
+        }
+        a.addEventListener('click', e => { e.preventDefault(); navigateShop(cat.slug); });
+        li.appendChild(a);
+      } else {
+        const btn = document.createElement('button');
+        btn.className = 'mega-nav__label';
+        btn.setAttribute('aria-expanded', 'false');
+        btn.setAttribute('aria-controls', 'megaPanel');
+        btn.dataset.cat = cat.slug;
+        btn.textContent = cat.name;
+
+        let hoverInTimer;
+        btn.addEventListener('mouseenter', () => {
+          clearTimeout(megaCloseTimer);
+          hoverInTimer = setTimeout(() => openMegaPanel(cat.slug, btn), 150);
+        });
+        btn.addEventListener('mouseleave', () => {
+          clearTimeout(hoverInTimer);
+          scheduleMegaClose();
+        });
+        btn.addEventListener('click', () => navigateShop(cat.slug));
+        btn.addEventListener('keydown', e => {
+          if (e.key === 'ArrowDown' && btn.getAttribute('aria-expanded') === 'true') {
+            e.preventDefault();
+            panel.querySelector('a')?.focus();
+          }
+          if (e.key === 'Escape') { closeMegaPanel(); btn.focus(); }
+        });
+        li.appendChild(btn);
+      }
+      list.appendChild(li);
+    });
+
+    if (!megaNavBuilt || !panel._listenersAttached) {
+      panel.addEventListener('mouseenter', () => clearTimeout(megaCloseTimer));
+      panel.addEventListener('mouseleave', scheduleMegaClose);
+      panel.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+          const trigger = document.querySelector(`.mega-nav__label[data-cat="${megaOpenCat}"]`);
+          closeMegaPanel();
+          trigger?.focus();
+        }
+      });
+      document.addEventListener('click', e => {
+        if (!document.getElementById('megaNav').contains(e.target) &&
+            !panel.contains(e.target)) closeMegaPanel();
+      });
+      window.addEventListener('scroll', closeMegaPanel, { passive: true });
+      panel._listenersAttached = true;
+    }
+  }
+
+  function scheduleMegaClose() {
+    megaCloseTimer = setTimeout(closeMegaPanel, 250);
+  }
+
+  function openMegaPanel(catSlug, triggerBtn) {
+    megaOpenCat = catSlug;
+    document.querySelectorAll('.mega-nav__label[aria-expanded]').forEach(b => {
+      b.setAttribute('aria-expanded', b === triggerBtn ? 'true' : 'false');
+    });
+    const cat = CATEGORY_TREE.find(c => c.slug === catSlug);
+    if (!cat) return;
+
+    const imgEl = document.getElementById('megaPanelImg');
+    if (imgEl) { imgEl.src = cat.image || ''; imgEl.alt = cat.name; }
+
+    let html = '';
+    cat.subs.forEach(sub => {
+      const isSoonSub = sub.status === 'Coming Soon';
+      const headerClass = 'mega-panel__col-header' + (isSoonSub ? ' mega-panel__col-header--soon' : '');
+      const headerTag = isSoonSub
+        ? `<span class="${headerClass}">${sub.name} <span class="coming-soon-badge">Soon</span></span>`
+        : `<a class="${headerClass}" href="/shop/${cat.slug}/${sub.slug}">${sub.name}</a>`;
+      html += `<div class="mega-panel__col">${headerTag}`;
+      const secItems = sub.sec.map(normalizeSec);
+      if (secItems.length) {
+        html += '<ul class="mega-panel__col-links">';
+        secItems.forEach(s => {
+          if (s.status === 'Coming Soon') {
+            html += `<li><span class="mega-coming-soon">${s.name} <span class="coming-soon-badge">Soon</span></span></li>`;
+          } else {
+            html += `<li><a href="/shop/${cat.slug}/${sub.slug}/${s.slug}">${s.name}</a></li>`;
+          }
+        });
+        html += '</ul>';
+      }
+      html += '</div>';
+    });
+
+    document.getElementById('megaPanelGrid').innerHTML = html;
+    document.querySelectorAll('#megaPanelGrid a').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const parts = a.getAttribute('href').split('/').filter(Boolean);
+        navigateShop(parts[1], parts[2], parts[3]);
+      });
+    });
+    document.getElementById('megaPanel').removeAttribute('hidden');
+  }
+
+  function closeMegaPanel() {
+    megaOpenCat = null;
+    document.querySelectorAll('.mega-nav__label[aria-expanded]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    document.getElementById('megaPanel').setAttribute('hidden', '');
+  }
+
+  // ── NAVIGATE SHOP ──
+  function navigateShop(catSlug, subSlug, secSlug) {
+    closeMegaPanel();
+    closeDrawer();
+    const url = '/shop/' + catSlug + (subSlug ? '/' + subSlug : '') + (secSlug ? '/' + secSlug : '');
+    history.pushState({ catSlug, subSlug, secSlug }, '', url);
+    applyShopRoute(catSlug, subSlug, secSlug);
+  }
+
+  function applyShopRoute(catSlug, subSlug, secSlug) {
+    const displayName = getDisplayName(catSlug, subSlug, secSlug);
+    document.querySelectorAll('.mega-nav__label[data-cat]').forEach(el => {
+      el.classList.toggle('active', el.dataset.cat === catSlug);
+    });
+
+    const isThrift = catSlug === 'thriftly';
+    document.querySelector('.filter-bar').style.display = isThrift ? 'none' : '';
+    document.querySelector('.shop-main').style.display  = isThrift ? 'none' : '';
+    const banner  = document.getElementById('thriftlyBanner');
+    const section = document.getElementById('thriftlySection');
+    if (isThrift) {
+      banner.classList.add('visible');
+      section.classList.add('visible');
+      loadThriftlyListings();
+    } else {
+      banner.classList.remove('visible');
+      section.classList.remove('visible');
+      loadProducts({ cat: catSlug, sub: subSlug, sec: secSlug });
+    }
+
+    document.getElementById('heroTitle').textContent = displayName;
+    document.title = displayName + ' — Beyond Beauty KE';
+  }
+
+  // ── MOBILE DRAWER ──
+  let drawerCatObj = null;
+
+  function buildDrawer() {
+    const list = document.getElementById('drawerL0List');
+    list.innerHTML = '';
+    CATEGORY_TREE.forEach(cat => {
+      const li  = document.createElement('li');
+      const btn = document.createElement('button');
+      btn.className = 'drawer-row';
+      if (cat.status === 'Coming Soon') {
+        btn.className += ' drawer-row--soon';
+        btn.innerHTML = `<span>${cat.name} <span class="coming-soon-badge">Soon</span></span>`;
+      } else if (cat.subs.length) {
+        btn.innerHTML = `<span>${cat.name}</span><span class="drawer-chev">&#8250;</span>`;
+        btn.addEventListener('click', () => drawerShowLevel1(cat));
+      } else {
+        btn.innerHTML = `<span>${cat.name}</span>`;
+        btn.addEventListener('click', () => navigateShop(cat.slug));
+      }
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
+
+  function drawerShowLevel1(cat) {
+    drawerCatObj = cat;
+    document.getElementById('drawerL1Title').textContent = cat.name;
+    const list = document.getElementById('drawerL1List');
+    list.innerHTML = '';
+    addDrawerRow(list, 'Shop all ' + cat.name, false, () => navigateShop(cat.slug), true);
+    cat.subs.forEach(sub => {
+      if (sub.status === 'Coming Soon') {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="drawer-row drawer-row--soon"><span>${sub.name} <span class="coming-soon-badge">Soon</span></span></span>`;
+        list.appendChild(li);
+      } else if (sub.sec.length === 0) {
+        addDrawerRow(list, sub.name, false, () => navigateShop(cat.slug, sub.slug));
+      } else {
+        addDrawerRow(list, sub.name, true, () => drawerShowLevel2(sub));
+      }
+    });
+    setDrawerLevel(1);
+  }
+
+  function drawerShowLevel2(sub) {
+    document.getElementById('drawerL2Title').textContent = sub.name;
+    const list = document.getElementById('drawerL2List');
+    list.innerHTML = '';
+    addDrawerRow(list, 'Shop all ' + sub.name, false, () => navigateShop(drawerCatObj.slug, sub.slug), true);
+    sub.sec.map(normalizeSec).forEach(s => {
+      if (s.status === 'Coming Soon') {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="drawer-row drawer-row--soon"><span>${s.name} <span class="coming-soon-badge">Soon</span></span></span>`;
+        list.appendChild(li);
+      } else {
+        addDrawerRow(list, s.name, false, () => navigateShop(drawerCatObj.slug, sub.slug, s.slug));
+      }
+    });
+    setDrawerLevel(2);
+  }
+
+  function addDrawerRow(list, text, hasChev, onClick, isShopAll) {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.className = 'drawer-row' + (isShopAll ? ' drawer-shop-all' : '');
+    btn.innerHTML = `<span>${text}</span>${hasChev ? '<span class="drawer-chev">&#8250;</span>' : ''}`;
+    btn.addEventListener('click', onClick);
+    li.appendChild(btn);
+    list.appendChild(li);
+  }
+
+  function openDrawer() {
+    setDrawerLevel(0);
+    document.getElementById('drawerOverlay').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('menuToggle').setAttribute('aria-expanded', 'true');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    document.getElementById('drawerOverlay').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+    document.getElementById('menuToggle').setAttribute('aria-expanded', 'false');
+    document.body.style.overflow = '';
+  }
+
+  function setDrawerLevel(level) {
+    const pct = level === 0 ? '0%' : level === 1 ? '-33.333%' : '-66.667%';
+    document.getElementById('drawerScreens').style.transform = `translateX(${pct})`;
+  }
+
+  // ── ROUTING ──
   function catFromPath() {
     const p = window.location.pathname;
-    return p === '/thriftly' ? 'thrift' : (p.replace(/^\//, '') || 'all');
+    if (p === '/thriftly') return 'thrift';
+    if (p.startsWith('/shop/')) return null;
+    return p.replace(/^\//, '') || 'all';
   }
 
   window.addEventListener('popstate', () => {
-    const cat = catFromPath();
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
-    filterCat(cat, true);
+    const p = window.location.pathname;
+    if (p.startsWith('/shop/')) {
+      const parts = p.split('/').filter(Boolean);
+      applyShopRoute(parts[1], parts[2], parts[3]);
+    } else {
+      const cat = catFromPath() || 'all';
+      document.querySelectorAll('.mega-nav__label[data-cat]').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
+      filterCat(cat, true);
+    }
   });
 
   // ── INIT ──
   updateCartUI();
-  (function () {
-    const cat = catFromPath();
-    document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
-    filterCat(cat, true);
+  // Build nav from fallback tree immediately so it's never blank
+  buildMegaNav();
+  buildDrawer();
+
+  // Then fetch live menu from Airtable and rebuild if data is different
+  (async function initMenu() {
+    try {
+      const tree = await fetch('/api/menu').then(r => r.ok ? r.json() : null);
+      if (tree && tree.length) {
+        CATEGORY_TREE = tree;
+        buildMegaNav();
+        buildDrawer();
+      }
+    } catch (_) { /* keep fallback tree */ }
+
+    const p = window.location.pathname;
+    if (p.startsWith('/shop/')) {
+      const parts = p.split('/').filter(Boolean);
+      applyShopRoute(parts[1], parts[2], parts[3]);
+    } else {
+      const cat = catFromPath() || 'all';
+      document.querySelectorAll('.mega-nav__label[data-cat]').forEach(n => n.classList.toggle('active', n.dataset.cat === cat));
+      filterCat(cat, true);
+    }
   })();
 </script>
 

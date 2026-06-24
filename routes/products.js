@@ -3,14 +3,19 @@ const router = express.Router();
 const axios = require('axios');
 const adminAuth = require('../middleware/adminAuth');
 
-const AIRTABLE_BASE     = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
-const AIRTABLE_VARIANTS = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_VARIANTS_TABLE_ID}`;
-const AIRTABLE_HEADERS  = () => ({ Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` });
+const AIRTABLE_BASE       = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
+const AIRTABLE_VARIANTS   = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_VARIANTS_TABLE_ID}`;
+const AIRTABLE_CATEGORIES = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Categories`;
+const AIRTABLE_HEADERS    = () => ({ Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` });
 
 // ── In-memory cache (5-minute TTL) ──
 const CACHE_TTL = 5 * 60 * 1000;
 let cache         = { data: null, fetchedAt: 0 };
+let catCache      = { data: null, fetchedAt: 0 };
 let variantsCache = {}; // keyed by product record ID
+
+// Old top-level category slugs → new cat_slug (for legacy URLs like /bags, /hair)
+const LEGACY_CAT = { bags: 'fashion', hair: 'beauty', skincare: 'beauty' };
 
 function mapVariantRecord(record) {
   const f = record.fields;
@@ -31,6 +36,53 @@ function mapVariantRecord(record) {
       full:  a.url,
     })),
   };
+}
+
+// ── Categories cache — resolves linked record IDs to slugs and builds parent maps ──
+async function fetchCategories() {
+  if (catCache.data && Date.now() - catCache.fetchedAt < CACHE_TTL) return catCache.data;
+
+  const allRecs = [];
+  let offset = null;
+  do {
+    const params = { pageSize: 100, 'fields[]': ['Category Name', 'Slug', 'Level', 'Parent Category'] };
+    if (offset) params.offset = offset;
+    const { data } = await axios.get(AIRTABLE_CATEGORIES, { headers: AIRTABLE_HEADERS(), params });
+    allRecs.push(...data.records);
+    offset = data.offset || null;
+  } while (offset);
+
+  // id → { slug, name, level, parentId }
+  const byId = {};
+  allRecs.forEach(r => {
+    byId[r.id] = {
+      slug:     r.fields.Slug                   || '',
+      name:     r.fields['Category Name']       || '',
+      level:    r.fields.Level                  || '',
+      parentId: (r.fields['Parent Category'] || [])[0] || null,
+    };
+  });
+
+  // sub slug → main category slug  (Sub Category → its Main Category parent)
+  // sec slug → main category slug  (Secondary → Sub → Main)
+  const subToCat = {};
+  const secToCat = {};
+  Object.values(byId).forEach(rec => {
+    if (rec.level === 'Sub Category' && rec.parentId) {
+      const parent = byId[rec.parentId];
+      if (parent) subToCat[rec.slug] = parent.slug;
+    } else if (rec.level === 'Secondary Sub Category' && rec.parentId) {
+      const sub = byId[rec.parentId];
+      if (sub?.parentId) {
+        const cat = byId[sub.parentId];
+        if (cat) secToCat[rec.slug] = cat.slug;
+      }
+    }
+  });
+
+  const result = { byId, subToCat, secToCat };
+  catCache = { data: result, fetchedAt: Date.now() };
+  return result;
 }
 
 // All-variants cache — fetched once, filtered per product
@@ -64,7 +116,7 @@ async function fetchVariantsForProduct(productId) {
 
 const NEW_IN_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
-function mapRecord(record) {
+function mapRecord(record, catMap = {}) {
   const f = record.fields;
   const price = f['Price (KES)'] || null;
   const salePrice = f['Sale Price'] ? parseFloat(f['Sale Price']) : null;
@@ -101,14 +153,21 @@ function mapRecord(record) {
     name: colourNames[i] || null,
   }));
 
+  // Resolve linked Category record IDs → slugs
+  const cat_slug = catMap[(f['Category (Link)']               || [])[0]]?.slug || '';
+  const sub_slug = catMap[(f['Sub-Category (Link)']           || [])[0]]?.slug || '';
+  const sec_slug = catMap[(f['Secondary Sub-Category (Link)'] || [])[0]]?.slug || '';
+
   return {
     id: record.id,
     name: f['Product Name'] || '',
     description: f['Product Description'] || '',
     price: salePrice && salePrice < price ? salePrice : price,
     original_price: salePrice && salePrice < price ? price : null,
-    category: (f['Product Category'] || '').toLowerCase(),
-    sub_category: f['Sub-Category'] || null,
+    category: cat_slug || (f['Product Category'] || '').toLowerCase(),
+    cat_slug,
+    sub_slug,
+    sec_slug,
     badge,
     total_stock_quantity: totalStock,
     sold_out,
@@ -132,19 +191,22 @@ function mapRecord(record) {
 }
 
 async function fetchAllFromAirtable() {
-  const records = [];
-  let offset = null;
-  do {
-    const params = { pageSize: 100 };
-    if (offset) params.offset = offset;
-    const { data } = await axios.get(AIRTABLE_BASE, {
-      headers: AIRTABLE_HEADERS(),
-      params,
-    });
-    records.push(...data.records);
-    offset = data.offset || null;
-  } while (offset);
-  return records.map(mapRecord);
+  const [{ byId }, records] = await Promise.all([
+    fetchCategories(),
+    (async () => {
+      const recs = [];
+      let offset = null;
+      do {
+        const params = { pageSize: 100 };
+        if (offset) params.offset = offset;
+        const { data } = await axios.get(AIRTABLE_BASE, { headers: AIRTABLE_HEADERS(), params });
+        recs.push(...data.records);
+        offset = data.offset || null;
+      } while (offset);
+      return recs;
+    })(),
+  ]);
+  return records.map(r => mapRecord(r, byId));
 }
 
 async function getProducts() {
@@ -159,16 +221,30 @@ async function getProducts() {
 router.get('/', async (req, res) => {
   try {
     let products = await getProducts();
-    const { category } = req.query;
-    if (category && category !== 'all') {
-      if (category === 'sale') {
-        products = products.filter(p => p.badge === 'Sale' || p.original_price != null);
-      } else if (category === 'new') {
-        products = products.filter(p => p.badge === 'New In');
-      } else {
-        products = products.filter(p => p.category === category);
+    const { category, cat, sub, sec } = req.query;
+
+    if (category === 'sale') {
+      products = products.filter(p => p.badge === 'Sale' || p.original_price != null);
+    } else if (category === 'new') {
+      products = products.filter(p => p.badge === 'New In');
+    } else {
+      const catSlug = cat || (category && category !== 'all' ? (LEGACY_CAT[category] || category) : null);
+      if (sec) {
+        products = products.filter(p => p.sec_slug === sec);
+      } else if (sub) {
+        products = products.filter(p => p.sub_slug === sub);
+      } else if (catSlug) {
+        // Expand the filter to include products linked at any level of this category's
+        // sub-tree, so clicking a top-level nav item returns all its sub/sec products too.
+        const { subToCat, secToCat } = await fetchCategories();
+        products = products.filter(p =>
+          p.cat_slug === catSlug ||
+          subToCat[p.sub_slug] === catSlug ||
+          secToCat[p.sec_slug] === catSlug
+        );
       }
     }
+
     res.json(products);
   } catch (err) {
     console.error('[Airtable] Fetch error:', err.message);
@@ -179,7 +255,8 @@ router.get('/', async (req, res) => {
 // GET /api/products/refresh — bust the cache (admin only)
 router.get('/refresh', adminAuth, async (req, res) => {
   try {
-    cache = { data: null, fetchedAt: 0 };
+    cache    = { data: null, fetchedAt: 0 };
+    catCache = { data: null, fetchedAt: 0 };
     const products = await getProducts();
     res.json({ refreshed: true, count: products.length });
   } catch (err) {

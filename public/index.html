@@ -70,6 +70,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .announce-bar { background: var(--black); color: var(--white); text-align: center; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; padding: 9px 20px; font-family: var(--font-sans); }
   .announce-bar a { color: var(--accent); text-decoration: none; }
 
+  /* ── CATEGORY BANNER ── */
+  .category-banner { width: 100%; border-bottom: 1px solid var(--border); overflow: hidden; line-height: 0; }
+  .category-banner img { display: block; width: 100%; height: 180px; object-fit: cover; }
+  @media (min-width: 1024px) { .category-banner img { height: 420px; } }
+
   /* ── HERO ── */
   .page-hero { text-align: center; padding: 48px 40px 32px; border-bottom: 1px solid var(--border); background: var(--white); }
   .page-hero h1 { font-family: var(--font-serif); font-size: clamp(28px,4vw,48px); font-weight: 300; letter-spacing: .06em; margin-bottom: 10px; }
@@ -440,6 +445,157 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   @media (min-width: 1024px) {
     .drawer-overlay, .drawer { display: none !important; }
   }
+
+  /* ── MOBILE PILL BAR (hidden ≥1024px) ── */
+  .pill-bar {
+    display: none;
+    position: sticky;
+    top: var(--pb-top, 0);
+    z-index: 89;
+    background: var(--white);
+    border-bottom: 1px solid var(--border); /* Row 2's bottom edge */
+  }
+  @media (max-width: 1023px) { .pill-bar { display: block; } }
+
+  .pill-bar__row {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 0 16px;
+    gap: 2px;
+  }
+  .pill-bar__row::-webkit-scrollbar { display: none; }
+
+  /* Collapse wrapper — owns overflow:hidden + max-height animation */
+  .pill-bar__cats-wrap {
+    overflow: hidden;
+    max-height: 48px;
+    transition: max-height 0.22s ease;
+  }
+  @media (prefers-reduced-motion: reduce) { .pill-bar__cats-wrap { transition: none; } }
+  .pill-bar--cats-hidden .pill-bar__cats-wrap { max-height: 0; }
+
+  /* Row itself — only handles flex + horizontal scroll, no overflow:hidden */
+  .pill-bar__row--cats {
+    border-bottom: none;
+  }
+
+  .pill-bar__row--refine {
+    min-height: 40px;
+    background: #b5853a;
+    overflow: hidden; /* outer row does NOT scroll; inner .pb-pills-area does */
+    padding: 0;
+    gap: 0;
+  }
+  .pill-bar__row--refine:empty { min-height: 0; }
+
+  /* Chips area — stays pinned to the left, never scrolls */
+  .pb-chips-area {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    padding: 4px 0 4px 16px;
+    gap: 6px;
+    background: #b5853a;
+  }
+
+  /* Pills area — takes remaining width and scrolls horizontally */
+  .pb-pills-area {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px 16px;
+    gap: 14px;
+    background: #b5853a;
+  }
+  .pb-pills-area::-webkit-scrollbar { display: none; }
+
+  .pb-cat {
+    position: relative;
+    flex-shrink: 0;
+    padding: 11px 14px 13px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--mid);
+    background: none;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .pb-cat:hover { color: var(--black); }
+  .pb-cat[aria-current="true"] { color: var(--accent); }
+  .pb-cat[aria-current="true"]::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 14px;
+    right: 14px;
+    height: 2px;
+    background: var(--black);
+  }
+
+  .pb-pill {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: #ffffff;
+    background: none;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+  .pb-pill:hover { opacity: 0.8; }
+
+  .pb-cat--thriftly { color: var(--accent); }
+  .pb-cat--thriftly:hover { color: var(--accent); }
+  .pb-cat--thriftly .thriftly-icon { font-size: 13px; }
+
+  .pb-chip {
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    font-family: var(--font-sans);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: var(--white);
+    background: var(--black);
+    white-space: nowrap;
+    padding: 5px 0 5px 12px;
+    border: 1px solid var(--black);
+  }
+  .pb-chip__label { pointer-events: none; }
+  .pb-chip__x {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    background: none;
+    border: none;
+    color: var(--white);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0.7;
+    padding: 0 4px;
+    transition: opacity 0.15s;
+  }
+  .pb-chip__x:hover { opacity: 1; }
 </style>
 </head>
 <body>
@@ -547,13 +703,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </aside>
 
-<div class="page-hero">
+<div class="pill-bar" id="pillBar" aria-label="Browse categories">
+  <div class="pill-bar__cats-wrap" id="pbCatsWrap">
+    <div class="pill-bar__row pill-bar__row--cats" id="pbRow1" role="list" aria-label="Top-level categories"></div>
+  </div>
+  <div class="pill-bar__row pill-bar__row--refine" id="pbRow2" role="list" aria-label="Refine by sub-category"></div>
+</div>
+
+<div class="category-banner" id="categoryBanner" style="display:none">
+  <img id="categoryBannerImg" alt="" loading="eager">
+</div>
+<div class="page-hero" id="pageHero">
   <h1 id="heroTitle">All Products</h1>
   <p>Curated pieces for the modern Kenyan woman</p>
 </div>
 
 <div class="filter-bar">
-  <span class="filter-count" id="productCount">Loading…</span>
+  <span class="filter-count" id="productCount" aria-live="polite">Loading…</span>
   <div class="filter-right">
     <select class="sort-select" id="sortSelect">
       <option value="default">Sort: Featured</option>
@@ -692,6 +858,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   let allProducts = [];
   let activeCategory = 'all';
   const savedSet = new Set();
+  let _loadAbort = null;
+  // pill bar state — declared here so buildPillBar() can be called synchronously during init
+  let _pbCat = null, _pbChips = [], _pbLastY = 0, _pbAcc = 0;
+  const _PB_THRESHOLD = 8, _PB_TOP_GUARD = 24;
 
   // ── WHATSAPP LINKS ──
   function setWaLinks(num) {
@@ -931,6 +1101,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   // ── FETCH & FILTER ──
   async function loadProducts(params = 'all') {
+    if (_loadAbort) _loadAbort.abort();
+    _loadAbort = new AbortController();
+    const grid = document.getElementById('productGrid');
+    if (grid && allProducts.length) grid.style.opacity = '0.5';
     try {
       let url;
       if (typeof params === 'string') {
@@ -945,12 +1119,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         if (params.sec) qs.set('sec', params.sec);
         url = '/api/products' + (qs.toString() ? '?' + qs.toString() : '');
       }
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: _loadAbort.signal });
       allProducts = await res.json();
       sortAndRender();
     } catch (err) {
+      if (err.name === 'AbortError') return;
       console.error('loadProducts error:', err);
       document.getElementById('productGrid').innerHTML = '<p style="color:var(--mid);padding:40px 0">Could not load products. Please refresh.</p>';
+    } finally {
+      if (grid) grid.style.opacity = '';
     }
   }
 
@@ -971,9 +1148,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       if (window.location.pathname !== url) history.pushState({ cat }, '', url);
     }
     document.title = (titles[cat] || 'All Products') + ' — Beyond Beauty KE';
+    _applyBanner('', titles[cat] || 'All Products');
 
     const isThrift = cat === 'thrift';
-    document.getElementById('heroTitle').textContent = titles[cat] || 'All Products';
     document.querySelector('.filter-bar').style.display = isThrift ? 'none' : '';
     document.querySelector('.shop-main').style.display  = isThrift ? 'none' : '';
 
@@ -987,6 +1164,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       banner.classList.remove('visible');
       section.classList.remove('visible');
       loadProducts(cat);
+      syncPillBar(cat, null, null);
     }
   }
 
@@ -1035,7 +1213,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     if (!q) return;
     const filtered = allProducts.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.category.toLowerCase().includes(q.toLowerCase()));
     renderProducts(filtered);
-    document.getElementById('heroTitle').textContent = `Results for "${q}"`;
+    _applyBanner('', `Results for "${q}"`);
   }
 
   document.getElementById('sortSelect').addEventListener('change', sortAndRender);
@@ -1238,6 +1416,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     applyShopRoute(catSlug, subSlug, secSlug);
   }
 
+  function _applyBanner(url, fallbackTitle) {
+    const bannerEl  = document.getElementById('categoryBanner');
+    const bannerImg = document.getElementById('categoryBannerImg');
+    const heroEl    = document.getElementById('pageHero');
+    if (url) {
+      bannerImg.src = url;
+      bannerEl.style.display = '';
+      heroEl.style.display = 'none';
+    } else {
+      bannerEl.style.display = 'none';
+      heroEl.style.display = '';
+      document.getElementById('heroTitle').textContent = fallbackTitle;
+    }
+  }
+
   function applyShopRoute(catSlug, subSlug, secSlug) {
     const displayName = getDisplayName(catSlug, subSlug, secSlug);
     document.querySelectorAll('.mega-nav__label[data-cat]').forEach(el => {
@@ -1247,20 +1440,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const isThrift = catSlug === 'thriftly';
     document.querySelector('.filter-bar').style.display = isThrift ? 'none' : '';
     document.querySelector('.shop-main').style.display  = isThrift ? 'none' : '';
-    const banner  = document.getElementById('thriftlyBanner');
+    const thriftBanner  = document.getElementById('thriftlyBanner');
     const section = document.getElementById('thriftlySection');
     if (isThrift) {
-      banner.classList.add('visible');
+      thriftBanner.classList.add('visible');
       section.classList.add('visible');
       loadThriftlyListings();
     } else {
-      banner.classList.remove('visible');
+      thriftBanner.classList.remove('visible');
       section.classList.remove('visible');
       loadProducts({ cat: catSlug, sub: subSlug, sec: secSlug });
     }
 
-    document.getElementById('heroTitle').textContent = displayName;
+    // Banner image: prefer sub-category banner, fall back to category banner
+    const catNode = CATEGORY_TREE.find(c => c.slug === catSlug);
+    const subNode = catNode && subSlug ? catNode.subs.find(s => s.slug === subSlug) : null;
+    const bannerUrl = (subNode?.banner) || catNode?.banner || '';
+    _applyBanner(bannerUrl, displayName);
+
     document.title = displayName + ' — Beyond Beauty KE';
+    syncPillBar(catSlug, subSlug, secSlug);
   }
 
   // ── MOBILE DRAWER ──
@@ -1377,9 +1576,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   // ── INIT ──
   updateCartUI();
+  updatePbTop();
   // Build nav from fallback tree immediately so it's never blank
   buildMegaNav();
   buildDrawer();
+  buildPillBar();
 
   // Then fetch live menu from Airtable and rebuild if data is different
   (async function initMenu() {
@@ -1389,6 +1590,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         CATEGORY_TREE = tree;
         buildMegaNav();
         buildDrawer();
+        buildPillBar();
       }
     } catch (_) { /* keep fallback tree */ }
 
@@ -1402,6 +1604,171 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       filterCat(cat, true);
     }
   })();
+
+  // ── PILL BAR ──────────────────────────────────────────────────────────────
+
+  function updatePbTop() {
+    const h = document.querySelector('.site-header')?.offsetHeight || 0;
+    document.documentElement.style.setProperty('--pb-top', h + 'px');
+  }
+
+  function buildPillBar() {
+    const row1 = document.getElementById('pbRow1');
+    if (!row1) return;
+    row1.innerHTML = '';
+    CATEGORY_TREE.forEach(cat => {
+      if (cat.status === 'Coming Soon') return;
+      const btn = document.createElement('button');
+      btn.className = 'pb-cat' + (cat.slug === 'thriftly' ? ' pb-cat--thriftly' : '');
+      if (cat.slug === 'thriftly') {
+        btn.innerHTML = cat.name + ' <span class="thriftly-icon" aria-hidden="true">✦</span>';
+      } else {
+        btn.textContent = cat.name;
+      }
+      btn.dataset.slug = cat.slug;
+      btn.setAttribute('aria-current', 'false');
+      btn.setAttribute('role', 'listitem');
+      btn.addEventListener('click', () => navigateShop(cat.slug));
+      row1.appendChild(btn);
+    });
+    _renderPbRow1();  // restore active state if _pbCat is already set
+    _renderPbRow2();
+  }
+
+  function syncPillBar(catSlug, subSlug, secSlug) {
+    _pbCat   = CATEGORY_TREE.find(c => c.slug === catSlug) || null;
+    _pbChips = [];
+
+    if (_pbCat && subSlug) {
+      const sub = _pbCat.subs.find(s => s.slug === subSlug);
+      if (sub) {
+        const subSec = sub.sec.map(normalizeSec);
+        _pbChips.push({ slug: sub.slug, name: sub.name, sec: subSec });
+        if (secSlug) {
+          const sec = subSec.find(s => s.slug === secSlug);
+          if (sec) _pbChips.push({ slug: sec.slug, name: sec.name, sec: [] });
+        }
+      }
+    }
+
+    _renderPbRow1();
+    _renderPbRow2();
+  }
+
+  function _renderPbRow1() {
+    const row1 = document.getElementById('pbRow1');
+    if (!row1) return;
+    row1.querySelectorAll('.pb-cat').forEach(btn => {
+      const active = _pbCat && btn.dataset.slug === _pbCat.slug;
+      btn.setAttribute('aria-current', active ? 'true' : 'false');
+    });
+    const active = row1.querySelector('.pb-cat[aria-current="true"]');
+    if (active) active.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }
+
+  function _renderPbRow2() {
+    const row2 = document.getElementById('pbRow2');
+    if (!row2) return;
+    row2.innerHTML = '';
+    if (!_pbCat) return;
+
+    let pills = [];
+    if (_pbChips.length === 0) {
+      pills = _pbCat.subs
+        .filter(s => s.status !== 'Disabled' && s.status !== 'Coming Soon')
+        .map(s => ({ slug: s.slug, name: s.name, sec: s.sec.map(normalizeSec) }));
+    } else if (_pbChips.length === 1) {
+      pills = _pbChips[0].sec.filter(s => s.status !== 'Disabled' && s.status !== 'Coming Soon');
+    }
+
+    if (_pbChips.length === 0 && pills.length === 0) return;
+
+    // Chips area — sticky left, never scrolls
+    if (_pbChips.length > 0) {
+      const chipsArea = document.createElement('div');
+      chipsArea.className = 'pb-chips-area';
+      _pbChips.forEach((chip, i) => {
+        const wrap = document.createElement('span');
+        wrap.className = 'pb-chip';
+        wrap.setAttribute('role', 'listitem');
+        const label = document.createElement('span');
+        label.className = 'pb-chip__label';
+        label.textContent = chip.name;
+        const xBtn = document.createElement('button');
+        xBtn.className = 'pb-chip__x';
+        xBtn.setAttribute('aria-label', 'Remove ' + chip.name);
+        xBtn.innerHTML = '&times;';
+        xBtn.addEventListener('click', () => _pbRemoveChip(i));
+        wrap.appendChild(label);
+        wrap.appendChild(xBtn);
+        chipsArea.appendChild(wrap);
+      });
+      row2.appendChild(chipsArea);
+    }
+
+    // Pills area — takes remaining width, scrolls independently
+    const pillsArea = document.createElement('div');
+    pillsArea.className = 'pb-pills-area';
+    pills.forEach(pill => {
+      const btn = document.createElement('button');
+      btn.className = 'pb-pill';
+      btn.textContent = pill.name;
+      btn.setAttribute('role', 'listitem');
+      btn.addEventListener('click', () => _pbSelectPill(pill));
+      pillsArea.appendChild(btn);
+    });
+    row2.appendChild(pillsArea);
+
+    const _idle = window.requestIdleCallback
+      ? (fn, opts) => window.requestIdleCallback(fn, opts)
+      : fn => setTimeout(fn, 50);
+    _idle(() => _pbPrefetch(pills), { timeout: 1000 });
+  }
+
+  function _pbSelectPill(pill) {
+    const cat = _pbCat?.slug || '';
+    const sub = _pbChips.length === 0 ? pill.slug : _pbChips[0].slug;
+    const sec = _pbChips.length === 0 ? undefined : pill.slug;
+    navigateShop(cat, sub, sec);
+  }
+
+  function _pbRemoveChip(i) {
+    const cat = _pbCat?.slug || '';
+    const sub = i === 0 ? undefined : _pbChips[0]?.slug;
+    navigateShop(cat, sub);
+  }
+
+  function _pbPrefetch(pills) {
+    if (!_pbCat) return;
+    pills.slice(0, 5).forEach(pill => {
+      const sub = _pbChips.length === 0 ? pill.slug : _pbChips[0].slug;
+      const sec = _pbChips.length === 0 ? undefined : pill.slug;
+      const qs  = new URLSearchParams({ cat: _pbCat.slug });
+      if (sub) qs.set('sub', sub);
+      if (sec) qs.set('sec', sec);
+      const href = '/api/products?' + qs.toString();
+      if (!document.querySelector(`link[rel="prefetch"][href="${href}"]`)) {
+        const link = Object.assign(document.createElement('link'), { rel: 'prefetch', href, as: 'fetch' });
+        document.head.appendChild(link);
+      }
+    });
+  }
+
+  // Row 1 collapse on scroll — hysteresis (THRESHOLD=8px, TOP_GUARD=24px)
+  window.addEventListener('scroll', () => {
+    const bar = document.getElementById('pillBar');
+    if (!bar) return;
+    const y     = window.scrollY;
+    const delta = y - _pbLastY;
+    _pbLastY = y;
+    if (y < _PB_TOP_GUARD) { bar.classList.remove('pill-bar--cats-hidden'); _pbAcc = 0; return; }
+    if (Math.sign(delta) !== Math.sign(_pbAcc) && _pbAcc !== 0) _pbAcc = 0;
+    _pbAcc += delta;
+    if (_pbAcc >  _PB_THRESHOLD) { bar.classList.add('pill-bar--cats-hidden');    _pbAcc = 0; }
+    if (_pbAcc < -_PB_THRESHOLD) { bar.classList.remove('pill-bar--cats-hidden'); _pbAcc = 0; }
+  }, { passive: true });
+
+  window.addEventListener('resize', updatePbTop, { passive: true });
 </script>
 
 <!-- ── THRIFTLY LISTING FORM MODAL ── -->

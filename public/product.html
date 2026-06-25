@@ -1023,7 +1023,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <!-- INFO -->
       <div class="product-info">
-        ${p.sub_category ? `<div class="product-sub">${p.sub_category}</div>` : ''}
+        ${(p.secondary_sub_category || p.sub_category) ? `<div class="product-sub">${p.secondary_sub_category || p.sub_category}</div>` : ''}
         <h1 class="product-title">${p.name}</h1>
         <div class="price-row" id="price-row">${priceHtml}</div>
 

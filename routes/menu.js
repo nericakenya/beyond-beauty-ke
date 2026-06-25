@@ -34,10 +34,15 @@ function buildTree(records) {
       const image   = Array.isArray(img) && img[0]
         ? (img[0].thumbnails?.large?.url || img[0].url) : '';
 
+      const bannerField = cat.fields['Banner Image'];
+      const banner = Array.isArray(bannerField) && bannerField[0] ? bannerField[0].url : '';
+
       const subs = visible
         .filter(r => r.fields.Level === 'Sub-Category' && r.fields['Parent Slug'] === catSlug)
         .map(sub => {
           const subSlug = sub.fields.Slug || '';
+          const subBannerField = sub.fields['Banner Image'];
+          const subBanner = Array.isArray(subBannerField) && subBannerField[0] ? subBannerField[0].url : '';
           const sec = visible
             .filter(r => r.fields.Level === 'Secondary Sub-Category' && r.fields['Parent Slug'] === subSlug && r.fields['Category Slug'] === catSlug)
             .map(s => ({
@@ -49,6 +54,7 @@ function buildTree(records) {
             name:   sub.fields.Name   || '',
             slug:   subSlug,
             status: sub.fields.Status || 'Enabled',
+            banner: subBanner,
             sec,
           };
         });
@@ -57,6 +63,7 @@ function buildTree(records) {
         name:   cat.fields.Name   || '',
         slug:   catSlug,
         image,
+        banner,
         status: cat.fields.Status || 'Enabled',
         subs,
       };

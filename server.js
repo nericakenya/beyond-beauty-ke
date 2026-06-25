@@ -11,6 +11,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/products',      require('./routes/products'));
+app.use('/api/menu',          require('./routes/menu'));
 app.use('/api/orders',        require('./routes/orders'));
 app.use('/api/payments',      require('./routes/payments'));
 app.use('/api/thriftly',      require('./routes/thriftly'));
@@ -28,6 +29,9 @@ app.get('/thriftly/confirm',  (req, res) => res.sendFile(path.join(__dirname, 'p
 // Shop category pages — all serve index.html; JS reads pathname to activate the right category
 ['/bags', '/accessories', '/hair', '/skincare', '/beauty', '/home', '/sale', '/thriftly']
   .forEach(r => app.get(r, (req, res) => res.sendFile(path.join(__dirname, 'public/index.html'))));
+
+// New /shop/* routes — mega menu nav targets
+app.get('/shop/:cat?/:sub?/:sec?', (req, res) => res.sendFile(path.join(__dirname, 'public/index.html')));
 
 app.get('/policies/delivery-refund',  (req, res) => res.sendFile(path.join(__dirname, 'public/policies/delivery-refund.html')));
 app.get('/policies/privacy-policy',   (req, res) => res.sendFile(path.join(__dirname, 'public/policies/privacy-policy.html')));

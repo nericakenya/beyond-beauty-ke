@@ -482,13 +482,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
 
   .pill-bar__row--refine {
-    min-height: 46px;
+    height: 46px;
     background: #b5853a;
-    overflow: hidden; /* outer row does NOT scroll; inner .pb-pills-area does */
+    overflow: hidden; /* fixed height — inner .pb-pills-area scrolls horizontally */
     padding: 0;
     gap: 0;
   }
-  .pill-bar__row--refine:empty { min-height: 0; }
+  .pill-bar__row--refine:empty { height: 0; }
 
   /* Chips area — stays pinned to the left, never scrolls */
   .pb-chips-area {
@@ -576,7 +576,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     background: var(--black);
     white-space: nowrap;
     padding: 5px 0 5px 12px;
-    border: 1px solid var(--black);
   }
   .pb-chip__label { pointer-events: none; }
   .pb-chip__x {

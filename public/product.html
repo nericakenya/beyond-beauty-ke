@@ -1105,8 +1105,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           const bl = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
           badgeHtml = `<span class="also-card-badge ${bc}">${bl}</span>`;
         }
+        const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         return `
-          <a class="also-card" href="/product?id=${p.id}">
+          <a class="also-card" href="/product?id=${p.id}&name=${slug}">
             <div class="also-card-img">
               ${badgeHtml}
               <img src="${p.image_url}" alt="${p.name}" loading="lazy"

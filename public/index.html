@@ -1076,8 +1076,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const priceHtml = p.price
         ? `<span class="product-price ${p.original_price ? 'sale-price' : ''}">${fmt(p.price)}</span>${p.original_price ? `<span class="product-price original">${fmt(p.original_price)}</span>` : ''}`
         : `<span class="product-price" style="color:var(--accent);font-style:italic">Enquire for price</span>`;
+      const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       return `
-      <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='/product?id=${p.id}'">
+      <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='/product?id=${p.id}&name=${slug}'">
         <div class="product-img-wrap">
           ${badgeLabel ? `<span class="product-badge ${badgeClass}">${badgeLabel}</span>` : ''}
           <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/FAFBFB/6b6560?text=Photo+Coming'">

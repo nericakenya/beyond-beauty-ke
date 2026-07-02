@@ -101,7 +101,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .gallery-main{position:relative;flex:1;min-width:0;aspect-ratio:3/4;background:var(--product-img-bg);overflow:hidden;touch-action:pan-y}
   .gallery-main img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .3s}
   .gallery-main img.fade{opacity:0}
-  .gallery-badge{position:absolute;top:14px;left:14px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500;z-index:2}
+  .gallery-badges{position:absolute;top:14px;left:14px;display:flex;gap:4px;flex-wrap:wrap;z-index:2}
+  .gallery-badge{font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500}
   .gallery-badge.sale{background:var(--accent);color:var(--white)}
   .gallery-badge.new-in{background:#A8733F;color:var(--white)}
   .gallery-badge.out-of-stock{background:#1A1A1A;color:var(--white)}
@@ -109,7 +110,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .gallery-badge.selling-fast{background:#16a34a;color:var(--white)}
   .gallery-badge.coming-soon{background:#B8946A;color:var(--white)}
   .gallery-badge.only-x-left{background:#2563eb;color:var(--white)}
-  .also-card-badge{position:absolute;top:10px;left:10px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500;z-index:2}
+  .also-card-badges{position:absolute;top:10px;left:10px;display:flex;gap:4px;flex-wrap:wrap;z-index:2}
+  .also-card-badge{font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500}
   .also-card-badge.sale{background:var(--accent);color:var(--white)}
   .also-card-badge.new-in{background:#A8733F;color:var(--white)}
   .also-card-badge.out-of-stock{background:#1A1A1A;color:var(--white)}
@@ -984,19 +986,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const hasImages = p.images && p.images.length > 0;
     const primarySrc = hasImages ? p.images[0].full : '';
 
-    const soldOut    = p.sold_out || (p.total_stock_quantity === 0 && !!p.price && p.badge !== 'Coming Soon');
-    const comingSoon = p.badge === 'Coming Soon' || p.availability_status === 'coming_soon';
+    const badges     = Array.isArray(p.badges) ? p.badges : [];
+    const soldOut    = p.sold_out || (p.total_stock_quantity <= 0 && !!p.price && !badges.includes('Coming Soon'));
+    const comingSoon = badges.includes('Coming Soon') || p.availability_status === 'coming_soon';
     const unavailable = soldOut || comingSoon;
 
-    // Badge: show Out of Stock when sold out; never show "Only 0 Left"
-    let galleryBadgeHtml = '';
+    let galleryBadgesHtml;
     if (soldOut) {
-      galleryBadgeHtml = `<span class="gallery-badge out-of-stock">Out of Stock</span>`;
-    } else if (p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) <= 0)
-                       && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2)) {
-      const bc = p.badge.toLowerCase().replace(/[\s']+/g,'-').replace(/[^a-z0-9-]/g,'');
-      const bl = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
-      galleryBadgeHtml = `<span class="gallery-badge ${bc}">${bl}</span>`;
+      galleryBadgesHtml = `<span class="gallery-badge out-of-stock">Out of Stock</span>`;
+    } else {
+      galleryBadgesHtml = badges.map(b => {
+        const cls   = b.toLowerCase().replace(/[\s']+/g,'-').replace(/[^a-z0-9-]/g,'');
+        const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : b;
+        return `<span class="gallery-badge ${cls}">${label}</span>`;
+      }).join('');
     }
 
     const priceHtml = p.price
@@ -1009,7 +1012,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <!-- GALLERY -->
       <div class="gallery">
         <div class="gallery-main">
-          ${galleryBadgeHtml}
+          <div class="gallery-badges">${galleryBadgesHtml}</div>
           <div class="gallery-track" id="galleryTrack">${hasImages
             ? p.images.map((img, i) => `<div class="gallery-slide"><img src="${img.full}" alt="${p.name}"${i > 0 ? ' loading="lazy"' : ''}></div>`).join('')
             : `<div class="gallery-slide"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--light);font-size:12px;letter-spacing:.06em">No photo yet</div></div>`
@@ -1095,21 +1098,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const grid = document.getElementById('alsoLikeGrid');
       grid.innerHTML = similar.map(p => {
         const priceStr = p.price ? fmt(p.price) : 'Enquire';
-        const alsoSoldOut = p.sold_out || (p.total_stock_quantity === 0 && !!p.price && p.badge !== 'Coming Soon');
-        let badgeHtml = '';
+        const alsoBadges  = Array.isArray(p.badges) ? p.badges : [];
+        const alsoSoldOut = p.sold_out || (p.total_stock_quantity <= 0 && !!p.price && !alsoBadges.includes('Coming Soon'));
+        let badgesHtml;
         if (alsoSoldOut) {
-          badgeHtml = `<span class="also-card-badge out-of-stock">Out of Stock</span>`;
-        } else if (p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) <= 0)
-                           && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2)) {
-          const bc = p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '');
-          const bl = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
-          badgeHtml = `<span class="also-card-badge ${bc}">${bl}</span>`;
+          badgesHtml = `<span class="also-card-badge out-of-stock">Out of Stock</span>`;
+        } else {
+          badgesHtml = alsoBadges.map(b => {
+            const cls   = b.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '');
+            const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : b;
+            return `<span class="also-card-badge ${cls}">${label}</span>`;
+          }).join('');
         }
         const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         return `
           <a class="also-card" href="/product?id=${p.id}&name=${slug}">
             <div class="also-card-img">
-              ${badgeHtml}
+              <div class="also-card-badges">${badgesHtml}</div>
               <img src="${p.image_url}" alt="${p.name}" loading="lazy"
                 onerror="this.src='https://placehold.co/400x533/FAFBFB/6b6560?text=Photo+Coming'">
             </div>

@@ -98,7 +98,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .55s cubic-bezier(.25,.46,.45,.94); }
   .product-card:hover .product-img-wrap img { transform: scale(1.04); }
 
-  .product-badge { position: absolute; top: 12px; left: 12px; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; padding: 4px 9px; font-family: var(--font-sans); font-weight: 500; z-index: 2; }
+  .product-badges { position: absolute; top: 12px; left: 12px; display: flex; gap: 4px; flex-wrap: wrap; z-index: 2; }
+  .product-badge { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; padding: 4px 9px; font-family: var(--font-sans); font-weight: 500; }
   .product-badge.sale { background: var(--accent); color: var(--white); }
   .product-badge.new-in { background: #A8733F; color: var(--white); }
   .product-badge.out-of-stock { background: #1A1A1A; color: var(--white); }
@@ -1059,18 +1060,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       return;
     }
     grid.innerHTML = list.map((p, i) => {
-      const soldOut    = p.sold_out || (p.total_stock_quantity === 0 && !!p.price && p.badge !== 'Coming Soon');
-      const comingSoon = p.badge === 'Coming Soon' || p.availability_status === 'coming_soon';
+      const badges     = Array.isArray(p.badges) ? p.badges : [];
+      const soldOut    = p.sold_out || (p.total_stock_quantity <= 0 && !!p.price && !badges.includes('Coming Soon'));
+      const comingSoon = badges.includes('Coming Soon') || p.availability_status === 'coming_soon';
       const unavailable = soldOut || comingSoon;
 
-      // Badge logic: show Out of Stock when sold out; never show "Only 0 Left"
-      let badgeLabel = null, badgeClass = null;
+      // Build badges HTML: Out of Stock shown alone; otherwise render all badges from server array
+      let badgesHtml;
       if (soldOut) {
-        badgeLabel = 'Out of Stock'; badgeClass = 'out-of-stock';
-      } else if (p.badge && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) <= 0)
-                         && !(p.badge === "Only 'X' Left" && (p.total_stock_quantity ?? 0) > 2)) {
-        badgeLabel = p.badge === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : p.badge;
-        badgeClass = p.badge.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '');
+        badgesHtml = `<span class="product-badge out-of-stock">Out of Stock</span>`;
+      } else {
+        badgesHtml = badges.map(b => {
+          const cls   = b.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '');
+          const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : b;
+          return `<span class="product-badge ${cls}">${label}</span>`;
+        }).join('');
       }
 
       const priceHtml = p.price
@@ -1080,7 +1084,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       return `
       <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='/product?id=${p.id}&name=${slug}'">
         <div class="product-img-wrap">
-          ${badgeLabel ? `<span class="product-badge ${badgeClass}">${badgeLabel}</span>` : ''}
+          <div class="product-badges">${badgesHtml}</div>
           <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/FAFBFB/6b6560?text=Photo+Coming'">
           <button class="product-save" onclick="event.stopPropagation();toggleSave('${p.id}', this)" title="Save">${heartIcon(false)}</button>
           ${!unavailable ? `<div class="product-quick">

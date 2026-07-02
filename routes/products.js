@@ -114,33 +114,32 @@ async function fetchVariantsForProduct(productId) {
   return records.map(mapVariantRecord);
 }
 
-const NEW_IN_TTL_MS = 14 * 24 * 60 * 60 * 1000;
-
 function mapRecord(record, catMap = {}) {
   const f = record.fields;
   const price = f['Price (KES)'] || null;
   const salePrice = f['Sale Price'] ? parseFloat(f['Sale Price']) : null;
 
-  let badge = f['Badge'] || null;
-
-  // Server-side "New In" 14-day expiry
-  if (badge === 'New In') {
-    const startDate = f['New In Start Date']
-      ? new Date(f['New In Start Date'])
-      : new Date(record.createdTime);
-    if (Date.now() - startDate.getTime() > NEW_IN_TTL_MS) badge = null;
-  }
+  // Badge is now a multi-select — REST API returns string[] or null
+  let badges = Array.isArray(f['Badge']) ? [...f['Badge']] : [];
 
   const totalStock = f['Total Stock Quantity'] ?? null;
   const availabilityStatus = f['Availability Status'] || null;
 
-  // Derive sold_out: zero stock and not a coming-soon product
-  const sold_out = badge === 'Sold Out'
-    || badge === 'Out of Stock'
-    || (totalStock === 0 && badge !== 'Coming Soon' && !!price);
+  // Derive sold_out from badges and stock as a safety net for stale Airtable badge state
+  const sold_out = badges.includes('Sold Out')
+    || badges.includes('Out of Stock')
+    || (totalStock <= 0 && !badges.includes('Coming Soon') && !!price);
 
-  // Never let "Only 'X' Left" leak through when stock is 0
-  if (badge === "Only 'X' Left" && totalStock === 0) badge = null;
+  // Safety net: if product has an active sale price but Airtable automation hasn't set the badge yet
+  const saleIsActive = salePrice && price && salePrice < price;
+  if (saleIsActive && !badges.includes('Sale') && !sold_out && !badges.includes('Coming Soon')) {
+    badges = ['Sale', ...badges];
+  }
+
+  // Safety net: strip "Only 'X' Left" if stock is above the threshold (stale Airtable badge)
+  if (totalStock > 2) {
+    badges = badges.filter(b => b !== "Only 'X' Left");
+  }
 
   // 'Primary Image URL' is now an Airtable attachment field containing all product images.
   // First attachment = primary (shop grid), all = gallery (product page).
@@ -168,7 +167,7 @@ function mapRecord(record, catMap = {}) {
     cat_slug,
     sub_slug,
     sec_slug,
-    badge,
+    badges,
     total_stock_quantity: totalStock,
     sold_out,
     availability_status: availabilityStatus,
@@ -223,10 +222,10 @@ router.get('/', async (req, res) => {
     let products = await getProducts();
     const { category, cat, sub, sec } = req.query;
 
-    if (category === 'sale') {
-      products = products.filter(p => p.badge === 'Sale' || p.original_price != null);
-    } else if (category === 'new') {
-      products = products.filter(p => p.badge === 'New In');
+    if (category === 'sale' || cat === 'sale') {
+      products = products.filter(p => p.badges.includes('Sale') || p.original_price != null);
+    } else if (category === 'new' || cat === 'new') {
+      products = products.filter(p => p.badges.includes('New In'));
     } else {
       const catSlug = cat || (category && category !== 'all' ? (LEGACY_CAT[category] || category) : null);
       if (sec) {

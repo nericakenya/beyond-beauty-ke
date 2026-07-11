@@ -6,12 +6,14 @@ const adminAuth = require('../middleware/adminAuth');
 const AIRTABLE_BASE       = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_ID}`;
 const AIRTABLE_VARIANTS   = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_VARIANTS_TABLE_ID}`;
 const AIRTABLE_CATEGORIES = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Categories`;
+const AIRTABLE_MENU       = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Menu`;
 const AIRTABLE_HEADERS    = () => ({ Authorization: `Bearer ${process.env.AIRTABLE_TOKEN}` });
 
 // ── In-memory cache (5-minute TTL) ──
 const CACHE_TTL = 5 * 60 * 1000;
 let cache         = { data: null, fetchedAt: 0 };
 let catCache      = { data: null, fetchedAt: 0 };
+let menuGroupCache = { data: null, fetchedAt: 0 };
 let variantsCache = {}; // keyed by product record ID
 
 // Old top-level category slugs → new cat_slug (for legacy URLs like /bags, /hair)
@@ -82,6 +84,50 @@ async function fetchCategories() {
 
   const result = { byId, subToCat, secToCat };
   catCache = { data: result, fetchedAt: Date.now() };
+  return result;
+}
+
+// ── Menu groups — a single nav slug (e.g. "cleansers-toners") can link multiple
+// Categories records via Menu's "Category Ref" field (e.g. Cleansers, Toners, and
+// Cleansers & Toners itself). Products are tagged with whichever individual category
+// they actually belong to, so filtering must match against the whole group, not just
+// the nav slug's own category — otherwise pages like this return zero products. ──
+async function fetchMenuGroups() {
+  if (menuGroupCache.data && Date.now() - menuGroupCache.fetchedAt < CACHE_TTL) {
+    return menuGroupCache.data;
+  }
+
+  const [{ byId }, menuRecords] = await Promise.all([
+    fetchCategories(),
+    (async () => {
+      const recs = [];
+      let offset = null;
+      do {
+        const params = { pageSize: 100, 'fields[]': ['Slug', 'Level', 'Category Ref'] };
+        if (offset) params.offset = offset;
+        const { data } = await axios.get(AIRTABLE_MENU, { headers: AIRTABLE_HEADERS(), params });
+        recs.push(...data.records);
+        offset = data.offset || null;
+      } while (offset);
+      return recs;
+    })(),
+  ]);
+
+  // slug → Set of equivalent slugs (all Categories records linked from that Menu row)
+  const subGroups = {};
+  const secGroups = {};
+  menuRecords.forEach(r => {
+    const slug = r.fields.Slug;
+    const refs = r.fields['Category Ref'] || [];
+    if (!slug || !refs.length) return;
+    const equivalentSlugs = new Set(refs.map(id => byId[id]?.slug).filter(Boolean));
+    equivalentSlugs.add(slug); // always match the nav slug itself too
+    if (r.fields.Level === 'Sub-Category') subGroups[slug] = equivalentSlugs;
+    else if (r.fields.Level === 'Secondary Sub-Category') secGroups[slug] = equivalentSlugs;
+  });
+
+  const result = { subGroups, secGroups };
+  menuGroupCache = { data: result, fetchedAt: Date.now() };
   return result;
 }
 
@@ -229,9 +275,13 @@ router.get('/', async (req, res) => {
     } else {
       const catSlug = cat || (category && category !== 'all' ? (LEGACY_CAT[category] || category) : null);
       if (sec) {
-        products = products.filter(p => p.sec_slug === sec);
+        const { secGroups } = await fetchMenuGroups();
+        const allowedSlugs = secGroups[sec] || new Set([sec]);
+        products = products.filter(p => allowedSlugs.has(p.sec_slug));
       } else if (sub) {
-        products = products.filter(p => p.sub_slug === sub);
+        const { subGroups } = await fetchMenuGroups();
+        const allowedSlugs = subGroups[sub] || new Set([sub]);
+        products = products.filter(p => allowedSlugs.has(p.sub_slug));
       } else if (catSlug) {
         // Expand the filter to include products linked at any level of this category's
         // sub-tree, so clicking a top-level nav item returns all its sub/sec products too.
@@ -254,8 +304,9 @@ router.get('/', async (req, res) => {
 // GET /api/products/refresh — bust the cache (admin only)
 router.get('/refresh', adminAuth, async (req, res) => {
   try {
-    cache    = { data: null, fetchedAt: 0 };
-    catCache = { data: null, fetchedAt: 0 };
+    cache          = { data: null, fetchedAt: 0 };
+    catCache       = { data: null, fetchedAt: 0 };
+    menuGroupCache = { data: null, fetchedAt: 0 };
     const products = await getProducts();
     res.json({ refreshed: true, count: products.length });
   } catch (err) {

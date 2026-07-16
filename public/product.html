@@ -139,7 +139,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .colour-thumb-wrap.unavailable::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom right,transparent calc(50% - 0.5px),rgba(0,0,0,.45) calc(50% - 0.5px),rgba(0,0,0,.45) calc(50% + 0.5px),transparent calc(50% + 0.5px));pointer-events:none}
 
   .product-title{font-family:var(--font-serif);font-size:clamp(26px,3vw,38px);font-weight:400;letter-spacing:.04em;line-height:1.15;margin-bottom:12px}
-  .product-sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
+  .product-sub{font-family:var(--font-sans);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--accent);margin-bottom:14px;display:inline-block;text-decoration:none;transition:color .2s}
+  .product-sub:hover{color:var(--black)}
   .price-row{display:flex;align-items:baseline;gap:10px;margin-bottom:24px}
   .price{font-size:18px;color:var(--mid);font-weight:400}
   .price.sale{color:var(--accent);font-weight:500}
@@ -983,6 +984,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('breadcrumb').innerHTML =
       `<a href="/">Shop</a><span>›</span><a href="/${p.category}">${categoryLabel}</a><span>›</span>${p.name}`;
 
+    // Sub-nav label above the title: Secondary Sub-Category → Sub-Category → Category
+    const subNavLabel = p.sec_name || p.sub_name || p.cat_name || categoryLabel;
+    const subNavHref = (p.cat_slug && p.sub_slug && p.sec_slug) ? `/shop/${p.cat_slug}/${p.sub_slug}/${p.sec_slug}`
+                      : (p.cat_slug && p.sub_slug)              ? `/shop/${p.cat_slug}/${p.sub_slug}`
+                      : p.cat_slug                              ? `/shop/${p.cat_slug}`
+                      : `/${p.category}`;
+
     const hasImages = p.images && p.images.length > 0;
     const primarySrc = hasImages ? p.images[0].full : '';
 
@@ -1026,7 +1034,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
       <!-- INFO -->
       <div class="product-info">
-        ${(p.secondary_sub_category || p.sub_category) ? `<div class="product-sub">${p.secondary_sub_category || p.sub_category}</div>` : ''}
+        ${subNavLabel ? `<a class="product-sub" href="${subNavHref}">${subNavLabel}</a>` : ''}
         <h1 class="product-title">${p.name}</h1>
         <div class="price-row" id="price-row">${priceHtml}</div>
 

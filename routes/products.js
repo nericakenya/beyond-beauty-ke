@@ -198,10 +198,13 @@ function mapRecord(record, catMap = {}) {
     name: colourNames[i] || null,
   }));
 
-  // Resolve linked Category record IDs → slugs
-  const cat_slug = catMap[(f['Category (Link)']               || [])[0]]?.slug || '';
-  const sub_slug = catMap[(f['Sub-Category (Link)']           || [])[0]]?.slug || '';
-  const sec_slug = catMap[(f['Secondary Sub-Category (Link)'] || [])[0]]?.slug || '';
+  // Resolve linked Category record IDs → slugs + display names
+  const catRec = catMap[(f['Category (Link)']               || [])[0]] || null;
+  const subRec = catMap[(f['Sub-Category (Link)']           || [])[0]] || null;
+  const secRec = catMap[(f['Secondary Sub-Category (Link)'] || [])[0]] || null;
+  const cat_slug = catRec?.slug || '';
+  const sub_slug = subRec?.slug || '';
+  const sec_slug = secRec?.slug || '';
 
   return {
     id: record.id,
@@ -213,6 +216,9 @@ function mapRecord(record, catMap = {}) {
     cat_slug,
     sub_slug,
     sec_slug,
+    cat_name: catRec?.name || '',
+    sub_name: subRec?.name || '',
+    sec_name: secRec?.name || '',
     badges,
     total_stock_quantity: totalStock,
     sold_out,

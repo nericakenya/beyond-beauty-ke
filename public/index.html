@@ -82,9 +82,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   /* ── HERO SLIDER (homepage / unfiltered "All Products" view only) ── */
   .hero-slider { position: relative; width: 100%; overflow: hidden; background: var(--border); height: calc(100svh - var(--hero-top, 0px)); }
   @media (max-width: 1023px) { .hero-slider { height: calc(100svh - var(--hero-top, 0px) - var(--pillbar-h, 0px)); } }
-  .hero-slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; transition: opacity 1s ease; }
+  .hero-slide { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; pointer-events: none; transition: opacity 1s ease; }
   @media (prefers-reduced-motion: reduce) { .hero-slide { transition: none; } }
-  .hero-slide.is-active { opacity: 1; }
+  .hero-slide.is-active { opacity: 1; pointer-events: auto; }
   .hero-slide__content { position: absolute; left: 24px; right: 24px; bottom: 32px; padding-bottom: 32px; color: #fff; text-align: center; }
   @media (min-width: 1024px) { .hero-slide__content { bottom: 64px; } }
   .hero-slide__headline { font-family: var(--font-sans); font-size: clamp(20px,3vw,30px); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; line-height: 1.3; margin-bottom: 16px; }
@@ -1291,6 +1291,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const hsCollections2 = document.getElementById('hsCollections2');
     const newsletterSection = document.getElementById('newsletterSection');
     if (cat === 'all') {
+      ensureHomepageSections();
       if (heroSlider) heroSlider.style.display = '';
       if (hsCarousel1 && hsCarousel1Products.length) hsCarousel1.style.display = '';
       if (hsCollections2 && hsCollections2Loaded) hsCollections2.style.display = '';
@@ -1786,6 +1787,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         </div>` : ''}
       </div>
     `).join('');
+    // Route in-site CTA links through the SPA navigator instead of a full page
+    // load — a full load re-runs init on a /shop/... URL, which is the source
+    // of the homepage sections briefly flashing above the product grid.
+    track.querySelectorAll('.hero-slide__cta').forEach(a => {
+      const href = a.getAttribute('href') || '';
+      if (href.startsWith('/shop/')) {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          const parts = href.split('/').filter(Boolean);
+          navigateShop(parts[1], parts[2], parts[3]);
+        });
+      }
+    });
     dots.innerHTML = HERO_SLIDES.length > 1
       ? HERO_SLIDES.map((_, i) => `<button class="hero-slider__dot${i === 0 ? ' is-active' : ''}" aria-label="Go to slide ${i + 1}" onclick="goToHeroSlide(${i})"></button>`).join('')
       : '';
@@ -1833,6 +1847,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   // ── HOMEPAGE SECTIONS (below pill-bar, homepage only) ──
   let hsCarousel1Products = [];
   let hsCollections2Loaded = false;
+
+  // Hero slider / Section 1 / Section 2 are homepage-only marketing content.
+  // Gate their loading behind this so a direct load of a non-homepage route
+  // (e.g. /shop/...) never fetches or renders them in the first place, and a
+  // later in-app return to the homepage still loads them exactly once.
+  let _homepageSectionsLoaded = false;
+  function ensureHomepageSections() {
+    if (_homepageSectionsLoaded) return;
+    _homepageSectionsLoaded = true;
+    renderHeroSlider();
+    loadHomepageSections();
+  }
 
   function addToCartByHs1Index(i) { addToCart(hsCarousel1Products[i]); }
   function waLinkByHs1Index(i) { return waLink(hsCarousel1Products[i]); }
@@ -1951,8 +1977,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   buildMegaNav();
   buildDrawer();
   buildPillBar();
-  renderHeroSlider();
-  loadHomepageSections();
+  // Only load the homepage marketing sections when we're actually on the
+  // homepage — checked synchronously, before the async menu fetch below,
+  // so a direct load of e.g. /shop/... never renders them at all.
+  if (window.location.pathname === '/') {
+    ensureHomepageSections();
+  }
 
   // Then fetch live menu from Airtable and rebuild if data is different
   (async function initMenu() {

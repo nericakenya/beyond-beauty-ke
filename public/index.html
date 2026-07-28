@@ -1237,6 +1237,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   let _visibleProductCount = 8;
   const PRODUCT_PAGE_SIZE = 8;
   const PRODUCT_LOAD_MORE_SIZE = 12;
+  // Category/sub-category shop pages (/shop/:cat/:sub/:sec) load in larger
+  // batches than the homepage's All Products section — set per-view by
+  // filterCat()/applyShopRoute(), consumed by renderProducts()/loadMoreProducts().
+  const SHOP_PAGE_SIZE = 48;
+  const SHOP_LOAD_MORE_SIZE = 48;
+  let _productPageSize = PRODUCT_PAGE_SIZE;
+  let _productLoadMoreSize = PRODUCT_LOAD_MORE_SIZE;
 
   function addToCartByIndex(i) { addToCart(renderedList[i]); }
   function waLinkByIndex(i) { return waLink(renderedList[i]); }
@@ -1289,7 +1296,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   function renderProducts(list) {
     renderedList = list;
-    _visibleProductCount = Math.min(PRODUCT_PAGE_SIZE, list.length);
+    _visibleProductCount = Math.min(_productPageSize, list.length);
     renderProductGrid();
   }
 
@@ -1315,7 +1322,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const grid = document.getElementById('productGrid');
     const loadMoreWrap = document.getElementById('loadMoreWrap');
     const prevCount = _visibleProductCount;
-    _visibleProductCount = Math.min(_visibleProductCount + PRODUCT_LOAD_MORE_SIZE, renderedList.length);
+    _visibleProductCount = Math.min(_visibleProductCount + _productLoadMoreSize, renderedList.length);
     const newItems = renderedList.slice(prevCount, _visibleProductCount);
     grid.insertAdjacentHTML('beforeend', newItems.map((p, idx) => {
       const i = prevCount + idx;
@@ -1368,11 +1375,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function filterCat(cat, skipPushState) {
     activeCategory = cat;
     _diversifyGallery = isMultiCategoryCat(cat);
+    // Only the true homepage ('all') keeps the smaller homepage page size —
+    // every other gallery view here (shop-all, sale, legacy category slugs)
+    // is a full product gallery page and uses the larger shop page size.
+    _productPageSize = (cat === 'all') ? PRODUCT_PAGE_SIZE : SHOP_PAGE_SIZE;
+    _productLoadMoreSize = (cat === 'all') ? PRODUCT_LOAD_MORE_SIZE : SHOP_LOAD_MORE_SIZE;
     const titles = { all: 'Shop All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', beauty: 'Beauty', home: 'Home', sale: 'Sale', thrift: 'Thriftly', fashion: 'Fashion' };
 
     if (!skipPushState) {
       const url = cat === 'all' ? '/' : cat === 'thrift' ? '/thriftly' : '/' + cat;
-      if (window.location.pathname !== url) history.pushState({ cat }, '', url);
+      // Only scroll to top when this is genuinely a new page — re-navigating
+      // to the page you're already on should leave scroll position untouched.
+      if (window.location.pathname !== url) {
+        history.pushState({ cat }, '', url);
+        window.scrollTo(0, 0);
+      }
     }
     document.title = (titles[cat] || 'All Products') + ' — Beyond Beauty KE';
     const heroSlider = document.getElementById('heroSlider');
@@ -1672,8 +1689,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     closeMegaPanel();
     closeDrawer();
     const url = '/shop/' + catSlug + (subSlug ? '/' + subSlug : '') + (secSlug ? '/' + secSlug : '');
+    // Only scroll to top when this is genuinely a new page — re-navigating to
+    // the page you're already on (e.g. clicking the same nav item twice)
+    // should leave scroll position untouched, same as a same-page reload.
+    const isNewPage = window.location.pathname !== url;
     history.pushState({ catSlug, subSlug, secSlug }, '', url);
     applyShopRoute(catSlug, subSlug, secSlug);
+    if (isNewPage) window.scrollTo(0, 0);
   }
 
   // "Shop All" — every product, shown with the same category-page treatment as
@@ -1681,9 +1703,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function navigateShopAll() {
     closeMegaPanel();
     closeDrawer();
+    const isNewPage = window.location.pathname !== '/shop';
     history.pushState({}, '', '/shop');
     document.querySelectorAll('.mega-nav__label[data-cat]').forEach(n => n.classList.toggle('active', n.dataset.cat === 'shop-all'));
     filterCat('shop-all', true);
+    if (isNewPage) window.scrollTo(0, 0);
   }
 
   function _applyBanner(url, fallbackTitle) {
@@ -1703,6 +1727,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   function applyShopRoute(catSlug, subSlug, secSlug) {
     _diversifyGallery = isMultiCategoryCat(catSlug) && !subSlug && !secSlug;
+    // /shop/:cat/:sub/:sec is always a full product gallery page (category,
+    // sub-category, or secondary sub-category) — never the homepage.
+    _productPageSize = SHOP_PAGE_SIZE;
+    _productLoadMoreSize = SHOP_LOAD_MORE_SIZE;
     const displayName = getDisplayName(catSlug, subSlug, secSlug);
     const heroSlider = document.getElementById('heroSlider');
     if (heroSlider) heroSlider.style.display = 'none';

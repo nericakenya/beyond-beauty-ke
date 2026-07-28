@@ -972,81 +972,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   let activeCategory = 'all';
   const savedSet = new Set();
   let _loadAbort = null;
-
-  // ── DIVERSIFIED GALLERY ORDERING ──
-  // Cross-category views (Shop All, Sale) would otherwise render in raw catalog
-  // order, letting Skincare — the largest category — dominate long runs of the
-  // grid. Single-category pages are untouched; grouping there is expected.
-  let _diversifyGallery = true;
-  function isMultiCategoryCat(cat) {
-    return cat === 'all' || cat === 'shop-all' || cat === 'sale' || cat === 'new';
-  }
-
-  // Round-robin with a cooldown: always place the next item from whichever
-  // eligible category has the most items left, skipping any category used
-  // within the last `cooldown` slots. Preserves each category's incoming
-  // relative order (bestseller rank, recency, etc.) — only position changes.
-  // Weighted-random pick, not greedy-max: with a heavily skewed catalog (e.g.
-  // Beauty at ~87% of products), always picking the largest remaining group
-  // degenerates into a rigid period-2 alternation (Beauty, other, Beauty,
-  // other, …) — which in an N-column grid lines Beauty up in the same
-  // column every time. Plain linear weighting (by remaining count) doesn't
-  // fix this in practice: Beauty still outweighs any single competitor by
-  // 15-50x, so it keeps winning the instant it's eligible and the same
-  // rigid parity locks in almost immediately. Square-rooting the weight
-  // compresses that gap so minority categories get a real, frequent shot —
-  // still generally favouring the bigger category, but breaking the lockstep
-  // from early in the list rather than relying on rare late-list luck.
-  function weightedRandomPick(candidates) {
-    const weights = candidates.map(c => Math.sqrt(c.remaining));
-    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
-    let r = Math.random() * totalWeight;
-    for (let i = 0; i < candidates.length; i++) {
-      r -= weights[i];
-      if (r <= 0) return candidates[i];
-    }
-    return candidates[candidates.length - 1];
-  }
-
-  function diversifyByCategory(products, cooldown = 2) {
-    if (products.length <= 1) return products;
-    const groups = new Map();
-    products.forEach(p => {
-      const key = p.cat_slug || p.category || '__none__';
-      if (!groups.has(key)) groups.set(key, []);
-      groups.get(key).push(p);
-    });
-    if (groups.size <= 1) return products;
-
-    const heap = [...groups.keys()].map(key => ({ key, remaining: groups.get(key).length }));
-    const pointer = new Map();
-    const lastUsedAt = new Map();
-    const result = [];
-
-    while (result.length < products.length) {
-      const eligible = heap
-        .filter(g => g.remaining > 0)
-        .filter(g => {
-          const last = lastUsedAt.get(g.key);
-          return last === undefined || (result.length - last) >= cooldown;
-        });
-
-      // Fallback: one category exceeds 50% of the list — cooldown can't be
-      // honored every slot, so pick from all remaining groups instead.
-      const chosen = eligible.length
-        ? weightedRandomPick(eligible)
-        : weightedRandomPick(heap.filter(g => g.remaining > 0));
-
-      const idx = pointer.get(chosen.key) || 0;
-      const group = groups.get(chosen.key);
-      result.push(group[idx]);
-      pointer.set(chosen.key, idx + 1);
-      lastUsedAt.set(chosen.key, result.length - 1);
-      chosen.remaining -= 1;
-    }
-
-    return result;
-  }
   // pill bar state — declared here so buildPillBar() can be called synchronously during init
   let _pbCat = null, _pbChips = [];
 
@@ -1361,13 +1286,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     let list = [...allProducts];
     if (sort === 'price_asc') list.sort((a, b) => a.price - b.price);
     else if (sort === 'price_desc') list.sort((a, b) => b.price - a.price);
-    else if (_diversifyGallery) list = diversifyByCategory(list);
     renderProducts(list);
   }
 
   function filterCat(cat, skipPushState) {
     activeCategory = cat;
-    _diversifyGallery = isMultiCategoryCat(cat);
     const titles = { all: 'Shop All Products', bags: 'Bags', accessories: 'Accessories', hair: 'Hair', skincare: 'Skincare', beauty: 'Beauty', home: 'Home', sale: 'Sale', thrift: 'Thriftly', fashion: 'Fashion' };
 
     if (!skipPushState) {
@@ -1702,7 +1625,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   function applyShopRoute(catSlug, subSlug, secSlug) {
-    _diversifyGallery = isMultiCategoryCat(catSlug) && !subSlug && !secSlug;
     const displayName = getDisplayName(catSlug, subSlug, secSlug);
     const heroSlider = document.getElementById('heroSlider');
     if (heroSlider) heroSlider.style.display = 'none';

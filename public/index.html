@@ -31,8 +31,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     --pillbar-h: 0px;
   }
 
-  html { scroll-behavior: smooth; }
-  body { background: var(--cream); color: var(--black); font-family: var(--font-sans); font-size: 14px; line-height: 1.6; overflow-x: hidden; }
+  /* overflow-x lives on html, not body: setting it on body alone relies on the browser
+     propagating it up to the viewport to keep body a non-scrolling element — that
+     propagation is inconsistent across engines, and when it doesn't happen, body becomes
+     its own scroll container. Since it's a container that never actually develops a scroll
+     offset (nothing constrains its height), any position:sticky descendant of body (the
+     header, the pill-bar) would compute "stuck" relative to that dead container and never
+     engage — indistinguishable from position:static. html is unambiguously the root
+     scroller in every browser, so setting it there avoids the ambiguity entirely. */
+  html { scroll-behavior: smooth; overflow-x: hidden; }
+  body { background: var(--cream); color: var(--black); font-family: var(--font-sans); font-size: 14px; line-height: 1.6; }
 
   /* ── HEADER ── */
   .site-header { background: var(--white); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
@@ -148,7 +156,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .hs-carousel { max-width: 1280px; margin: 0 auto; padding: 32px 16px; }
   .hs-carousel__track { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .hs-carousel__track::-webkit-scrollbar { display: none; }
-  .hs-carousel__track .product-card { flex: 0 0 calc((100% - 2 * 12px) / 2.5); scroll-snap-align: start; }
+  .hs-carousel__track .product-card { flex: 0 0 calc((100% - 2 * 12px) / 2.25); scroll-snap-align: start; }
   @media (min-width: 1024px) { .hs-carousel__track { gap: 16px; } .hs-carousel__track .product-card { flex-basis: calc((100% - 3 * 16px) / 4); } }
   .hs-carousel__dots { display: flex; justify-content: center; gap: 6px; margin-top: 18px; }
   .hs-divider { max-width: 1280px; margin: 0 auto; border: none; border-top: 1px solid var(--border); width: 100%; }
@@ -399,7 +407,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   @keyframes fadeUp { to { opacity:1; transform:translateY(0); } }
 
   /* ── MEGA NAV ── */
-  .mega-nav { border-top: 1px solid var(--border); background: var(--white); display: flex; justify-content: center; padding: 0 40px; }
+  .mega-nav { border-top: 1px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; padding: 0 40px; }
   .mega-nav__list { display: flex; list-style: none; margin: 0; padding: 0; align-items: stretch; }
   .mega-nav__list > li { display: flex; align-items: stretch; }
   .mega-nav__label {
@@ -418,6 +426,31 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .mega-nav__label--thriftly { color: var(--accent); }
   .mega-nav__label--thriftly:hover { color: var(--accent); }
   .mega-nav__label--thriftly .thriftly-icon { font-size: 13px; }
+
+  /* ── MEGA NAV SEARCH (desktop) ── */
+  .mega-search-toggle {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: none; border: none; cursor: pointer; color: var(--mid);
+    min-width: 40px; min-height: 44px; padding: 0 16px 0 0; transition: color .2s;
+  }
+  .mega-search-toggle:hover, .mega-search-toggle[aria-expanded="true"] { color: var(--black); }
+  .mega-search-field {
+    display: none; align-items: center; gap: 8px; margin: 0;
+    width: min(420px, 50vw); padding: 6px 4px 6px 0; border-bottom: 1px solid var(--border);
+  }
+  .mega-search-field.open { display: flex; animation: searchSlideUp .22s ease-out; }
+  .mega-search-input {
+    flex: 1; min-width: 0; border: none; background: none; outline: none;
+    font-family: var(--font-sans); font-size: 13px; letter-spacing: .02em; color: var(--black); padding: 6px 0;
+  }
+  .mega-search-input::placeholder { color: var(--light); }
+  .mega-search-clear {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 28px; height: 28px; background: none; border: none; color: var(--mid); cursor: pointer; padding: 0;
+  }
+  .mega-search-clear:hover { color: var(--black); }
+  @keyframes searchSlideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .mega-search-field.open, .pb-search-field.open { animation: none; } }
   .coming-soon-badge { display: inline-block; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; background: #f0ede9; color: var(--mid); padding: 1px 5px; margin-left: 5px; vertical-align: middle; }
   .mega-coming-soon { font-size: 12px; color: var(--light); letter-spacing: .02em; display: block; cursor: default; padding: 1px 0; }
   .mega-panel__col-header--soon { color: var(--light) !important; cursor: default; pointer-events: none; }
@@ -534,12 +567,39 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   .pill-bar__cats-wrap {
     overflow: hidden;
+    display: flex;
+    align-items: center;
   }
 
   /* Row itself — only handles flex + horizontal scroll, no overflow:hidden */
   .pill-bar__row--cats {
     border-bottom: none;
+    flex: 1;
+    min-width: 0;
   }
+
+  /* ── PILL BAR SEARCH (mobile) ── */
+  .pb-search-toggle {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    background: none; border: none; cursor: pointer; color: var(--mid);
+    min-width: 44px; min-height: 44px; padding: 0 0 0 16px; transition: color .2s;
+  }
+  .pb-search-toggle:hover, .pb-search-toggle[aria-expanded="true"] { color: var(--black); }
+  .pb-search-field {
+    display: none; align-items: center; flex: 1; min-width: 0; gap: 8px; margin: 0; padding: 0 16px 0 0;
+  }
+  .pb-search-field.open { display: flex; animation: searchSlideUp .22s ease-out; }
+  .pb-search-input {
+    flex: 1; min-width: 0; border: none; background: none; outline: none;
+    /* 16px prevents iOS Safari's zoom-on-focus for inputs under 16px */
+    font-family: var(--font-sans); font-size: 16px; letter-spacing: .02em; color: var(--black); padding: 11px 0;
+  }
+  .pb-search-input::placeholder { color: var(--light); }
+  .pb-search-clear {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 32px; height: 32px; background: none; border: none; color: var(--mid); cursor: pointer; padding: 0;
+  }
+  .pb-search-clear:hover { color: var(--black); }
 
   .pill-bar__row--refine {
     height: 46px;
@@ -689,7 +749,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 
   <nav class="mega-nav" id="megaNav" aria-label="Shop by category">
+    <button class="mega-search-toggle" id="megaSearchToggle" aria-label="Search" aria-expanded="false" onclick="toggleSearch()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="17" y1="17" x2="22" y2="22"/></svg>
+    </button>
     <ul class="mega-nav__list" id="megaNavList"></ul>
+    <form class="mega-search-field" id="megaSearchField" onsubmit="event.preventDefault(); runSearch(document.getElementById('megaSearchInput').value);">
+      <input type="text" class="mega-search-input" id="megaSearchInput" placeholder="Search moisturiser" autocomplete="off" enterkeyhint="search" oninput="if (this.value) stopSearchSuggestionCycle();">
+      <button type="button" class="mega-search-clear" id="megaSearchClear" aria-label="Close search" onclick="closeSearchUI()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </form>
   </nav>
   <div class="mega-panel" id="megaPanel" hidden role="region" aria-label="Category submenu">
     <div class="mega-panel__inner">
@@ -774,7 +843,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <div class="pill-bar" id="pillBar" aria-label="Browse categories">
   <div class="pill-bar__cats-wrap" id="pbCatsWrap">
+    <button class="pb-search-toggle" id="pbSearchToggle" aria-label="Search" aria-expanded="false" onclick="toggleSearch()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="17" y1="17" x2="22" y2="22"/></svg>
+    </button>
     <div class="pill-bar__row pill-bar__row--cats" id="pbRow1" role="list" aria-label="Top-level categories"></div>
+    <form class="pb-search-field" id="pbSearchField" onsubmit="event.preventDefault(); runSearch(document.getElementById('pbSearchInput').value);">
+      <input type="text" class="pb-search-input" id="pbSearchInput" placeholder="Search moisturiser" autocomplete="off" enterkeyhint="search" oninput="if (this.value) stopSearchSuggestionCycle();">
+      <button type="button" class="pb-search-clear" id="pbSearchClear" aria-label="Close search" onclick="closeSearchUI()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </form>
   </div>
   <div class="pill-bar__row pill-bar__row--refine" id="pbRow2" role="list" aria-label="Refine by sub-category"></div>
 </div>
@@ -1475,12 +1553,202 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
   }
 
+  let _searchOpen = false;
+
+  // ── SEARCH PLACEHOLDER SUGGESTIONS ──
+  // "Search" stays fixed; only the trailing term rotates — plain placeholder text swaps
+  // don't move/animate "Search" itself, since it's the same leading characters every time.
+  const SEARCH_SUGGESTIONS = ['moisturiser', 'bag', 'retinol', 'earrings', 'cosrx'];
+  let _searchSuggestionTimer = null;
+  let _searchSuggestionIndex = 0;
+
+  function setSearchPlaceholder(term) {
+    const text = `Search ${term}`;
+    const pbInput = document.getElementById('pbSearchInput');
+    const megaInput = document.getElementById('megaSearchInput');
+    if (pbInput) pbInput.placeholder = text;
+    if (megaInput) megaInput.placeholder = text;
+  }
+
+  function startSearchSuggestionCycle() {
+    stopSearchSuggestionCycle();
+    _searchSuggestionIndex = 0;
+    setSearchPlaceholder(SEARCH_SUGGESTIONS[_searchSuggestionIndex]);
+    _searchSuggestionTimer = setInterval(() => {
+      _searchSuggestionIndex = (_searchSuggestionIndex + 1) % SEARCH_SUGGESTIONS.length;
+      setSearchPlaceholder(SEARCH_SUGGESTIONS[_searchSuggestionIndex]);
+    }, 2500);
+  }
+
+  function stopSearchSuggestionCycle() {
+    if (_searchSuggestionTimer) {
+      clearInterval(_searchSuggestionTimer);
+      _searchSuggestionTimer = null;
+    }
+  }
+
   function toggleSearch() {
-    const q = prompt('Search products:');
+    if (_searchOpen) closeSearchUI(); else openSearchUI();
+  }
+
+  // ── VISUAL VIEWPORT KEYBOARD-PAN COMPENSATION ──
+  // position:sticky clamps an element relative to the layout viewport, but the on-screen
+  // keyboard (on some mobile browsers) pans the visual viewport — what's actually on
+  // screen — down *within* that layout viewport instead of just shrinking it from the
+  // bottom. On this device only .site-header (stuck at top:0) exhibited this — .pill-bar
+  // (stuck at top:57px, i.e. under the header) rendered correctly without any correction,
+  // so apply the compensating transform to the header only; giving pill-bar the same
+  // transform double-shifted it further down than intended.
+  let _vvSyncActive = false;
+  function _syncStickyToVisualViewport() {
+    const vv = window.visualViewport;
+    const offset = vv ? Math.max(0, vv.offsetTop) : 0;
+    const header = document.querySelector('.site-header');
+    if (header) header.style.transform = offset ? `translateY(${offset}px)` : '';
+  }
+  function _startVisualViewportSync() {
+    if (!window.visualViewport || _vvSyncActive) return;
+    _vvSyncActive = true;
+    window.visualViewport.addEventListener('resize', _syncStickyToVisualViewport);
+    window.visualViewport.addEventListener('scroll', _syncStickyToVisualViewport);
+    _syncStickyToVisualViewport();
+  }
+  function _stopVisualViewportSync() {
+    if (window.visualViewport && _vvSyncActive) {
+      window.visualViewport.removeEventListener('resize', _syncStickyToVisualViewport);
+      window.visualViewport.removeEventListener('scroll', _syncStickyToVisualViewport);
+    }
+    _vvSyncActive = false;
+    const header = document.querySelector('.site-header');
+    if (header) header.style.transform = '';
+  }
+
+  function openSearchUI() {
+    _searchOpen = true;
+    _startVisualViewportSync();
+    startSearchSuggestionCycle();
+    document.getElementById('pbSearchToggle')?.setAttribute('aria-expanded', 'true');
+    document.getElementById('megaSearchToggle')?.setAttribute('aria-expanded', 'true');
+    const pbRow1 = document.getElementById('pbRow1');
+    const pbRow2 = document.getElementById('pbRow2');
+    const megaList = document.getElementById('megaNavList');
+    if (pbRow1) pbRow1.style.display = 'none';
+    if (pbRow2) pbRow2.style.display = 'none';
+    if (megaList) megaList.style.display = 'none';
+    document.getElementById('pbSearchField')?.classList.add('open');
+    document.getElementById('megaSearchField')?.classList.add('open');
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    const pillBar = document.getElementById('pillBar');
+    const input = document.getElementById(isDesktop ? 'megaSearchInput' : 'pbSearchInput');
+
+    // The pill-bar only becomes sticky-stuck once scrolled past the hero — don't rely on the
+    // keyboard's own scroll-into-view (inconsistent on iOS), force it under the header ourselves.
+    // scrollIntoView() is the wrong tool here: it aligns the element's un-stuck (static) top to
+    // the viewport top, ignoring that position:sticky will clamp it well before that — it
+    // overshoots by exactly the header's height, dragging everything after the pill-bar (e.g.
+    // the next section's eyebrow heading) up past the header along with it. Compute the actual
+    // minimum scroll needed instead: offsetTop reports the pill-bar's natural (unstuck) position.
+    // Force instant (bypass CSS scroll-behavior:smooth) — keeps this deterministic alongside
+    // the visualViewport-driven re-stick below, without an animation to race against it.
+    const stickUnderHeader = () => {
+      if (!pillBar) return;
+      const prevBehavior = document.documentElement.style.scrollBehavior;
+      document.documentElement.style.scrollBehavior = 'auto';
+      const headerH = document.querySelector('.site-header')?.offsetHeight || 0;
+      const target = Math.max(0, pillBar.offsetTop - headerH);
+      window.scrollTo(0, target);
+      document.documentElement.style.scrollBehavior = prevBehavior;
+    };
+    if (!isDesktop) stickUnderHeader();
+
+    // focus() must run synchronously inside this click handler — deferring it (even via a
+    // 0ms/50ms setTimeout) drops out of the user-gesture context, and iOS Safari silently
+    // refuses to raise the keyboard/cursor for a focus() call made outside of one. preventScroll
+    // stops iOS's own focus-triggered auto-scroll from fighting the scroll above.
+    input?.focus({ preventScroll: true });
+
+    if (!isDesktop) {
+      // On some iOS configurations, opening the keyboard shrinks the layout viewport itself
+      // (hero-slider's height is `100svh`-based), shifting everything below it — including the
+      // pill-bar — after our initial scroll already ran. Re-run the same calculation once the
+      // keyboard has settled so it's stuck at the correct (possibly now-different) position.
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', stickUnderHeader, { once: true });
+      } else {
+        setTimeout(stickUnderHeader, 350);
+      }
+    }
+  }
+
+  function closeSearchUI() {
+    _searchOpen = false;
+    _stopVisualViewportSync();
+    stopSearchSuggestionCycle();
+    document.getElementById('pbSearchToggle')?.setAttribute('aria-expanded', 'false');
+    document.getElementById('megaSearchToggle')?.setAttribute('aria-expanded', 'false');
+    document.getElementById('pbSearchField')?.classList.remove('open');
+    document.getElementById('megaSearchField')?.classList.remove('open');
+    const pbRow1 = document.getElementById('pbRow1');
+    const pbRow2 = document.getElementById('pbRow2');
+    const megaList = document.getElementById('megaNavList');
+    if (pbRow1) pbRow1.style.display = '';
+    if (pbRow2) pbRow2.style.display = '';
+    if (megaList) megaList.style.display = '';
+    const pbInput = document.getElementById('pbSearchInput');
+    const megaInput = document.getElementById('megaSearchInput');
+    if (pbInput) pbInput.value = '';
+    if (megaInput) megaInput.value = '';
+  }
+
+  async function runSearch(rawQuery) {
+    const q = (rawQuery || '').trim();
     if (!q) return;
-    const filtered = allProducts.filter(p => p.name.toLowerCase().includes(q.toLowerCase()) || p.category.toLowerCase().includes(q.toLowerCase()));
-    renderProducts(filtered);
-    _applyBanner('', `Results for "${q}"`);
+    closeSearchUI();
+
+    activeCategory = 'search';
+    _diversifyGallery = false;
+    _productPageSize = SHOP_PAGE_SIZE;
+    _productLoadMoreSize = SHOP_LOAD_MORE_SIZE;
+
+    const heroSlider = document.getElementById('heroSlider');
+    if (heroSlider) heroSlider.style.display = 'none';
+    const hsCarousel1 = document.getElementById('hsCarousel1');
+    if (hsCarousel1) hsCarousel1.style.display = 'none';
+    const hsCollections2 = document.getElementById('hsCollections2');
+    if (hsCollections2) hsCollections2.style.display = 'none';
+    const hsCarousel3 = document.getElementById('hsCarousel3');
+    if (hsCarousel3) hsCarousel3.style.display = 'none';
+    const hsDivider3 = document.getElementById('hsDivider3');
+    if (hsDivider3) hsDivider3.style.display = 'none';
+    const newsletterSection = document.getElementById('newsletterSection');
+    if (newsletterSection) newsletterSection.style.display = 'none';
+    document.querySelectorAll('.mega-nav__label[data-cat]').forEach(n => n.classList.remove('active'));
+
+    document.querySelector('.filter-bar').style.display = '';
+    document.querySelector('.shop-main').style.display = '';
+    document.getElementById('thriftlyBanner')?.classList.remove('visible');
+    document.getElementById('thriftlySection')?.classList.remove('visible');
+
+    document.title = `Search results for: ${q} — Beyond Beauty KE`;
+    _applyBanner('', `Search results for: ${q.toUpperCase()}`);
+
+    const grid = document.getElementById('productGrid');
+    if (grid) grid.style.opacity = '0.5';
+    try {
+      const res = await fetch('/api/products');
+      allProducts = await res.json();
+      const needle = q.toLowerCase();
+      const filtered = allProducts.filter(p =>
+        [p.name, p.cat_name, p.sub_name, p.sec_name].some(f => (f || '').toLowerCase().includes(needle))
+      );
+      renderProducts(filtered);
+    } catch (err) {
+      console.error('runSearch error:', err);
+      if (grid) grid.innerHTML = '<p style="color:var(--mid);font-size:13px;padding:40px 0">Could not load products. Please refresh.</p>';
+    } finally {
+      if (grid) grid.style.opacity = '';
+    }
+    window.scrollTo(0, 0);
   }
 
   document.getElementById('sortSelect').addEventListener('change', sortAndRender);

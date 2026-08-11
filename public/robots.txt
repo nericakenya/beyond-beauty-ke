@@ -1,4 +1,4 @@
-# Beyond Beauty KE — robots.txt
+# Beyond Beauty KE - robots.txt
 
 # Search engine crawlers
 User-agent: Googlebot

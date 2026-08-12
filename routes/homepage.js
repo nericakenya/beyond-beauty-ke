@@ -158,18 +158,20 @@ async function buildSections() {
       const maxItems = f['Max Items'] || 8;
       let items;
       if (f['Selection Mode'] === 'Manual') {
-        items = (f['Products'] || []).map(id => productsById[id]).filter(Boolean);
+        // Manual picks are hand-ordered via Airtable's Products link field —
+        // preserve that order as-is instead of diversifying it.
+        items = (f['Products'] || []).map(id => productsById[id]).filter(Boolean).slice(0, maxItems);
       } else {
         // Auto: Low Stock — oldest→newest among products still buyable and showing the low-stock badge
         // (excludes items whose stock has since hit 0 but haven't had the Airtable badge cleared yet)
         items = products
           .filter(p => p.badges.includes("Only 'X' Left") && !p.sold_out)
           .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        // Diversify across the full candidate pool before truncating to Max Items,
+        // so a category-dominated pool (e.g. mostly Skincare) doesn't fill the
+        // section's small visible slot count with one category.
+        items = diversifyByCategory(items).slice(0, maxItems);
       }
-      // Diversify across the full candidate pool before truncating to Max Items,
-      // so a category-dominated pool (e.g. mostly Skincare) doesn't fill the
-      // section's small visible slot count with one category.
-      items = diversifyByCategory(items).slice(0, maxItems);
       return { ...base, products: items };
     })
     .filter(s => (s.type === 'Collection Carousel' ? s.collections.length > 0 : s.products.length > 0));

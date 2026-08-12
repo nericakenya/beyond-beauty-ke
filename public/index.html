@@ -887,17 +887,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </section>
 
-<section class="hs-collections" id="hsCollections2" style="display:none">
-  <div class="hs-collections__head">
-    <p class="hs-collections__eyebrow" id="hs2Eyebrow"></p>
-    <h2 class="hs-collections__headline" id="hs2Headline"></h2>
-  </div>
-  <div class="hs-collections__track" id="hs2Track"></div>
-  <div class="hs-collections__dots" id="hs2Dots"></div>
-</section>
-
-<hr class="hs-divider" id="hsDivider3" style="display:none">
-
 <section class="hs-carousel" id="hsCarousel3" style="display:none">
   <div class="hs-collections__head">
     <p class="hs-collections__eyebrow" id="hsEyebrow3"></p>
@@ -905,6 +894,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
   <div class="hs-carousel__track" id="hsTrack3"></div>
   <div class="hs-carousel__dots" id="hsDots3"></div>
+</section>
+
+<hr class="hs-divider" id="hsDivider3" style="display:none">
+
+<section class="hs-collections" id="hsCollections2" style="display:none">
+  <div class="hs-collections__head">
+    <p class="hs-collections__eyebrow" id="hs2Eyebrow"></p>
+    <h2 class="hs-collections__headline" id="hs2Headline"></h2>
+  </div>
+  <div class="hs-collections__track" id="hs2Track"></div>
+  <div class="hs-collections__dots" id="hs2Dots"></div>
 </section>
 
 <div class="category-banner" id="categoryBanner" style="display:none">
@@ -2371,12 +2371,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   async function loadHomepageSections() {
     try {
       const sections = await fetch('/api/homepage/sections').then(r => r.ok ? r.json() : []);
-      // Sections arrive pre-sorted by Airtable's Sort Order — the first Product
-      // Carousel row is Section 1, the second (if present) is Section 3.
-      const productCarousels = sections.filter(s => s.type === 'Product Carousel');
-      if (productCarousels[0]) renderHsCarousel1(productCarousels[0]);
-      if (productCarousels[1]) renderHsCarousel3(productCarousels[1]);
+      // Matched by Section Name rather than Airtable Sort Order, so the fixed
+      // homepage layout (Bestsellers, then Newsletter, then Low Stock, then
+      // K-Beauty Collections) doesn't depend on how the Sections table is sorted.
+      const bestsellers = sections.find(s => s.name === 'Bestsellers');
+      const lowStock = sections.find(s => s.name === 'Low Stock Carousel');
       const collections2 = sections.find(s => s.type === 'Collection Carousel');
+      if (bestsellers) renderHsCarousel1(bestsellers);
+      if (lowStock) renderHsCarousel3(lowStock);
       if (collections2) renderHsCollections2(collections2);
     } catch (err) {
       console.error('loadHomepageSections error:', err);

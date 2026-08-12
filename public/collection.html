@@ -65,9 +65,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .mega-nav__label:hover{color:var(--black)}
   .mega-nav__label[aria-expanded="true"],.mega-nav__label.active{color:var(--accent)}
   .mega-nav__label[aria-expanded="true"]::after,.mega-nav__label.active::after{content:'';position:absolute;bottom:0;left:20px;right:20px;height:2px;background:var(--black)}
-  .mega-nav__label--thriftly{color:var(--accent)}
-  .mega-nav__label--thriftly:hover{color:var(--accent)}
-  .mega-nav__label--thriftly .thriftly-icon{font-size:13px}
+  .mega-nav__label--sale{color:var(--accent)}
+  .mega-nav__label--sale:hover{color:var(--accent)}
+  .mega-nav__label--sale .sale-icon{font-size:13px}
   .coming-soon-badge{display:inline-block;font-size:9px;letter-spacing:.08em;text-transform:uppercase;background:#f0ede9;color:var(--mid);padding:1px 5px;margin-left:5px;vertical-align:middle}
   .mega-coming-soon{font-size:12px;color:var(--light);letter-spacing:.02em;display:block;cursor:default;padding:1px 0}
   .mega-panel__col-header--soon{color:var(--light)!important;cursor:default;pointer-events:none}
@@ -476,13 +476,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       { name: 'Living', slug: 'living', sec: ['Rugs','Lighting','Storage & Organisation','Multi-packs'] },
     ]},
     { name: 'Sale', slug: 'sale', subs: [] },
-    { name: 'Thriftly', slug: 'thriftly', subs: [] },
-    { name: 'Fashion', slug: 'fashion', image: 'https://placehold.co/400x600/e8e4df/6b6560?text=Fashion', subs: [
-      { name: 'Clothing', slug: 'clothing', sec: ['Dresses','Tops & T-Shirts','Pants & Jeans','Skirts','Jackets & Coats','Knitwear','Suits & Co-ords','Activewear','Swimwear','Maternity','Multi-packs'] },
-      { name: 'Lingerie & Sleepwear', slug: 'lingerie-sleepwear', sec: ['Bras','Underwear','Shapewear','Sleepwear','Socks & Hosiery','Multi-packs'] },
-      { name: 'Accessories', slug: 'accessories', sec: ['Jewellery','Bags & Wallets','Belts','Sunglasses','Scarves & Hats','Watches','Multi-packs'] },
-      { name: 'Shoes', slug: 'shoes', sec: ['Boots & Ankle Boots','Heels & Wedges','Flats & Loafers','Sneakers','Sandals','Multi-packs'] },
-    ]},
   ];
 
   function normalizeSec(s) {
@@ -510,11 +503,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const li = document.createElement('li');
       if (!cat.subs.length) {
         const a = document.createElement('a');
-        a.className = 'mega-nav__label' + (cat.slug === 'thriftly' ? ' mega-nav__label--thriftly' : '');
+        a.className = 'mega-nav__label' + (cat.slug === 'sale' ? ' mega-nav__label--sale' : '');
         a.href = '/shop/' + cat.slug;
         a.dataset.cat = cat.slug;
-        if (cat.slug === 'thriftly') {
-          a.innerHTML = `${cat.name} <span class="thriftly-icon" aria-hidden="true">✦</span>`;
+        if (cat.slug === 'sale') {
+          a.innerHTML = `${cat.name} <span class="sale-icon" aria-hidden="true">✦</span>`;
         } else {
           a.textContent = cat.name;
         }

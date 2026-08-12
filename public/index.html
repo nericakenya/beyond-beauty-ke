@@ -95,11 +95,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .hero-slide.is-active { opacity: 1; pointer-events: auto; }
   .hero-slide__content { position: absolute; left: 24px; right: 24px; bottom: 32px; padding-bottom: 32px; color: #fff; text-align: center; }
   @media (min-width: 1024px) { .hero-slide__content { bottom: 64px; } }
-  .hero-slide__headline { font-family: var(--font-sans); font-size: clamp(20px,3vw,30px); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; line-height: 1.3; margin-bottom: 16px; }
+  .hero-slide__headline { font-family: var(--font-sans); font-size: 20px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; line-height: 1.3; margin-bottom: 16px; }
   .hero-slide__cta { display: inline-flex; align-items: center; gap: 8px; background: var(--black); color: #fff; font-family: var(--font-sans); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; text-decoration: none; padding: 14px 28px; }
   .hero-slider__dots { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2; }
   .hero-slider__dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.5); border: none; padding: 0; cursor: pointer; }
   .hero-slider__dot.is-active { background: #fff; }
+  /* Desktop: show all 3 slides side by side as columns instead of crossfading one at a time */
+  @media (min-width: 1024px) {
+    .hero-slider__track { display: grid; grid-template-columns: repeat(3, 1fr); height: 100%; gap: 0; }
+    .hero-slide { position: relative; inset: auto; width: 100%; height: 100%; opacity: 1; pointer-events: auto; transition: none; }
+    .hero-slider__dots { display: none; }
+  }
 
   /* ── FILTER BAR ── */
   .filter-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 40px; border-bottom: 1px solid var(--border); background: var(--white); gap: 16px; }
@@ -199,8 +205,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   /* ── CART PANEL ── */
   .cart-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 300; }
   .cart-overlay.open { display: block; }
-  .cart-panel { position: fixed; top: 0; right: -420px; width: 420px; max-width: 100vw; height: 100%; background: var(--white); z-index: 301; display: flex; flex-direction: column; transition: right .32s cubic-bezier(.25,.46,.45,.94); box-shadow: -4px 0 32px rgba(0,0,0,.1); }
-  .cart-panel.open { right: 0; }
+  /* Hidden via translateX(100%) rather than a fixed right offset — that self-adjusts to
+     whatever width is active at any breakpoint (see the width:100vw override below), so the
+     closed state stays fully off-screen instead of needing a matching offset per breakpoint. */
+  .cart-panel { position: fixed; top: 0; right: 0; width: 420px; max-width: 100vw; height: 100%; background: var(--white); z-index: 301; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .32s cubic-bezier(.25,.46,.45,.94); box-shadow: -4px 0 32px rgba(0,0,0,.1); }
+  .cart-panel.open { transform: translateX(0); }
 
   .cart-header { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; border-bottom: 1px solid var(--border); min-height: 56px; }
   .cart-header-title { font-family: var(--font-sans); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 500; color: var(--black); text-align: center; }
@@ -423,9 +432,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .mega-nav__label.active::after {
     content: ''; position: absolute; bottom: 0; left: 20px; right: 20px; height: 2px; background: var(--black);
   }
-  .mega-nav__label--thriftly { color: var(--accent); }
-  .mega-nav__label--thriftly:hover { color: var(--accent); }
-  .mega-nav__label--thriftly .thriftly-icon { font-size: 13px; }
+  .mega-nav__label--sale { color: var(--accent); }
+  .mega-nav__label--sale:hover { color: var(--accent); }
+  .mega-nav__label--sale .sale-icon { font-size: 13px; }
 
   /* ── MEGA NAV SEARCH (desktop) ── */
   .mega-search-toggle {
@@ -679,9 +688,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   }
   .pb-pill:hover { opacity: 0.8; }
 
-  .pb-cat--thriftly { color: var(--accent); }
-  .pb-cat--thriftly:hover { color: var(--accent); }
-  .pb-cat--thriftly .thriftly-icon { font-size: 13px; }
+  .pb-cat--sale { color: var(--accent); }
+  .pb-cat--sale:hover { color: var(--accent); }
+  .pb-cat--sale .sale-icon { font-size: 13px; }
 
   .pb-chip {
     display: inline-flex;
@@ -1044,6 +1053,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div class="toast" id="toast"></div>
 
 <script>
+  // Thriftly isn't launched yet — bounce any direct/bookmarked hit (both the
+  // legacy /thriftly path and the mega-nav /shop/thriftly path) to the shop
+  // before routing logic below reads the (now-corrected) URL.
+  (function () {
+    const p = window.location.pathname;
+    if (p === '/thriftly' || p.startsWith('/shop/thriftly')) {
+      history.replaceState({}, '', '/shop');
+    }
+  })();
+
   // ── CONFIG (fetched from server, WA number set here as fallback) ──
   let WA_NUMBER = '254114481515';
   let allProducts = [];
@@ -1781,13 +1800,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       { name: 'Living', slug: 'living', sec: ['Rugs','Lighting','Storage & Organisation','Multi-packs'] },
     ]},
     { name: 'Sale', slug: 'sale', subs: [] },
-    { name: 'Thriftly', slug: 'thriftly', subs: [] },
-    { name: 'Fashion', slug: 'fashion', image: 'https://placehold.co/400x600/e8e4df/6b6560?text=Fashion', subs: [
-      { name: 'Clothing', slug: 'clothing', sec: ['Dresses','Tops & T-Shirts','Pants & Jeans','Skirts','Jackets & Coats','Knitwear','Suits & Co-ords','Activewear','Swimwear','Maternity','Multi-packs'] },
-      { name: 'Lingerie & Sleepwear', slug: 'lingerie-sleepwear', sec: ['Bras','Underwear','Shapewear','Sleepwear','Socks & Hosiery','Multi-packs'] },
-      { name: 'Accessories', slug: 'accessories', sec: ['Jewellery','Bags & Wallets','Belts','Sunglasses','Scarves & Hats','Watches','Multi-packs'] },
-      { name: 'Shoes', slug: 'shoes', sec: ['Boots & Ankle Boots','Heels & Wedges','Flats & Loafers','Sneakers','Sandals','Multi-packs'] },
-    ]},
   ];
 
   // Normalise sec items: API returns objects; fallback tree uses strings
@@ -1838,11 +1850,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const li = document.createElement('li');
       if (!cat.subs.length) {
         const a = document.createElement('a');
-        a.className = 'mega-nav__label' + (cat.slug === 'thriftly' ? ' mega-nav__label--thriftly' : '');
+        a.className = 'mega-nav__label' + (cat.slug === 'sale' ? ' mega-nav__label--sale' : '');
         a.href = '/shop/' + cat.slug;
         a.dataset.cat = cat.slug;
-        if (cat.slug === 'thriftly') {
-          a.innerHTML = `${cat.name} <span class="thriftly-icon" aria-hidden="true">✦</span>`;
+        if (cat.slug === 'sale') {
+          a.innerHTML = `${cat.name} <span class="sale-icon" aria-hidden="true">✦</span>`;
         } else {
           a.textContent = cat.name;
         }
@@ -2461,9 +2473,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     CATEGORY_TREE.forEach(cat => {
       if (cat.status === 'Coming Soon') return;
       const btn = document.createElement('button');
-      btn.className = 'pb-cat' + (cat.slug === 'thriftly' ? ' pb-cat--thriftly' : '');
-      if (cat.slug === 'thriftly') {
-        btn.innerHTML = cat.name + ' <span class="thriftly-icon" aria-hidden="true">✦</span>';
+      btn.className = 'pb-cat' + (cat.slug === 'sale' ? ' pb-cat--sale' : '');
+      if (cat.slug === 'sale') {
+        btn.innerHTML = cat.name + ' <span class="sale-icon" aria-hidden="true">✦</span>';
       } else {
         btn.textContent = cat.name;
       }

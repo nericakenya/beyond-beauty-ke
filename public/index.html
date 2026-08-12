@@ -1614,16 +1614,29 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   // position:sticky clamps an element relative to the layout viewport, but the on-screen
   // keyboard (on some mobile browsers) pans the visual viewport — what's actually on
   // screen — down *within* that layout viewport instead of just shrinking it from the
-  // bottom. On this device only .site-header (stuck at top:0) exhibited this — .pill-bar
-  // (stuck at top:57px, i.e. under the header) rendered correctly without any correction,
-  // so apply the compensating transform to the header only; giving pill-bar the same
-  // transform double-shifted it further down than intended.
+  // bottom. .site-header (stuck at top:0) reliably needs a manual correction for this.
+  // Whether .pill-bar (stuck at top:57px, i.e. directly under the header, and home to the
+  // search field opened alongside this sync) *also* needs one is inconsistent across iOS
+  // Safari versions/devices — on some it already tracks the panned viewport correctly on
+  // its own, and forcing the header's offset onto it too double-shifts it further down;
+  // on others it doesn't track at all, and skipping the correction leaves it stuck at its
+  // un-panned position, hidden underneath the now-lower, higher-z-index header. Rather
+  // than hardcode either assumption, measure the actual on-screen gap between the header's
+  // bottom edge and the pill-bar's top edge after correcting the header, and close only
+  // that residual — self-calibrates on both kinds of device instead of guessing.
   let _vvSyncActive = false;
   function _syncStickyToVisualViewport() {
     const vv = window.visualViewport;
     const offset = vv ? Math.max(0, vv.offsetTop) : 0;
     const header = document.querySelector('.site-header');
     if (header) header.style.transform = offset ? `translateY(${offset}px)` : '';
+
+    const pillBar = document.getElementById('pillBar');
+    if (header && pillBar && pillBar.offsetParent !== null) {
+      pillBar.style.transform = '';
+      const gap = header.getBoundingClientRect().bottom - pillBar.getBoundingClientRect().top;
+      pillBar.style.transform = Math.abs(gap) > 0.5 ? `translateY(${gap}px)` : '';
+    }
   }
   function _startVisualViewportSync() {
     if (!window.visualViewport || _vvSyncActive) return;
@@ -1640,6 +1653,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     _vvSyncActive = false;
     const header = document.querySelector('.site-header');
     if (header) header.style.transform = '';
+    const pillBar = document.getElementById('pillBar');
+    if (pillBar) pillBar.style.transform = '';
   }
 
   function openSearchUI() {
@@ -1669,8 +1684,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     // minimum scroll needed instead: offsetTop reports the pill-bar's natural (unstuck) position.
     // Force instant (bypass CSS scroll-behavior:smooth) — keeps this deterministic alongside
     // the visualViewport-driven re-stick below, without an animation to race against it.
+    //
+    // Only do this when the pill-bar isn't already fully on-screen at its natural (unstuck)
+    // position. On the homepage, a near-full-height hero sits above it, pushing it well below
+    // the fold — the scroll is genuinely needed there. On shop/category pages (no hero), it
+    // already rests just under the announce-bar + header, comfortably in view — forcibly
+    // scrolling there only hides the announce-bar for no visibility benefit.
     const stickUnderHeader = () => {
       if (!pillBar) return;
+      const rect = pillBar.getBoundingClientRect();
+      if (rect.top >= 0 && rect.bottom <= window.innerHeight) return;
       const prevBehavior = document.documentElement.style.scrollBehavior;
       document.documentElement.style.scrollBehavior = 'auto';
       const headerH = document.querySelector('.site-header')?.offsetHeight || 0;

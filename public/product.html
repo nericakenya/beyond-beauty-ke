@@ -1198,7 +1198,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     return AXES_ORDER
       .map(axis => {
         const vals = [...new Set(activeVariants.filter(v => v[axis] != null).map(v => v[axis]))];
-        return vals.length >= 2 ? { axis, values: sortValues(axis, vals) } : null;
+        const minVals = axis === 'size' ? 1 : 2;
+        return vals.length >= minVals ? { axis, values: sortValues(axis, vals) } : null;
       })
       .filter(Boolean);
   }
@@ -1300,10 +1301,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button class="btn-whatsapp" onclick="openWhatsApp()">${waIcon2} ${effectivePrice ? 'Order' : 'Enquire'} via WhatsApp</button>`;
     }
 
-    // Jump hero to selected variant's image in the strip (strip is built once in initVariants)
+    // Jump hero to selected variant's image in the strip (strip is built once in initVariants).
+    // Only jump when the variant actually has its own gallery image (e.g. colour) — axes like
+    // size shouldn't move the hero.
     const variantImg = resolvedVariant.images?.[0] || null;
     const variantIdx = variantImg ? currentImages.indexOf(variantImg) : -1;
-    switchImage(variantIdx !== -1 ? variantIdx : 0);
+    if (variantIdx !== -1) switchImage(variantIdx);
   }
 
   function syncURL() {

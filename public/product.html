@@ -176,7 +176,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .gallery-main img.fade{opacity:0}
   .gallery-badges{position:absolute;top:14px;left:14px;display:flex;gap:4px;flex-wrap:wrap;z-index:2}
   .gallery-badge{font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500}
-  .gallery-badge.sale{background:var(--accent);color:var(--white)}
+  .gallery-badge.sale{background:#0e0e0e;color:var(--white)}
   .gallery-badge.new-in{background:#A8733F;color:var(--white)}
   .gallery-badge.out-of-stock{background:#1A1A1A;color:var(--white)}
   .gallery-badge.sold-out{background:#1A1A1A;color:var(--white)}
@@ -185,7 +185,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .gallery-badge.only-x-left{background:#2563eb;color:var(--white)}
   .also-card-badges{position:absolute;top:10px;left:10px;display:flex;gap:4px;flex-wrap:wrap;z-index:2}
   .also-card-badge{font-size:9px;letter-spacing:.14em;text-transform:uppercase;padding:4px 9px;font-family:var(--font-sans);font-weight:500}
-  .also-card-badge.sale{background:var(--accent);color:var(--white)}
+  .also-card-badge.sale{background:#0e0e0e;color:var(--white)}
   .also-card-badge.new-in{background:#A8733F;color:var(--white)}
   .also-card-badge.out-of-stock{background:#1A1A1A;color:var(--white)}
   .also-card-badge.sold-out{background:#1A1A1A;color:var(--white)}
@@ -1410,8 +1410,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     } else {
       galleryBadgesHtml = badges.map(b => {
         const cls   = b.toLowerCase().replace(/[\s']+/g,'-').replace(/[^a-z0-9-]/g,'');
-        const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : b;
-        return `<span class="gallery-badge ${cls}">${label}</span>`;
+        const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : (b === 'Sale' ? (p.original_price ? Math.round((1 - p.price / p.original_price) * 100) + '% OFF' : '') : b);
+        return label ? `<span class="gallery-badge ${cls}">${label}</span>` : '';
       }).join('');
     }
 
@@ -1519,8 +1519,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         } else {
           badgesHtml = alsoBadges.map(b => {
             const cls   = b.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '');
-            const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : b;
-            return `<span class="also-card-badge ${cls}">${label}</span>`;
+            const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : (b === 'Sale' ? (p.original_price ? Math.round((1 - p.price / p.original_price) * 100) + '% OFF' : '') : b);
+            return label ? `<span class="also-card-badge ${cls}">${label}</span>` : '';
           }).join('');
         }
         const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');

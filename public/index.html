@@ -131,7 +131,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   .product-badges { position: absolute; top: 12px; left: 12px; display: flex; gap: 4px; flex-wrap: wrap; z-index: 2; }
   .product-badge { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; padding: 4px 9px; font-family: var(--font-sans); font-weight: 500; }
-  .product-badge.sale { background: var(--accent); color: var(--white); }
+  .product-badge.sale { background: #0e0e0e; color: var(--white); }
   .product-badge.new-in { background: #A8733F; color: var(--white); }
   .product-badge.out-of-stock { background: #1A1A1A; color: var(--white); }
   .product-badge.sold-out { background: #1A1A1A; color: var(--white); }
@@ -1361,8 +1361,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     } else {
       badgesHtml = badges.map(b => {
         const cls   = b.toLowerCase().replace(/[\s']+/g, '-').replace(/[^a-z0-9-]/g, '');
-        const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : b;
-        return `<span class="product-badge ${cls}">${label}</span>`;
+        const label = b === "Only 'X' Left" ? `Only ${p.total_stock_quantity ?? 'X'} Left` : (b === 'Sale' ? (p.original_price ? Math.round((1 - p.price / p.original_price) * 100) + '% OFF' : '') : b);
+        return label ? `<span class="product-badge ${cls}">${label}</span>` : '';
       }).join('');
     }
 

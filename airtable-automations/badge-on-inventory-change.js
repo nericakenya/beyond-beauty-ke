@@ -1,5 +1,8 @@
-// Trigger: When a record is created in Inventory Movements
-// Input variable: recordId  (set to Inventory Movements > Record ID from the trigger)
+// Trigger: When a record is created or updated in Purchase Lines (deliveries, write-offs, count corrections)
+//          — add a second automation with the same script for Order Items (sales, returns).
+// Input variables: recordId    (Record ID from the trigger)
+//                  sourceTable ("Purchase Lines" or "Order Items")
+// Inventory Movements was archived on 2026-10-28; stock now comes from Stock Items.
 
 const NEW_IN_WINDOW_DAYS = 15;
 const SELLING_FAST_DAYS  = 14;
@@ -10,18 +13,25 @@ today.setHours(0, 0, 0, 0);
 const cutoff = new Date(today);
 cutoff.setDate(cutoff.getDate() - SELLING_FAST_DAYS);
 
-// Navigate: Inventory Movement → Variant → Product
-const { recordId } = input.config();
+// Navigate: Purchase Line → Stock Item → Variant → Product, or Order Item → Variant → Product
+const { recordId, sourceTable = 'Purchase Lines' } = input.config();
 
-const invTable      = base.getTable('Inventory Movements');
 const variantsTable = base.getTable('Variants');
 const productsTable = base.getTable('Products');
 
-const movement = await invTable.selectRecordAsync(recordId, { fields: ['Variant'] });
-if (!movement) { console.log('Movement record not found.'); return; }
-
-const variantLinks = movement.getCellValue('Variant');
-if (!variantLinks?.length) { console.log('No variant linked to this movement.'); return; }
+let variantLinks;
+if (sourceTable === 'Order Items') {
+  const item = await base.getTable('Order Items').selectRecordAsync(recordId, { fields: ['Variant'] });
+  variantLinks = item?.getCellValue('Variant');
+} else {
+  const line = await base.getTable('Purchase Lines').selectRecordAsync(recordId, { fields: ['Stock Item'] });
+  const stockLinks = line?.getCellValue('Stock Item');
+  if (stockLinks?.length) {
+    const stockItem = await base.getTable('Stock Items').selectRecordAsync(stockLinks[0].id, { fields: ['Variant'] });
+    variantLinks = stockItem?.getCellValue('Variant');
+  }
+}
+if (!variantLinks?.length) { console.log('No website variant linked (item not listed yet).'); return; }
 
 const variant = await variantsTable.selectRecordAsync(variantLinks[0].id, { fields: ['Products'] });
 if (!variant) { console.log('Variant not found.'); return; }

@@ -227,6 +227,7 @@ function mapRecord(record, catMap = {}) {
     images,
     colour: f['Review Count'] || null,
     has_variants: Array.isArray(f['Variants']) && f['Variants'].length > 1,
+    split_colours: f['Split colours on shop'] === true,
     in_stock: f['In Stock'] !== 'No',
     is_active: 1,
     created_at: record.createdTime,
@@ -268,10 +269,131 @@ async function getProducts() {
   return products;
 }
 
-// GET /api/products
+// ── COLOUR CARDS ──
+// The shop grid shows one card per colour of a style (ASOS-style) for products ticked
+// "Split colours on shop" in Airtable. A "card" is a product object with colour-specific
+// image, price, stock and link; `id` stays the product record ID so cart, wishlist and
+// back-in-stock keep working. Set SHOP_COLOUR_CARDS=0 to switch the whole thing off.
+const colourCardsEnabled = () => process.env.SHOP_COLOUR_CARDS !== '0';
+const STOCK_BADGES = ['Sold Out', 'Out of Stock', "Only 'X' Left"];
+
+function nameSlug(name) {
+  return (name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+}
+
+// "Carlie Medium Clutch" + "Khaki" → "Carlie Medium Clutch in Khaki" (skipped when the
+// product name already mentions the colour).
+function nameWithColour(name, colour) {
+  if (!colour || name.toLowerCase().includes(colour.toLowerCase())) return name;
+  return `${name} in ${colour}`;
+}
+
+// Groups a product's active variants by colour. Returns [] unless there are 2+ colours.
+// Each group's gallery = that colour's own photos (Variant Image, then product images
+// tagged with the colour via "Colour Names"), followed by shared/untagged product images.
+function buildColourGroups(p, variants) {
+  const order = [];
+  const byColour = new Map();
+  variants.filter(v => v.active && v.colour).forEach(v => {
+    if (!byColour.has(v.colour)) { byColour.set(v.colour, []); order.push(v.colour); }
+    byColour.get(v.colour).push(v);
+  });
+  if (order.length < 2) return [];
+
+  const productImages = p.images || [];
+  const shared = productImages.filter(img => !img.name || !byColour.has(img.name));
+
+  return order.map(colour => {
+    const vs = byColour.get(colour);
+    // Photos live on one variant per colour — take the first variant that has any
+    const withImages = vs.find(v => v.images.length > 0);
+    const own = [
+      ...(withImages ? withImages.images : []),
+      ...productImages.filter(img => img.name === colour),
+    ].map(img => ({ thumb: img.thumb, full: img.full, name: colour }));
+    const images = own.length ? [...own, ...shared] : (shared.length ? shared : productImages);
+
+    const stock = vs.reduce((sum, v) => sum + Math.max(v.stock_quantity || 0, 0), 0);
+    const priced = (vs.some(v => v.stock_quantity > 0) ? vs.filter(v => v.stock_quantity > 0) : vs)
+      .map(v => v.price_override ?? p.price)
+      .filter(x => x != null);
+    const price = priced.length ? Math.min(...priced) : p.price;
+
+    return { colour, variants: vs, images, own_count: own.length, has_own_image: own.length > 0, stock, price };
+  });
+}
+
+function plainCard(p) {
+  return { ...p, card_key: p.id, style_key: p.id, url: `/product?id=${p.id}&name=${nameSlug(p.name)}` };
+}
+
+function expandToCards(products, variantsByProduct) {
+  const cards = [];
+  products.forEach(p => {
+    const groups = (colourCardsEnabled() && p.split_colours)
+      ? buildColourGroups(p, variantsByProduct.get(p.id) || [])
+      : [];
+    // Sold-out colours are hidden while another colour is in stock; if every colour
+    // is sold out the style falls back to a single card, exactly as before.
+    const inStock = groups.filter(g => g.stock > 0);
+    if (!inStock.length) { cards.push(plainCard(p)); return; }
+
+    inStock.forEach(g => {
+      const badges = p.badges.filter(b => !STOCK_BADGES.includes(b));
+      if (g.stock <= 2) badges.push("Only 'X' Left");
+      const name = nameWithColour(p.name, g.colour);
+      cards.push({
+        ...p,
+        card_key: `${p.id}:${g.colour}`,
+        style_key: p.id,
+        style_name: p.name,
+        colour: g.colour,
+        name,
+        image_url: g.images[0]?.thumb || p.image_url,
+        // Hover photo only when the colour itself has a second photo (never a shared one)
+        hover_image_url: g.own_count > 1 ? g.images[1].thumb : null,
+        images: g.images,
+        price: g.price,
+        original_price: g.price === p.price ? p.original_price : null,
+        total_stock_quantity: g.stock,
+        sold_out: false,
+        badges,
+        // Quick "Add to Bag" needs an exact SKU — only possible when the colour has one size
+        sku: g.variants.length === 1 ? g.variants[0].sku : null,
+        has_variants: g.variants.length > 1,
+        url: `/product?id=${p.id}&name=${nameSlug(name)}&colour=${encodeURIComponent(g.colour)}`,
+      });
+    });
+  });
+  return cards;
+}
+
+async function getVariantsByProduct() {
+  const all = await fetchAllVariants();
+  const map = new Map();
+  all.forEach(r => {
+    const v = mapVariantRecord(r);
+    (r.fields.Products || []).forEach(pid => {
+      if (!map.has(pid)) map.set(pid, []);
+      map.get(pid).push(v);
+    });
+  });
+  return map;
+}
+
+// Expands any list of products (already filtered/ordered) into shop cards
+async function toShopCards(products) {
+  return expandToCards(products, await getVariantsByProduct());
+}
+
+async function getShopCards() {
+  return toShopCards(await getProducts());
+}
+
+// GET /api/products  (add ?cards=1 for one card per colour — used by the shop grid)
 router.get('/', async (req, res) => {
   try {
-    let products = await getProducts();
+    let products = req.query.cards === '1' ? await getShopCards() : await getProducts();
     const { category, cat, sub, sec } = req.query;
 
     if (category === 'sale' || cat === 'sale') {
@@ -310,9 +432,10 @@ router.get('/', async (req, res) => {
 // GET /api/products/refresh — bust the cache (admin only)
 router.get('/refresh', adminAuth, async (req, res) => {
   try {
-    cache          = { data: null, fetchedAt: 0 };
-    catCache       = { data: null, fetchedAt: 0 };
-    menuGroupCache = { data: null, fetchedAt: 0 };
+    cache            = { data: null, fetchedAt: 0 };
+    catCache         = { data: null, fetchedAt: 0 };
+    menuGroupCache   = { data: null, fetchedAt: 0 };
+    allVariantsCache = { data: null, fetchedAt: 0 };
     const products = await getProducts();
     res.json({ refreshed: true, count: products.length });
   } catch (err) {
@@ -342,12 +465,30 @@ router.get('/:id/variants', async (req, res) => {
 });
 
 // GET /api/products/:id
+// Adds `colours` (per-colour gallery + stock) for multi-colour products. With ?sku=…
+// the image_url is that SKU's colour photo — used to keep cart thumbnails correct.
 router.get('/:id', async (req, res) => {
   try {
     const products = await getProducts();
     const p = products.find(p => p.id === req.params.id);
     if (!p) return res.status(404).json({ error: 'Product not found' });
-    res.json(p);
+
+    const variants = await fetchVariantsForProduct(p.id);
+    const groups = buildColourGroups(p, variants);
+    const out = {
+      ...p,
+      colours: groups.map(g => ({
+        colour: g.colour,
+        images: g.images,
+        has_own_image: g.has_own_image,
+        stock: g.stock,
+      })),
+    };
+    if (req.query.sku) {
+      const group = groups.find(g => g.variants.some(v => v.sku === req.query.sku));
+      if (group?.images[0]) out.image_url = group.images[0].thumb;
+    }
+    res.json(out);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -355,3 +496,4 @@ router.get('/:id', async (req, res) => {
 
 module.exports = router;
 module.exports.getProducts = getProducts;
+module.exports.toShopCards = toShopCards;

@@ -146,6 +146,23 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .form-error{padding:11px 14px;background:#fee2e2;color:var(--red);font-size:12px;margin-bottom:16px;display:none;border:1px solid #fecaca}
   .form-error.show{display:block}
 
+  /* ── DELIVERY LOCATION SEARCH ── */
+  .form-select{width:100%;padding:11px 13px;border:1px solid var(--border);background:var(--white);font-family:var(--font-sans);font-size:13px;color:var(--black);outline:none;border-radius:0}
+  .form-select:focus{border-color:var(--black)}
+  .form-select.error{border-color:var(--red)}
+  .form-hint{font-size:11px;color:var(--mid);margin-top:6px;line-height:1.5}
+  .loc-wrap{position:relative}
+  .loc-list{position:absolute;left:0;right:0;top:100%;z-index:50;background:var(--white);border:1px solid var(--black);border-top:none;list-style:none;max-height:260px;overflow-y:auto;display:none}
+  .loc-list.show{display:block}
+  .loc-item{padding:10px 13px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)}
+  .loc-item:last-child{border-bottom:none}
+  .loc-item:hover,.loc-item.active{background:#f9f7f5}
+  .loc-item small{display:block;font-size:11px;color:var(--mid);margin-top:2px}
+  .loc-picked{display:none;align-items:flex-start;justify-content:space-between;gap:12px;padding:11px 13px;border:1px solid var(--black);font-size:13px;line-height:1.5}
+  .loc-picked.show{display:flex}
+  .loc-picked small{display:block;font-size:11px;color:var(--accent);margin-top:2px}
+  .loc-change{background:none;border:none;border-bottom:1px solid var(--black);font-family:var(--font-sans);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--black);cursor:pointer;padding:0 0 1px;flex-shrink:0;margin-top:3px}
+
   /* ── ORDER SUMMARY ── */
   .summary-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
   .summary-item:last-of-type{border-bottom:none}
@@ -345,9 +362,32 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <input class="form-input" id="customerEmail" placeholder="jane@example.com" type="email" autocomplete="email">
       </div>
 
+      <div class="form-group" id="locSearchGroup" style="display:none">
+        <label class="form-label" for="locSearch">Delivery Location *</label>
+        <div class="loc-wrap" id="locWrap">
+          <input class="form-input" id="locSearch" placeholder="Search your estate, building or street" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="locList">
+          <ul class="loc-list" id="locList" role="listbox"></ul>
+        </div>
+        <div class="loc-picked" id="locPicked">
+          <div><span id="locPickedText"></span><small id="locPickedZone"></small></div>
+          <button type="button" class="loc-change" onclick="clearPlace(true)">Change</button>
+        </div>
+        <p class="form-hint" id="locHint">Pick your location from the list so we can work out your delivery fee.</p>
+      </div>
+
+      <div class="form-group" id="zoneGroup">
+        <label class="form-label" for="deliveryZone">Delivery Area *</label>
+        <select class="form-select" id="deliveryZone" onchange="onZoneChange()">
+          <option value="">Select your delivery area</option>
+          <option value="nairobi">Nairobi (within 13.5 km of the city centre, and Karen) — KSh 350</option>
+          <option value="metro">Greater Nairobi (up to 45 km from the city centre) — KSh 450</option>
+          <option value="outside">Rest of Kenya — KSh 500</option>
+        </select>
+      </div>
+
       <div class="form-group" style="margin-bottom:0">
-        <label class="form-label">Delivery Address *</label>
-        <textarea class="form-textarea" id="deliveryAddress" placeholder="e.g. Apt 4B, Kilimani Road, Nairobi · Landmark: Near Java House" rows="3"></textarea>
+        <label class="form-label" for="deliveryAddress">Address Details *</label>
+        <textarea class="form-textarea" id="deliveryAddress" placeholder="e.g. Apt 4B, Kilimani Road · Landmark: Near Java House" rows="3"></textarea>
       </div>
     </div>
 
@@ -707,10 +747,49 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
   function fmt(p) { return 'KSh ' + p.toLocaleString('en-KE'); }
 
+  // Delivery pricing — keep in sync with routes/orders.js
+  const FREE_DELIVERY_FROM = 9500;
+  const DELIVERY_FEES  = { nairobi: 350, metro: 450, outside: 500 };
+  const ZONE_LABELS    = { nairobi: 'Nairobi', metro: 'Greater Nairobi', outside: 'Rest of Kenya' };
+  // Zones are straight-line distance from the I&M Bank Tower, Kenyatta Avenue
+  const CITY_CENTRE    = { lat: -1.2847, lng: 36.820284 };
+  const NAIROBI_KM     = 13.5;   // within this: Nairobi rate
+  const METRO_KM       = 45;     // within this: Greater Nairobi rate; beyond: rest of Kenya
+  const KAREN_MAX_KM   = 22;     // Karen gets the Nairobi rate even though it is past NAIROBI_KM
+
+  function kmFromCentre(lat, lng) {
+    const rad = d => d * Math.PI / 180;
+    const dLat = rad(lat - CITY_CENTRE.lat), dLng = rad(lng - CITY_CENTRE.lng);
+    const a = Math.sin(dLat / 2) ** 2 +
+              Math.cos(rad(CITY_CENTRE.lat)) * Math.cos(rad(lat)) * Math.sin(dLng / 2) ** 2;
+    return 6371 * 2 * Math.asin(Math.sqrt(a));
+  }
+
+  // comps: Google address components; texts: the place's label and formatted address
+  function zoneForPlace(lat, lng, comps, texts) {
+    const km = kmFromCentre(lat, lng);
+    if (km <= NAIROBI_KM) return 'nairobi';
+    const county  = comps.find(c => c.types.includes('administrative_area_level_1'));
+    const inNairobiCounty = !!county && /nairobi/i.test(county.longText || '');
+    const isKaren = inNairobiCounty && km <= KAREN_MAX_KM && (
+      comps.some(c => /^karen$/i.test((c.longText || '').trim()) && !c.types.includes('route')) ||
+      texts.some(t => /\bkaren\b/i.test(t || ''))
+    );
+    if (isKaren) return 'nairobi';
+    return km <= METRO_KM ? 'metro' : 'outside';
+  }
+
+  let deliveryZone  = '';     // '' until the customer picks a location or area
+  let selectedPlace = null;   // { id, label, address, lat, lng } from Google Places
+
+  // delivery is null while the fee is still unknown (no location chosen yet)
   function getCartTotals() {
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const delivery = subtotal >= 9500 ? 0 : 250;
-    return { subtotal, delivery, grand: subtotal + delivery };
+    let delivery;
+    if (subtotal >= FREE_DELIVERY_FROM) delivery = 0;
+    else if (deliveryZone) delivery = DELIVERY_FEES[deliveryZone];
+    else delivery = null;
+    return { subtotal, delivery, grand: subtotal + (delivery || 0) };
   }
 
   // ── CART COUNT BADGE ──
@@ -748,8 +827,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     totalsEl.innerHTML = `
       <div class="summary-totals">
         <div class="summary-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
-        <div class="summary-row"><span>Delivery</span><span>${delivery === 0 ? '\u2713 Free' : fmt(delivery)}</span></div>
-        ${delivery > 0 ? `<div class="free-delivery-msg">Add ${fmt(3000 - subtotal)} more for free delivery</div>` : ''}
+        <div class="summary-row"><span>Delivery</span><span>${delivery === null ? 'Select your delivery location' : delivery === 0 ? '\u2713 Free' : fmt(delivery)}</span></div>
+        ${delivery !== 0 ? `<div class="free-delivery-msg">Add ${fmt(FREE_DELIVERY_FROM - subtotal)} more for free delivery</div>` : ''}
         <div class="summary-row grand"><span>Total</span><span>${fmt(grand)}</span></div>
       </div>`;
   }
@@ -763,9 +842,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       el.classList.remove('error');
       if (!el.value.trim()) { el.classList.add('error'); ok = false; }
     });
+    const zoneEl = document.getElementById('deliveryZone');
+    const locEl  = document.getElementById('locSearch');
+    zoneEl.classList.remove('error');
+    locEl.classList.remove('error');
+    if (!deliveryZone) {
+      ok = false;
+      zoneEl.classList.add('error');
+      if (mapsReady) locEl.classList.add('error');
+    }
     if (!ok) {
       const err = document.getElementById('formError');
-      err.textContent = 'Please fill in your name, phone number, and delivery address.';
+      err.textContent = 'Please fill in your name, phone number, delivery location and address details.';
       err.classList.add('show');
       document.getElementById('customerName').scrollIntoView({ behavior: 'smooth', block: 'center' });
     } else {
@@ -791,11 +879,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     lines.push('');
     lines.push('*Order Summary*');
     lines.push('Subtotal: ' + fmt(subtotal));
-    lines.push('Delivery: ' + (delivery === 0 ? 'Free \u2713' : fmt(delivery)));
+    lines.push('Delivery (' + ZONE_LABELS[deliveryZone] + '): ' + (delivery === 0 ? 'Free \u2713' : fmt(delivery)));
     lines.push('*Total: ' + fmt(grand) + '*');
     lines.push('');
     lines.push('*Delivery Address*');
-    lines.push(address);
+    if (selectedPlace) {
+      lines.push(selectedPlace.address || selectedPlace.label);
+      lines.push(address);
+      lines.push('Map: https://www.google.com/maps/search/?api=1&query=' + selectedPlace.lat + ',' + selectedPlace.lng + '&query_place_id=' + selectedPlace.id);
+    } else {
+      lines.push(address);
+    }
     lines.push('');
     lines.push('*Name:* ' + name);
     lines.push('*Phone:* ' + phone);
@@ -805,6 +899,185 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     return lines.join('\n');
   }
+
+  // ── DELIVERY LOCATION (Google Places) ──
+  // The customer searches for their location; its distance from the city centre decides
+  // the fee (see zoneForPlace). If Google Maps can't load, the search box stays hidden and the Delivery Area dropdown is used instead.
+  const GOOGLE_MAPS_KEY = 'AIzaSyDdc5hNgWl9uzmO1xbGJsxanLkokE-aCs4'; // restricted to this site's domain
+  let mapsReady = false;
+  let placesLib = null, sessionToken = null;
+  let locSuggestions = [], locActive = -1, locTimer = null, locSeq = 0;
+
+  function onZoneChange() {
+    deliveryZone = document.getElementById('deliveryZone').value;
+    document.getElementById('deliveryZone').classList.remove('error');
+    renderSummary();
+  }
+
+  function setZone(zone) {
+    document.getElementById('deliveryZone').value = zone;
+    onZoneChange();
+  }
+
+  function disableMaps() {
+    mapsReady = false;
+    document.getElementById('locSearchGroup').style.display = 'none';
+    document.getElementById('zoneGroup').style.display = '';
+    document.getElementById('deliveryZone').disabled = false;
+    if (selectedPlace) { selectedPlace = null; setZone(''); }
+  }
+  window.gm_authFailure = disableMaps;   // Google calls this if the key is rejected
+
+  function closeLocList() {
+    document.getElementById('locList').classList.remove('show');
+    document.getElementById('locSearch').setAttribute('aria-expanded', 'false');
+    locActive = -1;
+  }
+
+  function renderLocList(note) {
+    const list = document.getElementById('locList');
+    list.innerHTML = '';
+    locSuggestions.forEach((p, idx) => {
+      const li = document.createElement('li');
+      li.className = 'loc-item' + (idx === locActive ? ' active' : '');
+      li.setAttribute('role', 'option');
+      li.textContent = p.mainText ? p.mainText.toString() : p.text.toString();
+      if (p.secondaryText) {
+        const small = document.createElement('small');
+        small.textContent = p.secondaryText.toString();
+        li.appendChild(small);
+      }
+      // mousedown fires before the input's blur, so the pick isn't lost
+      li.addEventListener('mousedown', e => { e.preventDefault(); pickPlace(idx); });
+      list.appendChild(li);
+    });
+    if (note) {
+      const li = document.createElement('li');
+      li.className = 'loc-item';
+      li.style.cursor = 'default';
+      li.style.color = 'var(--mid)';
+      li.textContent = note;
+      list.appendChild(li);
+    }
+    const open = locSuggestions.length > 0 || !!note;
+    list.classList.toggle('show', open);
+    document.getElementById('locSearch').setAttribute('aria-expanded', String(open));
+  }
+
+  async function searchPlaces(input) {
+    const seq = ++locSeq;
+    try {
+      if (!sessionToken) sessionToken = new placesLib.AutocompleteSessionToken();
+      const { suggestions } = await placesLib.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input, sessionToken, includedRegionCodes: ['ke'],
+      });
+      if (seq !== locSeq) return;   // a newer search is already running
+      locSuggestions = suggestions.map(s => s.placePrediction).filter(Boolean);
+      locActive = -1;
+      renderLocList(locSuggestions.length ? '' : 'No matches \u2014 try a nearby estate, building or street.');
+    } catch (e) {
+      console.warn('[Checkout] Location search failed:', e);
+      if (seq === locSeq) disableMaps();
+    }
+  }
+
+  async function pickPlace(idx) {
+    const prediction = locSuggestions[idx];
+    if (!prediction) return;
+    const label = prediction.text.toString();
+    closeLocList();
+    const input = document.getElementById('locSearch');
+    input.value = label;
+    try {
+      const place = prediction.toPlace();
+      // Essentials-tier fields only — keeps each lookup on the cheapest Place Details price
+      await place.fetchFields({ fields: ['formattedAddress', 'addressComponents', 'location'] });
+      sessionToken = null;   // the Place Details call closes the billing session
+      const comps  = place.addressComponents || [];
+      const inKenya = comps.some(c => c.types.includes('country') && c.shortText === 'KE');
+      if (!inKenya || !place.location) {
+        renderLocList('Sorry, we only deliver within Kenya.');
+        return;
+      }
+      const lat  = place.location.lat(), lng = place.location.lng();
+      const zone = zoneForPlace(lat, lng, comps, [label, place.formattedAddress]);
+      selectedPlace = {
+        id: place.id, label, address: place.formattedAddress || label,
+        lat: lat.toFixed(6), lng: lng.toFixed(6),
+      };
+      document.getElementById('locPickedText').textContent = label;
+      document.getElementById('locPickedZone').textContent =
+        ZONE_LABELS[zone] + ' delivery \u2014 ' + fmt(DELIVERY_FEES[zone]);
+      document.getElementById('locPicked').classList.add('show');
+      document.getElementById('locWrap').style.display = 'none';
+      document.getElementById('locHint').style.display = 'none';
+      input.classList.remove('error');
+      setZone(zone);
+    } catch (e) {
+      console.warn('[Checkout] Could not load the selected place:', e);
+      disableMaps();
+    }
+  }
+
+  function clearPlace(focus) {
+    selectedPlace = null;
+    document.getElementById('locPicked').classList.remove('show');
+    document.getElementById('locWrap').style.display = '';
+    document.getElementById('locHint').style.display = '';
+    const input = document.getElementById('locSearch');
+    input.value = '';
+    setZone('');
+    if (focus) input.focus();
+  }
+
+  function initLocationSearch() {
+    const input = document.getElementById('locSearch');
+    input.addEventListener('input', () => {
+      clearTimeout(locTimer);
+      const q = input.value.trim();
+      if (q.length < 3) { locSeq++; locSuggestions = []; closeLocList(); return; }
+      locTimer = setTimeout(() => searchPlaces(q), 300);
+    });
+    input.addEventListener('keydown', e => {
+      if (!locSuggestions.length) return;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const n = locSuggestions.length;
+        locActive = (locActive + (e.key === 'ArrowDown' ? 1 : -1) + n) % n;
+        renderLocList('');
+      } else if (e.key === 'Enter' && locActive >= 0) {
+        e.preventDefault();
+        pickPlace(locActive);
+      } else if (e.key === 'Escape') {
+        closeLocList();
+      }
+    });
+    input.addEventListener('blur', () => setTimeout(closeLocList, 150));
+    // With the search available, the fee comes from the picked place, not the dropdown
+    document.getElementById('locSearchGroup').style.display = '';
+    document.getElementById('zoneGroup').style.display = 'none';
+    mapsReady = true;
+  }
+
+  (function loadGoogleMaps() {
+    if (!GOOGLE_MAPS_KEY || !cart.length) return;
+    window.__bbMapsLoaded = async function () {
+      try {
+        placesLib = await google.maps.importLibrary('places');
+        if (!placesLib.AutocompleteSuggestion) throw new Error('Places autocomplete unavailable');
+        initLocationSearch();
+      } catch (e) {
+        console.warn('[Checkout] Google Places unavailable, using the delivery area dropdown:', e);
+        disableMaps();
+      }
+    };
+    const s = document.createElement('script');
+    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GOOGLE_MAPS_KEY) +
+            '&v=weekly&loading=async&region=KE&callback=__bbMapsLoaded';
+    s.async = true;
+    s.onerror = disableMaps;
+    document.head.appendChild(s);
+  })();
 
   // ── SEND TO WHATSAPP ──
   function sendToWhatsApp() {

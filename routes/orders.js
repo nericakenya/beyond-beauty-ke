@@ -3,28 +3,19 @@ const router = express.Router();
 const { pool } = require('../database');
 const adminAuth = require('../middleware/adminAuth');
 
-const FREE_DELIVERY_FROM = 9500;
-const DELIVERY_FEES = { nairobi: 350, metro: 450, outside: 500 };
-
 function generateOrderNumber() {
   return 'BB' + Date.now().toString(36).toUpperCase();
 }
 
 // POST /api/orders — create order
 router.post('/', async (req, res) => {
-  const { customer_name, customer_phone, customer_email, delivery_address, delivery_zone, items } = req.body;
+  const { customer_name, customer_phone, customer_email, delivery_address, items } = req.body;
   if (!customer_name || !customer_phone || !delivery_address || !Array.isArray(items) || !items.length) {
     return res.status(400).json({ error: 'customer_name, customer_phone, delivery_address, and items are required' });
   }
 
   const subtotal = items.reduce((sum, i) => sum + i.unit_price * i.quantity, 0);
-  // Delivery pricing — keep in sync with public/checkout.html.
-  // delivery_zone: 'nairobi' (default when omitted), 'metro' (Greater Nairobi) or 'outside'.
-  const zone = delivery_zone || 'nairobi';
-  if (!Object.prototype.hasOwnProperty.call(DELIVERY_FEES, zone)) {
-    return res.status(400).json({ error: "delivery_zone must be 'nairobi', 'metro' or 'outside'" });
-  }
-  const delivery_fee = subtotal >= FREE_DELIVERY_FROM ? 0 : DELIVERY_FEES[zone];
+  const delivery_fee = subtotal >= 3000 ? 0 : 200;
   const total_amount = subtotal + delivery_fee;
   const order_number = generateOrderNumber();
 

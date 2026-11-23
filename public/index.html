@@ -9,7 +9,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-NJDHG99R');</script>
 <!-- End Google Tag Manager -->
 <script src="/js/tracking.js"></script>
-<script src="/js/shop-order.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Beyond Beauty KE</title>
@@ -129,9 +128,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .product-img-wrap { position: relative; overflow: hidden; aspect-ratio: 3/4; background: var(--product-img-bg); margin-bottom: 14px; }
   .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .55s cubic-bezier(.25,.46,.45,.94); }
   .product-card:hover .product-img-wrap img { transform: scale(1.04); }
-  /* Second photo of the colour, cross-faded in on hover (colour cards only) */
-  .product-img-wrap img.product-img-hover { position: absolute; inset: 0; opacity: 0; transition: opacity .35s ease, transform .55s cubic-bezier(.25,.46,.45,.94); }
-  @media (hover: hover) { .product-card:hover .product-img-wrap img.product-img-hover { opacity: 1; } }
 
   .product-badges { position: absolute; top: 12px; left: 12px; display: flex; gap: 4px; flex-wrap: wrap; z-index: 2; }
   .product-badge { font-size: 9px; letter-spacing: .14em; text-transform: uppercase; padding: 4px 9px; font-family: var(--font-sans); font-weight: 500; }
@@ -737,7 +733,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <div class="announce-bar">
-  <span class="ann-line">Free delivery on orders over KSh 9,500</span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="#" target="_blank">+254 114 481515</a></span>
+  <span class="ann-line">Free delivery on orders over KSh 5,000</span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="#" target="_blank">+254 114 481515</a></span>
 </div>
 
 <header class="site-header">
@@ -1045,7 +1041,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="cart-footer" id="cartFooter" style="display:none">
     <div class="cart-totals">
       <div class="cart-total-row"><span>Subtotal</span><span id="cartSubtotal">KSh 0</span></div>
-      <div class="cart-total-row"><span>Delivery</span><span id="cartDelivery">KSh 350</span></div>
+      <div class="cart-total-row"><span>Delivery</span><span id="cartDelivery">KSh 200</span></div>
       <div class="cart-total-row grand"><span>Total</span><span id="cartGrand">KSh 0</span></div>
     </div>
     <p class="cart-delivery-msg" id="cartDeliveryMsg"></p>
@@ -1186,20 +1182,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         value: Number(product.price) || 0
       });
     }
-    // Colour cards: add the exact SKU so the bag holds the right colour (same line
-    // shape the product page writes). Plain product cards behave as before.
-    const existing = product.sku
-      ? cart.find(i => i.sku === product.sku)
-      : cart.find(i => i.id === product.id && !i.sku);
+    const existing = cart.find(i => i.id === product.id);
     if (existing) {
       existing.qty++;
     } else {
-      const line = { id: product.id, name: product.name, price: product.price, image_url: product.image_url, qty: 1 };
-      if (product.sku) {
-        line.sku = product.sku;
-        line.name = (product.style_name || product.name) + (product.colour ? ` · ${product.colour}` : '');
-      }
-      cart.push(line);
+      cart.push({ id: product.id, name: product.name, price: product.price, image_url: product.image_url, qty: 1 });
     }
     saveCart();
     showToast('Added to bag');
@@ -1255,12 +1242,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
     footer.style.display = 'block';
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const delivery = subtotal >= 9500 ? 0 : 350;
+    const delivery = subtotal >= 5000 ? 0 : 250;
     const grand = subtotal + delivery;
     document.getElementById('cartSubtotal').textContent = fmt(subtotal);
     document.getElementById('cartDelivery').textContent = delivery === 0 ? 'Free' : fmt(delivery);
     document.getElementById('cartGrand').textContent = fmt(grand);
-    document.getElementById('cartDeliveryMsg').textContent = delivery > 0 ? `Add ${fmt(9500 - subtotal)} more for free delivery` : '✓ You qualify for free delivery';
+    document.getElementById('cartDeliveryMsg').textContent = delivery > 0 ? `Add ${fmt(5000 - subtotal)} more for free delivery` : '✓ You qualify for free delivery';
     el.innerHTML = cart.map(item => {
       const key = itemKey(item);
       return `
@@ -1280,19 +1267,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }).join('');
   }
 
-  // Airtable image links expire, so cart thumbnails are refreshed when the bag opens.
-  // Lines with a SKU ask for that SKU's colour photo — otherwise a khaki bag in the
-  // cart would be repainted with the product's main (e.g. black) image.
   async function refreshCartImages() {
     if (!cart.length) return;
-    const fresh = await Promise.all(cart.map(item =>
-      fetch(`/api/products/${item.id}${item.sku ? `?sku=${encodeURIComponent(item.sku)}` : ''}`)
-        .then(r => r.ok ? r.json() : null).catch(() => null)
-    ));
+    const ids = [...new Set(cart.map(i => i.id))];
+    const updates = await Promise.all(
+      ids.map(id => fetch(`/api/products/${id}`).then(r => r.ok ? r.json() : null).catch(() => null))
+    );
     let changed = false;
-    cart.forEach((item, i) => {
-      const p = fresh[i];
-      if (p && p.image_url && item.image_url !== p.image_url) { item.image_url = p.image_url; changed = true; }
+    updates.forEach(p => {
+      if (!p) return;
+      cart.forEach(item => {
+        if (item.id === p.id && item.image_url !== p.image_url) {
+          item.image_url = p.image_url;
+          changed = true;
+        }
+      });
     });
     if (changed) { localStorage.setItem('bb_cart', JSON.stringify(cart)); renderCartItems(); }
   }
@@ -1331,9 +1320,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     return `<svg width="16" height="16" viewBox="0 0 24 24" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>`;
   }
 
-  // `id` is the card key (product + colour) so each colour is saved separately
   function toggleSave(id, btn) {
-    const key = decodeURIComponent(String(id));
+    const key = String(id);
     if (savedSet.has(key)) { savedSet.delete(key); btn.classList.remove('saved'); }
     else { savedSet.add(key); btn.classList.add('saved'); }
     btn.innerHTML = heartIcon(savedSet.has(key));
@@ -1354,18 +1342,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   let _productPageSize = PRODUCT_PAGE_SIZE;
   let _productLoadMoreSize = PRODUCT_LOAD_MORE_SIZE;
 
-  // Quick add from a card. A colour that comes in several sizes has no single SKU,
-  // so the shopper picks the size on the product page instead.
-  function quickAdd(card) {
-    if (card.colour && card.card_key !== card.id && !card.sku) { location.href = cardUrl(card); return; }
-    addToCart(card);
-  }
-  function cardUrl(p) {
-    if (p.url) return p.url;
-    const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return `/product?id=${p.id}&name=${slug}`;
-  }
-  function addToCartByIndex(i) { quickAdd(renderedList[i]); }
+  function addToCartByIndex(i) { addToCart(renderedList[i]); }
   function waLinkByIndex(i) { return waLink(renderedList[i]); }
 
   // Shared card markup — addToCartCall/waLinkCall receive the card's index and return
@@ -1392,16 +1369,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const priceHtml = p.price
       ? `<span class="product-price ${p.original_price ? 'sale-price' : ''}">${fmt(p.price)}</span>${p.original_price ? `<span class="product-price original">${fmt(p.original_price)}</span>` : ''}`
       : `<span class="product-price" style="color:var(--accent);font-style:italic">Enquire for price</span>`;
-    const href    = cardUrl(p).replace(/'/g, '%27');
-    const saveKey = encodeURIComponent(p.card_key || p.id).replace(/'/g, '%27');
-    const altText = p.name.replace(/"/g, '&quot;');
+    const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     return `
-    <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='${href}'">
+    <div class="product-card" style="animation-delay:${i * 0.05}s" onclick="location.href='/product?id=${p.id}&name=${slug}'">
       <div class="product-img-wrap">
         <div class="product-badges">${badgesHtml}</div>
-        <img src="${p.image_url}" alt="${altText}" loading="lazy" onerror="this.src='https://placehold.co/400x533/FAFBFB/6b6560?text=Photo+Coming'">
-        ${p.hover_image_url ? `<img class="product-img-hover" src="${p.hover_image_url}" alt="" loading="lazy" onerror="this.remove()">` : ''}
-        <button class="product-save" onclick="event.stopPropagation();toggleSave('${saveKey}', this)" title="Save">${heartIcon(false)}</button>
+        <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/FAFBFB/6b6560?text=Photo+Coming'">
+        <button class="product-save" onclick="event.stopPropagation();toggleSave('${p.id}', this)" title="Save">${heartIcon(false)}</button>
         ${!unavailable ? `<div class="product-quick">
           ${p.price ? `<button class="quick-btn" onclick="event.stopPropagation();${addToCartCall(i)}">Add to Bag</button>` : ''}
           <a href="#" onclick="event.stopPropagation();if(window.bbTrack)bbTrack('whatsapp_lead',{source:'product_card'});window.open(${waLinkCall(i)},'_blank');return false;" class="quick-whatsapp">
@@ -1426,7 +1400,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function renderProductGrid() {
     const grid = document.getElementById('productGrid');
     const loadMoreWrap = document.getElementById('loadMoreWrap');
-    document.getElementById('productCount').textContent = renderedList.length + (renderedList.length === 1 ? ' item' : ' items');
+    document.getElementById('productCount').textContent = renderedList.length + ' products';
     if (!renderedList.length) {
       grid.innerHTML = '<p style="color:var(--mid);font-size:13px;padding:40px 0">No products found.</p>';
       loadMoreWrap.style.display = 'none';
@@ -1464,16 +1438,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       let url;
       if (typeof params === 'string') {
         const cat = params;
-        // cards=1 → one card per colour (see routes/products.js)
-        if (cat === 'all' || cat === 'shop-all')  url = '/api/products?cards=1';
-        else if (cat === 'sale') url = '/api/products?cards=1&category=sale';
-        else url = `/api/products?cards=1&cat=${encodeURIComponent(cat)}`;
+        if (cat === 'all' || cat === 'shop-all')  url = '/api/products';
+        else if (cat === 'sale') url = '/api/products?category=sale';
+        else url = `/api/products?cat=${encodeURIComponent(cat)}`;
       } else {
-        const qs = new URLSearchParams({ cards: '1' });
+        const qs = new URLSearchParams();
         if (params.cat) qs.set('cat', params.cat);
         if (params.sub) qs.set('sub', params.sub);
         if (params.sec) qs.set('sec', params.sec);
-        url = '/api/products?' + qs.toString();
+        url = '/api/products' + (qs.toString() ? '?' + qs.toString() : '');
       }
       const res = await fetch(url, { signal: _loadAbort.signal });
       allProducts = await res.json();
@@ -1493,8 +1466,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     if (sort === 'price_asc') list.sort((a, b) => a.price - b.price);
     else if (sort === 'price_desc') list.sort((a, b) => b.price - a.price);
     else if (_diversifyGallery) list = diversifyByCategory(list);
-    // Always last: colours of the same style must never sit side by side
-    renderProducts(spaceOutStyles(list));
+    renderProducts(list);
   }
 
   function filterCat(cat, skipPushState) {
@@ -1805,13 +1777,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const grid = document.getElementById('productGrid');
     if (grid) grid.style.opacity = '0.5';
     try {
-      const res = await fetch('/api/products?cards=1');
+      const res = await fetch('/api/products');
       allProducts = await res.json();
       const needle = q.toLowerCase();
       const filtered = allProducts.filter(p =>
         [p.name, p.cat_name, p.sub_name, p.sec_name].some(f => (f || '').toLowerCase().includes(needle))
       );
-      renderProducts(spaceOutStyles(filtered));
+      renderProducts(filtered);
     } catch (err) {
       console.error('runSearch error:', err);
       if (grid) grid.innerHTML = '<p style="color:var(--mid);font-size:13px;padding:40px 0">Could not load products. Please refresh.</p>';
@@ -2652,7 +2624,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     pills.slice(0, 5).forEach(pill => {
       const sub = _pbChips.length === 0 ? pill.slug : _pbChips[0].slug;
       const sec = _pbChips.length === 0 ? undefined : pill.slug;
-      const qs  = new URLSearchParams({ cards: '1', cat: _pbCat.slug });
+      const qs  = new URLSearchParams({ cat: _pbCat.slug });
       if (sub) qs.set('sub', sub);
       if (sec) qs.set('sec', sec);
       const href = '/api/products?' + qs.toString();

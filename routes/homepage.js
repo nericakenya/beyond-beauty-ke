@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const adminAuth = require('../middleware/adminAuth');
-const { getProducts, toShopCards } = require('./products');
+const { getProducts } = require('./products');
 
 const AIRTABLE_SECTIONS    = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Homepage%20Sections`;
 const AIRTABLE_COLLECTIONS = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Collections`;
@@ -247,8 +247,7 @@ router.get('/collections/:slug', async (req, res) => {
     const collections = await getResolvedCollections();
     const collection = collections.find(c => c.active && c.slug === req.params.slug);
     if (!collection) return res.status(404).json({ error: 'Collection not found' });
-    // One card per colour, same as the shop grid (hand-picked product order is kept)
-    res.json({ ...collection, products: await toShopCards(collection.products) });
+    res.json(collection);
   } catch (err) {
     console.error('[Homepage] Collection fetch error:', err.message);
     res.status(500).json({ error: 'Could not load collection' });

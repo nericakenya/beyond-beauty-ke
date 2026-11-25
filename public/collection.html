@@ -9,6 +9,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 })(window,document,'script','dataLayer','GTM-NJDHG99R');</script>
 <!-- End Google Tag Manager -->
 <script src="/js/tracking.js"></script>
+<script src="/js/shop-order.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Beyond Beauty KE</title>
@@ -262,7 +263,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <div class="announce-bar">
-  <span class="ann-line">Free delivery on orders over KSh 5,000</span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="https://wa.me/254114481515" target="_blank">+254 114 481515</a></span>
+  <span class="ann-line">Free delivery on orders over KSh 9,500</span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="https://wa.me/254114481515" target="_blank">+254 114 481515</a></span>
 </div>
 
 <div class="sticky-shell" id="stickyShell">
@@ -772,7 +773,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
     footer && (footer.style.display = 'block');
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const delivery = subtotal >= 5000 ? 0 : 250;
+    const delivery = subtotal >= 9500 ? 0 : 350;
     const grand = subtotal + delivery;
     el.innerHTML = cart.map(i => {
       const key = itemKey(i);
@@ -793,7 +794,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('cartSubtotal').textContent = fmt(subtotal);
     document.getElementById('cartDelivery').textContent = delivery === 0 ? 'Free' : fmt(delivery);
     document.getElementById('cartGrand').textContent = fmt(grand);
-    document.getElementById('cartDeliveryMsg').textContent = delivery === 0 ? 'You qualify for free delivery!' : `Add ${fmt(5000 - subtotal)} more for free delivery`;
+    document.getElementById('cartDeliveryMsg').textContent = delivery === 0 ? 'You qualify for free delivery!' : `Add ${fmt(9500 - subtotal)} more for free delivery`;
   }
 
   function showToast(msg) {
@@ -802,15 +803,20 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     setTimeout(() => t.classList.remove('show'), 2200);
   }
 
+  // Colour cards carry the colour's SKU so the bag holds the right colour
   function addProductToCart(p) {
-    const existing = cart.find(i => i.id === p.id && !i.sku);
-    if (existing) existing.qty++;
-    else cart.push({ id: p.id, name: p.name, price: p.price, image_url: p.image_url, qty: 1 });
+    const existing = p.sku ? cart.find(i => i.sku === p.sku) : cart.find(i => i.id === p.id && !i.sku);
+    if (existing) { existing.qty++; return; }
+    const line = { id: p.id, name: p.name, price: p.price, image_url: p.image_url, qty: 1 };
+    if (p.sku) { line.sku = p.sku; line.name = (p.style_name || p.name) + (p.colour ? ` · ${p.colour}` : ''); }
+    cart.push(line);
   }
 
   function addToCartByIndex(i) {
     const p = collectionProducts[i];
     if (!p || !p.price) return;
+    // A colour with several sizes has no single SKU — pick the size on the product page
+    if (p.colour && p.card_key !== p.id && !p.sku) { location.href = p.url; return; }
     if (window.bbTrack) bbTrack('add_to_cart', { product_id: p.id, item_name: p.name, value: Number(p.price) || 0 });
     addProductToCart(p);
     saveCart();
@@ -818,7 +824,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   function addAllToCart() {
-    const buyable = collectionProducts.filter(p => p.price && !p.sold_out);
+    // One of each style — not every colour of the same bag
+    const seenStyles = new Set();
+    const buyable = collectionProducts.filter(p => {
+      if (!p.price || p.sold_out || seenStyles.has(p.style_key || p.id)) return false;
+      seenStyles.add(p.style_key || p.id);
+      return true;
+    });
     buyable.forEach(p => addProductToCart(p));
     saveCart();
     if (window.bbTrack) bbTrack('add_all_to_cart', { count: buyable.length });
@@ -858,8 +870,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       ? `<span class="product-price ${p.original_price ? 'sale-price' : ''}">${fmt(p.price)}</span>${p.original_price ? `<span class="product-price original">${fmt(p.original_price)}</span>` : ''}`
       : `<span class="product-price" style="color:var(--accent);font-style:italic">Enquire for price</span>`;
     const slug = p.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const href = (p.url || `/product?id=${p.id}&name=${slug}`).replace(/'/g, '%27');
     return `
-    <div class="product-card" onclick="location.href='/product?id=${p.id}&name=${slug}'">
+    <div class="product-card" onclick="location.href='${href}'">
       <div class="product-img-wrap">
         <div class="product-badges">${badgesHtml}</div>
         <img src="${p.image_url}" alt="${p.name}" loading="lazy" onerror="this.src='https://placehold.co/400x533/FAFBFB/6b6560?text=Photo+Coming'">
@@ -884,7 +897,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const res = await fetch(`/api/homepage/collections/${encodeURIComponent(slug)}`);
       if (!res.ok) throw new Error('not found');
       const c = await res.json();
-      collectionProducts = c.products;
+      // Colour cards of the same style are kept apart (curated order otherwise preserved)
+      collectionProducts = spaceOutStyles(c.products);
       currentCollection = c;
       document.title = c.title + ' — Beyond Beauty KE';
 
@@ -945,7 +959,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="cart-footer" id="cartFooter" style="display:none">
     <div class="cart-totals">
       <div class="cart-total-row"><span>Subtotal</span><span id="cartSubtotal">KSh 0</span></div>
-      <div class="cart-total-row"><span>Delivery</span><span id="cartDelivery">KSh 250</span></div>
+      <div class="cart-total-row"><span>Delivery</span><span id="cartDelivery">KSh 350</span></div>
       <div class="cart-total-row grand"><span>Total</span><span id="cartGrand">KSh 0</span></div>
     </div>
     <p class="cart-delivery-msg" id="cartDeliveryMsg"></p>

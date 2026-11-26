@@ -80,12 +80,13 @@ function splitMessage(text, max = 1500) {
   return parts;
 }
 
-async function sendText(to, text) {
+// preview: false stops WhatsApp adding a link preview card (used for team alerts)
+async function sendText(to, text, { preview = true } = {}) {
   for (const body of splitMessage(text)) {
     if (config.dryRun) { console.log(`[DRY RUN → ${to}]\n${body}\n`); continue; }
     await post(`${config.meta.phoneNumberId}/messages`, {
       messaging_product: 'whatsapp', recipient_type: 'individual', to, type: 'text',
-      text: { body, preview_url: true },
+      text: { body, preview_url: preview },
     });
   }
 }

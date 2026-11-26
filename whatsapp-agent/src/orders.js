@@ -13,7 +13,7 @@ function nairobiStamp(now = new Date()) {
   return new Date(now.getTime() + 3 * 3600 * 1000).toISOString().replace('T', ' ').slice(0, 16);
 }
 
-const mapLink = ({ lat, lng }) => `${config.shopUrl}/map?ll=${lat},${lng}`; // opens Google Maps; no preview card
+const mapLink = ({ lat, lng }) => `https://www.google.com/maps?q=${lat},${lng}`; // team alert + Notes: full map preview is fine
 
 function newRef(prefix = 'BB-J') {
   const t = Date.now().toString(36).toUpperCase().slice(-5);

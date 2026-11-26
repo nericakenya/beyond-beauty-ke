@@ -78,7 +78,7 @@ Ref: BB-WAB12CD
 • Malaika Tote · Beige × 1  —  KSh 3,950
 • Silk Scrunchie Set × 1  —  KSh 850
 *Order Summary* Subtotal: KSh 4,800 · Delivery (Nairobi): KSh 350 · *Total: KSh 5,150* · Payment: on delivery
-*Delivery Address* Riverside Gardens, Apt 12, Riverside Drive · Map: https://beyondbeauty.co.ke/map?ll=-1.270000,36.800000
+*Delivery Address* Riverside Gardens, Apt 12, Riverside Drive · Location pin: -1.270000, 36.800000
 *Name:* Achieng *Phone:* 0711 000 222
 Please confirm my order and send the M-Pesa payment details.
 (create_order with names "Malaika Tote · Beige" and "Silk Scrunchie Set", area nairobi, ref BB-WAB12CD, location_pin → total 5,150)

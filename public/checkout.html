@@ -901,8 +901,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     if (selectedPlace) {
       lines.push(selectedPlace.address || selectedPlace.label);
       lines.push(address);
-      // Our own /map link opens Google Maps but gives WhatsApp no preview card (see server.js)
-      lines.push('Map: ' + location.origin + '/map?ll=' + Number(selectedPlace.lat).toFixed(6) + ',' + Number(selectedPlace.lng).toFixed(6));
+      // Plain coordinates, no link: a link would make WhatsApp add a preview card. Joy turns
+      // these into a Google Maps link in the team's order alert.
+      lines.push('Location pin: ' + Number(selectedPlace.lat).toFixed(6) + ', ' + Number(selectedPlace.lng).toFixed(6));
     } else {
       lines.push(address);
     }

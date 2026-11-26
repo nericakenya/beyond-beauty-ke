@@ -873,6 +873,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   // ── BUILD WHATSAPP MESSAGE ──
+  // One reference per checkout visit, so sending the same order twice doesn't create two orders.
+  const ORDER_REF = 'BB-W' + Date.now().toString(36).toUpperCase().slice(-5) + Math.random().toString(36).toUpperCase().slice(2, 4);
+
   function buildMessage() {
     const name    = document.getElementById('customerName').value.trim();
     const phone   = document.getElementById('customerPhone').value.trim();
@@ -880,11 +883,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const { subtotal, delivery, grand } = getCartTotals();
 
     const lines = [
-      "Hi Beyond Beauty, I'd like to place an order:\n",
+      "Hi Beyond Beauty, I'd like to place an order:",
+      'Ref: ' + ORDER_REF + '\n',
       '*My Order*',
     ];
     cart.forEach(i => {
-      lines.push('\u2022 ' + i.name + ' \u00d7 ' + i.qty + '  \u2014  ' + fmt(i.price * i.qty));
+      lines.push('\u2022 ' + i.name + ' \u00d7 ' + i.qty + '  \u2014  ' + fmt(i.price * i.qty) + '  [' + (i.sku || i.code || i.id) + ']');
     });
     lines.push('');
     lines.push('*Order Summary*');

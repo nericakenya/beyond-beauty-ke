@@ -1,240 +1,169 @@
-require('dotenv').config();
-const express        = require('express');
-const twilio         = require('twilio');
-const Anthropic      = require('@anthropic-ai/sdk');
-const { buildSystemPrompt }                         = require('./src/agent');
-const { handle: thriftlyHandle, hasActiveSession, isTrigger } = require('./src/thriftlyFlow');
-const { initiateSTKPush }                           = require('./src/mpesa');
+// Joy — Beyond Beauty KE's WhatsApp sales agent.
+// Meta WhatsApp Cloud API webhook → Claude (with shop/Airtable tools) → reply in WhatsApp.
+const express = require('express');
+const { config, missingSettings } = require('./src/config');
+const wa = require('./src/whatsapp');
+const conversations = require('./src/conversations');
+const agent = require('./src/agent');
+const { notifyAdmins } = require('./src/notify');
+const { phoneDigits } = require('./src/orders');
+const restock = require('./src/restock');
 
-const app    = express();
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-const ai     = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const app = express();
+app.set('trust proxy', true);
 
-app.use(express.urlencoded({ extended: false }));
-app.use(express.json());
+app.get('/health', (_req, res) => res.json({ ok: true, agent: 'Joy', model: config.claude.model, missing_settings: missingSettings() }));
 
-// ── Conversation sessions ────────────────────────────────────────────────────
-const sessions    = new Map();
-const SESSION_TTL = parseInt(process.env.SESSION_TTL_MS || '3600000', 10);
-
-// Clean up expired sessions every hour
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, s] of sessions.entries()) {
-    if (now - s.lastActive > SESSION_TTL) sessions.delete(key);
+// Meta's one-time webhook check (Webhooks → Callback URL + Verify token)
+app.get('/webhook', (req, res) => {
+  if (req.query['hub.mode'] === 'subscribe' && config.meta.verifyToken && req.query['hub.verify_token'] === config.meta.verifyToken) {
+    return res.status(200).send(req.query['hub.challenge']);
   }
-}, 60 * 60 * 1000);
+  res.sendStatus(403);
+});
 
-// In-memory STK Push payment tracking
-const payments = new Map();
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-async function sendWA(to, body) {
-  try {
-    await client.messages.create({ from: process.env.TWILIO_WHATSAPP_NUMBER, to, body });
-  } catch (err) {
-    console.error('[Twilio send error]', err.message);
+// Incoming messages. Raw body is needed to check Meta's signature.
+app.post('/webhook', express.raw({ type: '*/*', limit: '2mb' }), (req, res) => {
+  if (!wa.validSignature(req.body, req.get('x-hub-signature-256'))) {
+    console.warn('[webhook] bad signature — ignored');
+    return res.sendStatus(401);
   }
+  res.sendStatus(200); // answer Meta at once; work happens after
+  let body;
+  try { body = JSON.parse(req.body.toString('utf8')); } catch { return; }
+  for (const ev of wa.parseWebhook(body)) {
+    const phone = ev.kind === 'echo' ? ev.to : ev.from;
+    if (!phone || conversations.alreadySeen(ev.id)) continue;
+    conversations.enqueue(phone, () => handle(ev));
+  }
+});
+
+async function handle(ev) {
+  if (ev.kind === 'echo') return handleEcho(ev);
+  if (config.adminNumbers.includes(ev.from) && /^#\w/.test(ev.text || '')) return handleAdmin(ev);
+  return handleCustomer(ev);
 }
 
-function formatPhone(wa) {
-  const digits = wa.replace(/\D/g, '');
-  if (digits.startsWith('254')) return digits;
-  if (digits.startsWith('0'))   return '254' + digits.slice(1);
-  return digits;
+// A person replied from the WhatsApp Business app: Joy steps back for a while and
+// remembers what was said, so she has the full picture if she picks the chat up again.
+async function handleEcho(ev) {
+  const conv = await conversations.load(ev.to);
+  const history = [...conv.history, { role: 'assistant', content: `[Sent as Joy by Janet from the WhatsApp Business app]: ${ev.text}` }];
+  const pausedForGood = conv.fields['Bot paused'] && !conv.fields['Paused until'];
+  await conversations.save(conv, history, pausedForGood ? {} : {
+    'Bot paused': true,
+    'Paused reason': 'The team replied from the WhatsApp Business app',
+    'Paused until': new Date(Date.now() + config.humanTakeoverHours * 3600 * 1000).toISOString(),
+  });
 }
 
-// ── Twilio signature validation ──────────────────────────────────────────────
-function validateTwilio(req, res, next) {
-  const sig = req.headers['x-twilio-signature'];
-  const url = `${req.protocol}://${req.get('host')}${req.originalUrl}`;
-  if (!twilio.validateRequest(process.env.TWILIO_AUTH_TOKEN, sig, url, req.body)) {
-    console.warn('[security] Invalid Twilio signature — request rejected');
-    return res.status(403).send('Forbidden');
-  }
-  next();
-}
-
-// ── WhatsApp webhook ─────────────────────────────────────────────────────────
-app.post('/webhook', validateTwilio, async (req, res) => {
-  // Acknowledge Twilio immediately — must respond within 15 s
-  res.set('Content-Type', 'text/xml').send('<Response></Response>');
-
-  const from    = req.body.From;
-  const message = (req.body.Body || '').trim();
-  if (!from) return;
-
-  // Extract image attachments
-  const numMedia   = parseInt(req.body.NumMedia || '0');
-  const mediaItems = [];
-  for (let i = 0; i < numMedia; i++) {
-    const url         = req.body[`MediaUrl${i}`];
-    const contentType = req.body[`MediaContentType${i}`] || 'image/jpeg';
-    if (url && contentType.startsWith('image/')) {
-      mediaItems.push({ url, filename: `photo_${i + 1}.jpg`, contentType });
+async function handleAdmin(ev) {
+  const [cmd, arg] = ev.text.trim().split(/\s+/);
+  const target = arg ? phoneDigits(arg) : null;
+  const say = t => wa.sendText(ev.from, t);
+  switch (cmd.toLowerCase()) {
+    case '#release':
+    case '#resume': {
+      if (!target) return say('Usage: #release 07XXXXXXXX');
+      const c = await conversations.findByPhone(target);
+      if (!c) return say(`No chat found for +${target}.`);
+      await conversations.release(c);
+      return say(`✓ Joy is back on in the chat with +${target}.`);
     }
+    case '#pause':
+    case '#takeover': {
+      if (!target) return say('Usage: #pause 07XXXXXXXX');
+      const c = await conversations.load(target);
+      await conversations.pause(c, 'Paused by the team (#pause)');
+      return say(`✓ Joy is paused in the chat with +${target}. Send #release ${target} to hand it back.`);
+    }
+    case '#status': {
+      const airtable = require('./src/airtable');
+      const recs = await airtable.list(config.airtable.tables.conversations, { formula: 'OR({Bot paused}, {Needs attention})', fields: ['Phone', 'Name', 'Paused reason', 'Paused until', 'Needs attention'], maxRecords: 20 });
+      if (!recs.length) return say('All chats are with Joy. Nothing needs you right now ✓');
+      return say(recs.map(r => `• +${r.fields.Phone}${r.fields.Name ? ` (${r.fields.Name})` : ''}${r.fields['Needs attention'] ? ' ⚠️' : ''}\n  ${r.fields['Paused reason'] || ''}${r.fields['Paused until'] ? ` — until ${r.fields['Paused until'].slice(0, 16).replace('T', ' ')} UTC` : ''}`).join('\n'));
+    }
+    default:
+      return say('Commands:\n#status — chats waiting for you\n#pause 07XXXXXXXX — Joy stops replying to that number\n#release 07XXXXXXXX — hand the chat back to Joy');
   }
+}
 
-  console.log(`[IN]  ${from}: ${message}${numMedia ? ` (+${numMedia} media)` : ''}`);
-
-  // ── THRIFTLY FLOW — intercepts when user is listing or sends trigger word ──
-  if (hasActiveSession(from) || isTrigger(message)) {
-    try {
-      const result = await thriftlyHandle(from, message, mediaItems);
-      if (result) {
-        console.log(`[TL]  ${from}: ${result.reply.slice(0, 80)}…`);
-        await sendWA(from, result.reply);
-        return;
+async function buildUserContent(ev) {
+  const text = ev.text || '';
+  switch (ev.type) {
+    case 'text':
+    case 'button':
+    case 'interactive':
+      return { content: text, logText: text };
+    case 'image':
+      try {
+        const img = await wa.downloadMedia(ev.mediaId);
+        return {
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: img.mimeType, data: img.base64 } },
+            { type: 'text', text: text ? `[Photo with caption]: ${text}` : '[The customer sent this photo.]' },
+          ],
+          logText: `[photo] ${text}`.trim(),
+        };
+      } catch (e) {
+        console.error('[media]', e.message);
+        return { content: `[The customer sent a photo that could not be opened.] ${text}`.trim(), logText: '[photo — failed to open]' };
       }
-    } catch (err) {
-      console.error('[ThriftlyFlow error]', err.message);
-      await sendWA(from, 'Something went wrong with your listing. Please try again or type CANCEL to start over.');
-      return;
+    case 'location': {
+      const l = ev.location || {};
+      const t = `[The customer shared a location pin: latitude ${l.lat}, longitude ${l.lng}${l.name ? `, "${l.name}"` : ''}${l.address ? `, ${l.address}` : ''}]`;
+      return { content: t, logText: t };
     }
+    case 'audio':
+      return { content: '[The customer sent a voice note. Voice notes cannot be played here — kindly ask them to type their message.]', logText: '[voice note]' };
+    default:
+      return { content: `[The customer sent a ${ev.type} message that can't be shown here.] ${text}`.trim(), logText: `[${ev.type}]` };
   }
+}
 
-  if (!message) return;
+async function handleCustomer(ev) {
+  const conv = await conversations.load(ev.from);
+  const { content, logText } = await buildUserContent(ev);
+  await conversations.setFields(conv, {
+    'Last message at': new Date((ev.timestamp || Date.now() / 1000) * 1000).toISOString(),
+    'Last customer message': logText.slice(0, 5000),
+    ...(ev.name && !conv.fields.Name ? { Name: ev.name } : {}),
+  });
 
-  // ── STK PUSH — customer types "pay 4500" ────────────────────────────────
-  const payMatch = message.match(/^pay\s+([\d,]+)/i);
-  if (payMatch) {
-    const amount  = parseInt(payMatch[1].replace(/,/g, ''), 10);
-    const phone   = formatPhone(from);
-    const orderId = 'BB-' + Date.now();
-
-    if (!process.env.MPESA_CONSUMER_KEY) {
-      await sendWA(from,
-        `Please pay manually:\n\n` +
-        `• Till Number: *${process.env.MPESA_TILL_NUMBER}*\n` +
-        `• Business: *${process.env.BUSINESS_NAME}*\n` +
-        `• Amount: *KSh ${amount.toLocaleString('en-KE')}*\n` +
-        `• Reference: Your phone number\n\n` +
-        `Then send me your M-Pesa confirmation code 🌸`
-      );
-      return;
-    }
-
-    try {
-      const checkoutId = await initiateSTKPush({ phone, amount, orderId });
-      payments.set(checkoutId, { from, amount, orderId, status: 'PENDING' });
-      await sendWA(from,
-        `✅ M-Pesa prompt sent to *${phone}*!\n\n` +
-        `Enter your PIN to pay *KSh ${amount.toLocaleString('en-KE')}* to *${process.env.BUSINESS_NAME}*.\n\n` +
-        `I'll confirm your order as soon as payment comes through 🌸`
-      );
-    } catch (err) {
-      console.error('[STK Push error]', err.response?.data || err.message);
-      await sendWA(from,
-        `Sorry, I couldn't send the M-Pesa prompt right now.\n\n` +
-        `Please pay manually:\n` +
-        `• Till Number: *${process.env.MPESA_TILL_NUMBER}*\n` +
-        `• Amount: *KSh ${amount.toLocaleString('en-KE')}*\n` +
-        `• Reference: Your phone number\n\n` +
-        `Then send me your M-Pesa confirmation code 🌸`
-      );
-    }
+  // Paused (a person is handling this chat): remember the message, stay quiet.
+  if (conversations.isPaused(conv)) {
+    await conversations.save(conv, [...conv.history, { role: 'user', content }]);
     return;
   }
+  if (conv.fields['Bot paused']) await conversations.release(conv); // a timed pause has run out
 
-  // ── AISHA AI AGENT ───────────────────────────────────────────────────────
-  let session = sessions.get(from);
-  const now   = Date.now();
-  if (!session || now - session.lastActive > SESSION_TTL) {
-    session = { history: [], lastActive: now, greeted: false };
-  }
-  session.lastActive = now;
-
-  let messageToAgent = message;
-  if (!session.greeted) {
-    messageToAgent  = `[New customer routed from Beyond Beauty KE website to complete a purchase] ${message}`;
-    session.greeted = true;
-  }
-
-  session.history.push({ role: 'user', content: messageToAgent });
-
-  let reply = '';
+  await wa.markReadAndTyping(ev.id);
   try {
-    const response = await ai.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 400,
-      system:     buildSystemPrompt(),
-      messages:   session.history,
-    });
-    reply = response.content[0].text.trim();
-    session.history.push({ role: 'assistant', content: reply });
-    sessions.set(from, session);
-  } catch (err) {
-    console.error('[Claude error]', err.message);
-    reply = `Hi! Aisha here from ${process.env.BUSINESS_NAME} 🌸\nI'm having a moment — please resend your message or WhatsApp us directly and our team will help you.`;
+    const out = await agent.reply({ conv, phone: ev.from, profileName: ev.name || conv.fields.Name, userContent: content, text: ev.text });
+    if (out.refused) {
+      await conversations.save(conv, [...conv.history, { role: 'user', content }]);
+      await wa.sendText(ev.from, "Let me check on this and get back to you in a few minutes.");
+      await conversations.pause(conv, 'Joy could not answer this message (model declined)');
+      await conversations.setFields(conv, { 'Needs attention': true });
+      await notifyAdmins(`🙋 Chat needs you — +${ev.from}: Joy couldn't answer "${logText.slice(0, 200)}". Joy is paused there; send #release ${ev.from} to hand it back.`);
+      return;
+    }
+    if (out.text) await wa.sendText(ev.from, out.text);
+    await conversations.save(conv, out.messages);
+  } catch (e) {
+    console.error(`[agent +${ev.from}]`, e);
+    await conversations.save(conv, [...conv.history, { role: 'user', content }]).catch(() => {});
+    await wa.sendText(ev.from, "Let me check on this and get back to you in a few minutes.").catch(() => {});
+    await notifyAdmins(`⚠️ Joy hit an error replying to +${ev.from}: ${e.message.slice(0, 200)}\nTheir message: "${logText.slice(0, 200)}"`);
   }
+}
 
-  console.log(`[OUT] ${from}: ${reply.slice(0, 80)}…`);
-  await sendWA(from, reply);
-});
+if (require.main === module) {
+  const missing = missingSettings();
+  if (missing.length) console.warn(`⚠️  Missing settings: ${missing.join(', ')}`);
+  if (!process.env.ANTHROPIC_API_KEY) console.warn('⚠️  ANTHROPIC_API_KEY is not set');
+  app.listen(config.port, () => console.log(`Joy is listening on port ${config.port} (model ${config.claude.model}${config.dryRun ? ', DRY RUN' : ''})`));
+  if (config.airtable.token && config.airtable.baseId) restock.start();
+}
 
-// ── Daraja M-Pesa callback ───────────────────────────────────────────────────
-// Safaricom POSTs here when an STK Push payment completes or fails
-app.post('/api/mpesa/callback', async (req, res) => {
-  res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
-
-  const callback = req.body?.Body?.stkCallback;
-  if (!callback) return;
-
-  const { CheckoutRequestID, ResultCode, ResultDesc, CallbackMetadata } = callback;
-  const payment = payments.get(CheckoutRequestID);
-  if (!payment) {
-    console.warn('[Mpesa] Unknown CheckoutRequestID:', CheckoutRequestID);
-    return;
-  }
-
-  if (ResultCode === 0) {
-    const items   = CallbackMetadata?.Item || [];
-    const get     = (name) => items.find(i => i.Name === name)?.Value;
-    const receipt = get('MpesaReceiptNumber');
-    const amount  = get('Amount');
-
-    payment.status  = 'SUCCESS';
-    payment.receipt = receipt;
-    console.log(`[Mpesa] ✅ ${receipt} | KSh ${amount} | order ${payment.orderId}`);
-
-    await sendWA(payment.from,
-      `🎉 Payment confirmed — asante sana!\n\n` +
-      `*M-Pesa Receipt:* ${receipt}\n` +
-      `*Amount Paid:* KSh ${parseInt(amount).toLocaleString('en-KE')}\n\n` +
-      `Your order *${payment.orderId}* is confirmed and being processed.\n` +
-      `We'll send you an update when it ships 🛍️\n\n` +
-      `— Aisha, ${process.env.BUSINESS_NAME} 🌸`
-    );
-  } else {
-    payment.status = ResultCode === 1032 ? 'CANCELLED' : 'FAILED';
-    console.log(`[Mpesa] ❌ ${payment.status}: ${ResultDesc}`);
-
-    await sendWA(payment.from,
-      `It looks like the M-Pesa payment wasn't completed.\n\n` +
-      `No worries! You can:\n` +
-      `• Type *pay ${payment.amount}* for a new phone prompt\n` +
-      `• Or pay manually to Till *${process.env.MPESA_TILL_NUMBER}* and send me the confirmation code 🌸`
-    );
-  }
-
-  payments.set(CheckoutRequestID, payment);
-});
-
-// ── Health check ─────────────────────────────────────────────────────────────
-app.get('/', (_req, res) => res.json({
-  status: 'Beyond Beauty WA Agent running',
-  business: process.env.BUSINESS_NAME,
-  till: process.env.MPESA_TILL_NUMBER,
-  mpesa_env: process.env.MPESA_ENV || 'not configured',
-}));
-
-// ── Start ─────────────────────────────────────────────────────────────────────
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`\n✅ Beyond Beauty WhatsApp Agent running on port ${PORT}`);
-  console.log(`   Business:  ${process.env.BUSINESS_NAME}`);
-  console.log(`   Till:      ${process.env.MPESA_TILL_NUMBER}`);
-  console.log(`   WhatsApp:  ${process.env.TWILIO_WHATSAPP_NUMBER}`);
-  console.log(`   Daraja:    ${process.env.MPESA_ENV || '⚠️  not configured'}`);
-  console.log(`   Webhook:   http://localhost:${PORT}/webhook\n`);
-});
+module.exports = { app, handle };

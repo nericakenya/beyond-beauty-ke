@@ -235,6 +235,7 @@ function mapRecord(record, catMap = {}) {
   return {
     id: record.id,
     name: f['Product Name'] || '',
+    style_code: f['Style Code'] || null, // e.g. RNG-002 — shown in WhatsApp order messages
     description: f['Product Description'] || '',
     price: saleIsActive ? salePrice : price,
     original_price: saleIsActive ? price : null,

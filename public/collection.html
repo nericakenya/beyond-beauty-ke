@@ -808,6 +808,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const existing = p.sku ? cart.find(i => i.sku === p.sku) : cart.find(i => i.id === p.id && !i.sku);
     if (existing) { existing.qty++; return; }
     const line = { id: p.id, name: p.name, price: p.price, image_url: p.image_url, qty: 1 };
+    if (!p.sku && p.style_code) line.code = p.style_code; // shown in the WhatsApp order message
     if (p.sku) { line.sku = p.sku; line.name = (p.style_name || p.name) + (p.colour ? ` · ${p.colour}` : ''); }
     cart.push(line);
   }

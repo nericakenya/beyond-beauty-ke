@@ -1195,6 +1195,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       existing.qty++;
     } else {
       const line = { id: product.id, name: product.name, price: product.price, image_url: product.image_url, qty: 1 };
+      if (!product.sku && product.style_code) line.code = product.style_code; // shown in the WhatsApp order message
       if (product.sku) {
         line.sku = product.sku;
         line.name = (product.style_name || product.name) + (product.colour ? ` · ${product.colour}` : '');

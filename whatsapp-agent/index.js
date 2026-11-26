@@ -8,6 +8,7 @@ const agent = require('./src/agent');
 const { notifyAdmins } = require('./src/notify');
 const { phoneDigits } = require('./src/orders');
 const restock = require('./src/restock');
+const payments = require('./src/payments');
 
 const app = express();
 app.set('trust proxy', true);
@@ -163,7 +164,7 @@ if (require.main === module) {
   if (missing.length) console.warn(`⚠️  Missing settings: ${missing.join(', ')}`);
   if (!process.env.ANTHROPIC_API_KEY) console.warn('⚠️  ANTHROPIC_API_KEY is not set');
   app.listen(config.port, () => console.log(`Joy is listening on port ${config.port} (model ${config.claude.model}${config.dryRun ? ', DRY RUN' : ''})`));
-  if (config.airtable.token && config.airtable.baseId) restock.start();
+  if (config.airtable.token && config.airtable.baseId) { restock.start(); payments.start(); }
 }
 
 module.exports = { app, handle };

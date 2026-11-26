@@ -13,6 +13,8 @@ function nairobiStamp(now = new Date()) {
   return new Date(now.getTime() + 3 * 3600 * 1000).toISOString().replace('T', ' ').slice(0, 16);
 }
 
+const mapLink = ({ lat, lng }) => `${config.shopUrl}/map?ll=${lat},${lng}`; // opens Google Maps; no preview card
+
 function newRef(prefix = 'BB-J') {
   const t = Date.now().toString(36).toUpperCase().slice(-5);
   const r = Math.random().toString(36).toUpperCase().slice(2, 4);
@@ -38,11 +40,13 @@ function totals(lines, zone, { discount = 0, promoUsed = false, freeDeliveryProm
 // Checks every requested line against live shop data. Returns { lines, problems }.
 async function priceLines(requested) {
   const lines = [], problems = [];
-  for (const { code, qty: q } of requested) {
+  for (const { code, name, option, qty: q } of requested) {
     const qty = Math.max(1, Math.floor(Number(q) || 1));
-    const hit = await shop.resolveCode(code);
-    if (!hit) { problems.push(`${code}: no product or option with this code`); continue; }
-    if (hit.ambiguous) { problems.push(`${code}: "${hit.product.name}" has several options — use one of these codes: ${hit.ambiguous.map(a => `${a.code} (${a.option})`).join(', ')}`); continue; }
+    const label = code || [name, option].filter(Boolean).join(' · ');
+    const hit = code ? await shop.resolveCode(code) : await shop.resolveByName(name, option);
+    if (!hit) { problems.push(`${label}: no product found with this ${code ? 'code' : 'name'}`); continue; }
+    if (hit.ambiguousProducts) { problems.push(`${label}: several products match — ${hit.ambiguousProducts.join(', ')}. Use get_product to find the right one and pass its code.`); continue; }
+    if (hit.ambiguous) { problems.push(`${label}: "${hit.product.name}" has several options — ask which one, or use one of these codes: ${hit.ambiguous.map(a => `${a.code} (${a.option})`).join(', ')}`); continue; }
     const { product: p, variant: v } = hit;
     const { price, was_price } = shop.priceOf(p, v);
     const stock = shop.stockOf(p, v);
@@ -101,7 +105,7 @@ async function ordersForPhone(phone, limit = 5) {
 }
 
 // Creates Customer (if new), Order and Order Items. Idempotent on the reference.
-async function createOrder({ phone, customerName, phoneGiven, address, zone, requestedLines, promoCode, ref, notes }) {
+async function createOrder({ phone, customerName, phoneGiven, address, zone, requestedLines, promoCode, ref, notes, pin }) {
   if (ref) {
     const dup = await findOrderByRef(ref);
     if (dup) return { ok: true, already_existed: true, order_record_id: dup.id, ...orderSummary(dup) };
@@ -137,6 +141,7 @@ async function createOrder({ phone, customerName, phoneGiven, address, zone, req
     Notes: [
       `Placed ${nairobiStamp()} via WhatsApp (Joy, agent). Area: ${z.label}; payment ${z.payment}.`,
       phoneGiven && last9(phoneGiven) !== last9(phone) ? `Phone given in order: ${phoneGiven} (WhatsApp ${intlPhone(phone)}).` : null,
+      pin ? `Map: ${mapLink(pin)}` : null,
       notes || null,
     ].filter(Boolean).join('\n'),
   });
@@ -166,6 +171,15 @@ async function createOrder({ phone, customerName, phoneGiven, address, zone, req
       `Delivery: ${t.delivery_fee ? ksh(t.delivery_fee) : 'Free'}`,
       `*Total: ${ksh(t.total)}*`,
     ].filter(x => x !== null).join('\n'),
+    // For the team's new-order alert: same lines, with each item's code
+    admin_text: [
+      ...lines.map(l => `• ${l.name}${l.option !== 'Standard' ? ` (${l.option})` : ''} × ${l.qty}  —  ${ksh(l.line_total)}  [${l.code}]`),
+      `Subtotal ${ksh(t.subtotal)}${t.discount ? ` · discount ${promoResult.code} −${ksh(t.discount)}` : ''} · delivery ${t.delivery_fee ? ksh(t.delivery_fee) : 'free'} · *total ${ksh(t.total)}*`,
+      `${z.label} · pay ${z.payment}`,
+      `Address: ${address || '—'}`,
+      pin ? `Map: ${mapLink(pin)}` : null,
+      notes ? `Notes: ${notes}` : null,
+    ].filter(Boolean).join('\n'),
     free_delivery_nudge: (() => {
       const freeFrom = z.freeFrom;
       return t.delivery_fee && freeFrom && !promoResult && freeFrom > t.subtotal

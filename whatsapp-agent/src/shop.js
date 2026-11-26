@@ -147,4 +147,36 @@ async function resolveStyleCode(code) {
   return { product: p, variant: variants[0] || null };
 }
 
-module.exports = { search, product, resolveCode, priceOf, stockOf, variantLabel, productUrl };
+// Website cart lines read "Product name · Option" (option = colour, or length like 22").
+function splitCartName(line) {
+  const [product, ...rest] = String(line || '').split(' · ');
+  return { product: product.trim(), option: rest.join(' · ').trim() || null };
+}
+
+const norm = s => String(s || '').toLowerCase().replace(/[“”"]/g, '"').replace(/\s+/g, ' ').trim();
+
+function optionMatches(v, option) {
+  const o = norm(option);
+  const labels = [v.colour, v.size, v.texture, v.length != null ? `${v.length}"` : null, v.length != null ? `${v.length} inch` : null, variantLabel(v)];
+  return labels.filter(Boolean).some(l => norm(l) === o);
+}
+
+// Resolves a product by its exact name (as shown on the website) and an option label.
+async function resolveByName(name, option) {
+  const split = option ? { product: name, option } : splitCartName(name);
+  const want = norm(split.product);
+  const products = await allProducts();
+  let matches = products.filter(p => norm(p.name) === want);
+  if (!matches.length) matches = products.filter(p => norm(p.name).startsWith(want) || want.startsWith(norm(p.name)));
+  if (matches.length !== 1) return matches.length ? { ambiguousProducts: matches.map(p => p.name) } : null;
+  const p = matches[0];
+  const variants = await variantsFor(p.id);
+  if (variants.length <= 1) return { product: p, variant: variants[0] || null };
+  if (split.option) {
+    const v = variants.filter(x => optionMatches(x, split.option));
+    if (v.length === 1) return { product: p, variant: v[0] };
+  }
+  return { product: p, variant: null, ambiguous: variants.map(v => ({ code: v.sku, option: variantLabel(v) })) };
+}
+
+module.exports = { search, product, resolveCode, resolveByName, splitCartName, priceOf, stockOf, variantLabel, productUrl };

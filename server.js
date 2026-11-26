@@ -66,6 +66,18 @@ app.get('/og/product/:id.jpg', async (req, res) => {
     res.status(404).end();
   }
 });
+// Map link used in WhatsApp order messages: people are sent to Google Maps; link-preview
+// fetchers (WhatsApp, Facebook) get an empty page, so no preview card is added to the chat.
+app.get('/map', (req, res) => {
+  const ll = String(req.query.ll || '');
+  if (!/^-?\d{1,2}(\.\d+)?,-?\d{1,3}(\.\d+)?$/.test(ll)) return res.status(400).send('Invalid location');
+  res.set('X-Robots-Tag', 'noindex');
+  if (/whatsapp|facebookexternalhit|facebot|meta-externalagent/i.test(req.get('user-agent') || '')) {
+    return res.status(204).end();
+  }
+  res.redirect(302, `https://www.google.com/maps?q=${ll}`);
+});
+
 app.get('/collections/:slug', (req, res) => res.sendFile(path.join(__dirname, 'public/collection.html')));
 app.get('/thriftly/item',     (req, res) => res.sendFile(path.join(__dirname, 'public/thriftly/item.html')));
 app.get('/thriftly/dispatch', (req, res) => res.sendFile(path.join(__dirname, 'public/thriftly/dispatch.html')));

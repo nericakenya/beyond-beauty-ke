@@ -12,13 +12,13 @@ const config = {
 
   // Meta WhatsApp Cloud API
   meta: {
-    graphVersion: env('META_GRAPH_VERSION', 'v23.0'),
+    graphVersion: env('META_GRAPH_VERSION', 'v25.0'),
     accessToken: env('META_ACCESS_TOKEN'),          // permanent System User token
     phoneNumberId: env('META_PHONE_NUMBER_ID'),     // test number ID until 0114 481515 is connected
     appSecret: env('META_APP_SECRET'),              // checks the X-Hub-Signature-256 header
     verifyToken: env('META_VERIFY_TOKEN'),          // any string; also typed into the Meta webhook form
     restockTemplate: env('RESTOCK_TEMPLATE_NAME'),  // approved template for back-in-stock alerts (blank until approved)
-    restockTemplateLang: env('RESTOCK_TEMPLATE_LANG', 'en'),
+    restockTemplateLang: env('RESTOCK_TEMPLATE_LANG', 'en_US'),
   },
 
   // Claude
@@ -59,6 +59,8 @@ const config = {
     from: env('EMAIL_FROM'),          // e.g. Joy at Beyond Beauty <hello@beyondbeauty.co.ke> (domain verified in Resend)
     replyTo: env('EMAIL_REPLY_TO', 'hello@beyondbeauty.co.ke'),
   },
+
+  paymentCheckMinutes: Number(env('PAYMENT_CHECK_MINUTES', 3)), // thank-you after an order is set to Paid; 0 = off
 
   restockCheckMinutes: Number(env('RESTOCK_CHECK_MINUTES', 720)), // every 12 hours; 0 = off
 

@@ -29,7 +29,7 @@ Prices, totals and delivery fees are always calculated in code from live data �
 | See chats waiting for you | Send `#status` to the business number from the admin phone, or filter Airtable **Conversations** by *Needs attention* |
 | Take over a chat | Just reply from the WhatsApp Business app — Joy goes quiet in that chat for 12 hours. Or send `#pause 07XXXXXXXX` |
 | Hand a chat back to Joy | Send `#release 07XXXXXXXX` (or untick *Bot paused* in Conversations) |
-| Confirm a payment | Check the till statement against Orders → *Payment claim*, then set *Payment Status* = Paid, and send "Your payment is well received…" as Joy |
+| Confirm a payment | Check the till statement against Orders → *Payment claim*, then set *Payment Status* = Paid. Within ~3 minutes Joy sends "Your payment is well received, Thank you for shopping with us! ✨" and ticks *Thank-you sent* (only for orders with a Web Ref; if the customer hasn't chatted in 24 hours, Joy alerts you to send it yourself) |
 | See who's waiting for restocks | Airtable **Restock Requests** (Status = Waiting). Joy messages them automatically when stock is back |
 
 New orders arrive in Airtable as **Pending**, with a *Web Ref* and no *Order Number* (number them as usual). Joy never marks anything paid.
@@ -43,7 +43,7 @@ New orders arrive in Airtable as **Pending**, with a *Web Ref* and no *Order Num
 4. **Permanent token**: business.facebook.com → Settings → Users → **System users** → Add (Admin) → *Assign assets*: the app (full control) and the WhatsApp account (full control) → **Generate token** with `whatsapp_business_messaging` and `whatsapp_business_management`. (The token on the API Setup page expires after 24 hours.)
 5. After Railway is running (step 2): **WhatsApp → Configuration → Webhook** → Callback URL `https://<your-railway-domain>/webhook`, Verify token = your `META_VERIFY_TOKEN` → Verify and save → **subscribe to `messages`** (later, when 0114 481515 is connected with coexistence, also `smb_message_echoes`).
 
-6. **Back-in-stock template**: WhatsApp Manager → Message templates → Create → category **Marketing** (Meta treats back-in-stock as marketing; about US$0.02 per message in Kenya), name `back_in_stock`, language English, body:
+6. **Back-in-stock template**: WhatsApp Manager → Message templates → Create → category **Marketing** (Meta treats back-in-stock as marketing; about US$0.02 per message in Kenya), name `back_in_stock`, language English (US) (code en_US), body:
    `Hi {{1}}, good news! {{2}} is back in stock at Beyond Beauty. You can order it here: {{3}} or simply reply to this message. Joy, Beyond Beauty`
    (sample values: Amina / Mia Mini Bag (Black) / https://beyondbeauty.co.ke/product?id=…). Once approved, set `RESTOCK_TEMPLATE_NAME=back_in_stock` on Railway.
 

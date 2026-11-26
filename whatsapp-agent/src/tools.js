@@ -15,10 +15,12 @@ const itemsSchema = {
   items: {
     type: 'object',
     properties: {
-      code: { type: 'string', description: 'Exact option code from get_product (a SKU like "MNB-004-BLAC"); a style code like "RNG-002" or a product ID "rec…" also works when the product has only one option' },
+      code: { type: 'string', description: 'Exact option code from get_product (a SKU like "MNB-004-BLAC"). Give either code, or name (+ option).' },
+      name: { type: 'string', description: 'Product name exactly as written in a website checkout line, e.g. "Quilted Jewel Box · Blush Pink" (the part after " · " is the option)' },
+      option: { type: 'string', description: 'Option (colour, size, length) if not already part of name' },
       qty: { type: 'integer', minimum: 1 },
     },
-    required: ['code', 'qty'],
+    required: ['qty'],
     additionalProperties: false,
   },
 };
@@ -85,7 +87,8 @@ const TOOLS = [
         phone_given: { type: 'string', description: 'Phone number written in the order, if different from their WhatsApp number' },
         promo_code: { type: 'string' },
         ref: { type: 'string', description: 'Reference from the checkout message, e.g. BB-W1A2B3C' },
-        notes: { type: 'string', description: 'Anything the team should know (e.g. preferred delivery time)' },
+        notes: { type: 'string', description: 'Anything Janet should know (e.g. preferred delivery time)' },
+        location_pin: { type: 'object', description: 'Coordinates from a "Location pin:" line or a shared WhatsApp location', properties: { lat: { type: 'number' }, lng: { type: 'number' } }, required: ['lat', 'lng'], additionalProperties: false },
       },
       required: ['customer_name', 'delivery_area', 'delivery_address', 'items'],
       additionalProperties: false,
@@ -193,15 +196,16 @@ async function runTool(name, input, ctx) {
         promoCode: input.promo_code,
         ref: input.ref,
         notes: input.notes,
+        pin: input.location_pin,
       });
       if (result.ok && !result.already_existed) {
         await conversations.setFields(ctx.conv, {
           'Web Ref': result.ref,
           Orders: [...new Set([...(ctx.conv.fields.Orders || []), result.order_record_id])],
         });
-        await notifyAdmins(`🛍️ New order ${result.ref} — ${input.customer_name} (+${ctx.phone})\n${result.text}\nArea: ${result.area} · pay ${result.payment}\nAddress: ${input.delivery_address}`);
+        await notifyAdmins(`🛍️ New order ${result.ref} — ${input.customer_name} (+${ctx.phone})\n${result.admin_text}`);
       }
-      const { order_record_id, ...forModel } = result;
+      const { order_record_id, admin_text, ...forModel } = result;
       return forModel;
     }
     case 'my_orders':

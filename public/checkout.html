@@ -888,7 +888,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       '*My Order*',
     ];
     cart.forEach(i => {
-      lines.push('\u2022 ' + i.name + ' \u00d7 ' + i.qty + '  \u2014  ' + fmt(i.price * i.qty) + '  [' + (i.sku || i.code || i.id) + ']');
+      lines.push('\u2022 ' + i.name + ' \u00d7 ' + i.qty + '  \u2014  ' + fmt(i.price * i.qty));
     });
     lines.push('');
     lines.push('*Order Summary*');
@@ -901,7 +901,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     if (selectedPlace) {
       lines.push(selectedPlace.address || selectedPlace.label);
       lines.push(address);
-      lines.push('Map: https://www.google.com/maps/search/?api=1&query=' + selectedPlace.lat + ',' + selectedPlace.lng + '&query_place_id=' + selectedPlace.id);
+      // Our own /map link opens Google Maps but gives WhatsApp no preview card (see server.js)
+      lines.push('Map: ' + location.origin + '/map?ll=' + Number(selectedPlace.lat).toFixed(6) + ',' + Number(selectedPlace.lng).toFixed(6));
     } else {
       lines.push(address);
     }

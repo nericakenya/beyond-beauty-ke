@@ -3,8 +3,8 @@ const router = express.Router();
 const { pool } = require('../database');
 const adminAuth = require('../middleware/adminAuth');
 
-const FREE_DELIVERY_FROM = 9500;
 const DELIVERY_FEES = { nairobi: 350, metro: 450, outside: 500 };
+const FREE_DELIVERY_FROM = { nairobi: 7500, metro: 10500, outside: null }; // null = never free
 
 function generateOrderNumber() {
   return 'BB' + Date.now().toString(36).toUpperCase();
@@ -24,7 +24,8 @@ router.post('/', async (req, res) => {
   if (!Object.prototype.hasOwnProperty.call(DELIVERY_FEES, zone)) {
     return res.status(400).json({ error: "delivery_zone must be 'nairobi', 'metro' or 'outside'" });
   }
-  const delivery_fee = subtotal >= FREE_DELIVERY_FROM ? 0 : DELIVERY_FEES[zone];
+  const freeFrom = FREE_DELIVERY_FROM[zone];
+  const delivery_fee = freeFrom != null && subtotal >= freeFrom ? 0 : DELIVERY_FEES[zone];
   const total_amount = subtotal + delivery_fee;
   const order_number = generateOrderNumber();
 

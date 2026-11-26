@@ -160,6 +160,25 @@ async function fetchVariantsForProduct(productId) {
   return records.map(mapVariantRecord);
 }
 
+// Today's date in Nairobi (UTC+3) as YYYY-MM-DD, to compare with Airtable date fields.
+function todayNairobi() {
+  return new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+// While a product is on sale, each variant costs the lower of its own price and the
+// product's sale price, so the sale reaches the bag and the WhatsApp message (variant
+// prices used to win over the sale). A variant already cheaper than the sale price keeps
+// its price. original_price = the variant's price without the sale, when it is reduced.
+// Returns copies: one variant record can be linked to more than one product.
+function applySale(p, variants) {
+  return variants.map(v => {
+    const full = v.price_override ?? p.original_price ?? p.price;
+    if (p.original_price == null || full == null) return { ...v, original_price: null };
+    const sale = Math.min(full, p.price);
+    return { ...v, price_override: sale, original_price: sale < full ? full : null };
+  });
+}
+
 function mapRecord(record, catMap = {}) {
   const f = record.fields;
   const price = f['Price (KES)'] || null;
@@ -176,8 +195,15 @@ function mapRecord(record, catMap = {}) {
     || badges.includes('Out of Stock')
     || (totalStock <= 0 && !badges.includes('Coming Soon') && !!price);
 
+  // A sale is on when the sale price is below the price and today (Nairobi) is within
+  // the optional Sale Start / Sale End dates.
+  const today = todayNairobi();
+  const saleStart = f['Sale Start Date'] || null;
+  const saleEnd   = f['Sale End Date']   || null;
+  const saleIsActive = !!(salePrice && price && salePrice < price
+    && (!saleStart || saleStart <= today) && (!saleEnd || saleEnd >= today));
+
   // Safety net: if product has an active sale price but Airtable automation hasn't set the badge yet
-  const saleIsActive = salePrice && price && salePrice < price;
   if (saleIsActive && !badges.includes('Sale') && !sold_out && !badges.includes('Coming Soon')) {
     badges = ['Sale', ...badges];
   }
@@ -210,8 +236,8 @@ function mapRecord(record, catMap = {}) {
     id: record.id,
     name: f['Product Name'] || '',
     description: f['Product Description'] || '',
-    price: salePrice && salePrice < price ? salePrice : price,
-    original_price: salePrice && salePrice < price ? price : null,
+    price: saleIsActive ? salePrice : price,
+    original_price: saleIsActive ? price : null,
     category: cat_slug || (f['Product Category'] || '').toLowerCase(),
     cat_slug,
     sub_slug,
@@ -315,11 +341,13 @@ function buildColourGroups(p, variants) {
 
     const stock = vs.reduce((sum, v) => sum + Math.max(v.stock_quantity || 0, 0), 0);
     const priced = (vs.some(v => v.stock_quantity > 0) ? vs.filter(v => v.stock_quantity > 0) : vs)
-      .map(v => v.price_override ?? p.price)
-      .filter(x => x != null);
-    const price = priced.length ? Math.min(...priced) : p.price;
+      .map(v => ({ price: v.price_override ?? p.price, original: v.original_price ?? null }))
+      .filter(x => x.price != null)
+      .sort((a, b) => a.price - b.price);
+    const price = priced.length ? priced[0].price : p.price;
+    const original_price = priced.length ? priced[0].original : p.original_price;
 
-    return { colour, variants: vs, images, own_count: own.length, has_own_image: own.length > 0, stock, price };
+    return { colour, variants: vs, images, own_count: own.length, has_own_image: own.length > 0, stock, price, original_price };
   });
 }
 
@@ -331,7 +359,7 @@ function expandToCards(products, variantsByProduct) {
   const cards = [];
   products.forEach(p => {
     const groups = (colourCardsEnabled() && p.split_colours)
-      ? buildColourGroups(p, variantsByProduct.get(p.id) || [])
+      ? buildColourGroups(p, applySale(p, variantsByProduct.get(p.id) || []))
       : [];
     // Sold-out colours are hidden while another colour is in stock; if every colour
     // is sold out the style falls back to a single card, exactly as before.
@@ -354,7 +382,7 @@ function expandToCards(products, variantsByProduct) {
         hover_image_url: g.own_count > 1 ? g.images[1].thumb : null,
         images: g.images,
         price: g.price,
-        original_price: g.price === p.price ? p.original_price : null,
+        original_price: g.original_price,
         total_stock_quantity: g.stock,
         sold_out: false,
         badges,
@@ -456,8 +484,9 @@ router.get('/all', adminAuth, async (req, res) => {
 // GET /api/products/:id/variants
 router.get('/:id/variants', async (req, res) => {
   try {
-    const variants = await fetchVariantsForProduct(req.params.id);
-    res.json(variants);
+    const [variants, products] = await Promise.all([fetchVariantsForProduct(req.params.id), getProducts()]);
+    const p = products.find(p => p.id === req.params.id);
+    res.json(p ? applySale(p, variants) : variants);
   } catch (err) {
     console.error('[Airtable] Variants fetch error:', err.message);
     res.status(500).json({ error: 'Could not load variants' });
@@ -473,7 +502,7 @@ router.get('/:id', async (req, res) => {
     const p = products.find(p => p.id === req.params.id);
     if (!p) return res.status(404).json({ error: 'Product not found' });
 
-    const variants = await fetchVariantsForProduct(p.id);
+    const variants = applySale(p, await fetchVariantsForProduct(p.id));
     const groups = buildColourGroups(p, variants);
     const out = {
       ...p,

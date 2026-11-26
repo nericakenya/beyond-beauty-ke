@@ -224,7 +224,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <div class="announce-bar">
-  Free delivery on orders over KSh 9,500 · WhatsApp: <a href="https://wa.me/254114481515" target="_blank">+254 114 481515</a>
+  Free Nairobi delivery over KSh 7,500 · WhatsApp: <a href="https://wa.me/254114481515" target="_blank">+254 114 481515</a>
 </div>
 
 <!-- ── STICKY SHELL ── -->
@@ -748,8 +748,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   function fmt(p) { return 'KSh ' + p.toLocaleString('en-KE'); }
 
   // Delivery pricing — keep in sync with routes/orders.js
-  const FREE_DELIVERY_FROM = 9500;
   const DELIVERY_FEES  = { nairobi: 350, metro: 450, outside: 500 };
+  const FREE_DELIVERY_FROM = { nairobi: 7500, metro: 10500, outside: null }; // null = never free
   const ZONE_LABELS    = { nairobi: 'Nairobi', metro: 'Greater Nairobi', outside: 'Rest of Kenya' };
   // Zones are straight-line distance from the I&M Bank Tower, Kenyatta Avenue
   const CITY_CENTRE    = { lat: -1.2847, lng: 36.820284 };
@@ -785,11 +785,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   // delivery is null while the fee is still unknown (no location chosen yet)
   function getCartTotals() {
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    let delivery;
-    if (subtotal >= FREE_DELIVERY_FROM) delivery = 0;
-    else if (deliveryZone) delivery = DELIVERY_FEES[deliveryZone];
-    else delivery = null;
+    let delivery = null;
+    if (deliveryZone) {
+      const freeFrom = FREE_DELIVERY_FROM[deliveryZone];
+      delivery = freeFrom != null && subtotal >= freeFrom ? 0 : DELIVERY_FEES[deliveryZone];
+    }
     return { subtotal, delivery, grand: subtotal + (delivery || 0) };
+  }
+
+  // Line under the delivery fee: how far from free delivery, or the payment rule outside Nairobi
+  function deliveryNote(subtotal, delivery) {
+    const msg = t => `<div class="free-delivery-msg">${t}</div>`;
+    if (!deliveryZone) return msg(`Free delivery in Nairobi over ${fmt(FREE_DELIVERY_FROM.nairobi)} and Greater Nairobi over ${fmt(FREE_DELIVERY_FROM.metro)}`);
+    if (deliveryZone === 'outside') return msg('Outside Nairobi: full payment is due before dispatch');
+    if (delivery !== 0) return msg(`Add ${fmt(FREE_DELIVERY_FROM[deliveryZone] - subtotal)} more for free delivery`);
+    return '';
   }
 
   // ── CART COUNT BADGE ──
@@ -828,7 +838,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="summary-totals">
         <div class="summary-row"><span>Subtotal</span><span>${fmt(subtotal)}</span></div>
         <div class="summary-row"><span>Delivery</span><span>${delivery === null ? 'Select your delivery location' : delivery === 0 ? '\u2713 Free' : fmt(delivery)}</span></div>
-        ${delivery !== 0 ? `<div class="free-delivery-msg">Add ${fmt(FREE_DELIVERY_FROM - subtotal)} more for free delivery</div>` : ''}
+        ${deliveryNote(subtotal, delivery)}
         <div class="summary-row grand"><span>Total</span><span>${fmt(grand)}</span></div>
       </div>`;
   }
@@ -881,6 +891,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     lines.push('Subtotal: ' + fmt(subtotal));
     lines.push('Delivery (' + ZONE_LABELS[deliveryZone] + '): ' + (delivery === 0 ? 'Free \u2713' : fmt(delivery)));
     lines.push('*Total: ' + fmt(grand) + '*');
+    lines.push('Payment: ' + (deliveryZone === 'outside' ? 'full amount before dispatch' : 'on delivery'));
     lines.push('');
     lines.push('*Delivery Address*');
     if (selectedPlace) {

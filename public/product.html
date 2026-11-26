@@ -380,7 +380,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <div class="announce-bar">
-  <span class="ann-line">Free delivery on orders over KSh 9,500</span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="https://wa.me/254114481515" target="_blank">+254 114 481515</a></span>
+  <span class="ann-line">Free Nairobi delivery over KSh 7,500</span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="https://wa.me/254114481515" target="_blank">+254 114 481515</a></span>
 </div>
 
 <div class="sticky-shell" id="stickyShell">
@@ -924,7 +924,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
     footer && (footer.style.display = 'block');
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const delivery = subtotal >= 9500 ? 0 : 350;
+    const delivery = subtotal >= 7500 ? 0 : 350;
     const grand = subtotal + delivery;
     el.innerHTML = cart.map(i => {
       const key = itemKey(i);
@@ -949,7 +949,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
     if (deliveryEl) deliveryEl.textContent = delivery === 0 ? 'Free' : fmt(delivery);
     if (grandEl)    grandEl.textContent    = fmt(grand);
-    if (msgEl)      msgEl.textContent      = delivery === 0 ? 'You qualify for free delivery!' : `Add ${fmt(9500 - subtotal)} more for free delivery`;
+    if (msgEl)      msgEl.textContent      = delivery === 0 ? 'You qualify for free Nairobi delivery!' : `Add ${fmt(7500 - subtotal)} more for free Nairobi delivery`;
   }
 
   function addToCart() {
@@ -1155,7 +1155,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   }
 
   const DELIVERY_AND_RETURNS_HTML = `<ul>
-    <li>Free delivery on orders over KSh 9,500</li>
+    <li>Free delivery in Nairobi over KSh 7,500 and Greater Nairobi over KSh 10,500</li>
     <li>Standard delivery within Nairobi: KES 350 — 1 to 3 hours</li>
     <li>Greater Nairobi (up to 45 km from the city centre): KES 450</li>
     <li>We deliver nationwide across Kenya: KES 500 — 1 to 3 working days</li>
@@ -1306,8 +1306,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     const priceRow = document.getElementById('price-row');
     if (priceRow) {
+      const wasPrice = resolvedVariant.original_price;
       priceRow.innerHTML = effectivePrice
-        ? `<span class="price">${fmt(effectivePrice)}</span>`
+        ? (wasPrice
+            ? `<span class="price sale">${fmt(effectivePrice)}</span><span class="price original">${fmt(wasPrice)}</span>`
+            : `<span class="price">${fmt(effectivePrice)}</span>`)
         : `<span class="price enquire">Enquire for price</span>`;
     }
 

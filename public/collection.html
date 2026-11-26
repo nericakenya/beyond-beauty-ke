@@ -263,7 +263,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- End Google Tag Manager (noscript) -->
 
 <div class="announce-bar">
-  <span class="ann-line">Free delivery on orders over KSh 9,500</span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="https://wa.me/254114481515" target="_blank">+254 114 481515</a></span>
+  <span class="ann-line">Free Nairobi delivery over KSh 7,500</span><span class="ann-line">WhatsApp: <a id="waAnnounce" href="https://wa.me/254114481515" target="_blank">+254 114 481515</a></span>
 </div>
 
 <div class="sticky-shell" id="stickyShell">
@@ -773,7 +773,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
     footer && (footer.style.display = 'block');
     const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-    const delivery = subtotal >= 9500 ? 0 : 350;
+    const delivery = subtotal >= 7500 ? 0 : 350;
     const grand = subtotal + delivery;
     el.innerHTML = cart.map(i => {
       const key = itemKey(i);
@@ -794,7 +794,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('cartSubtotal').textContent = fmt(subtotal);
     document.getElementById('cartDelivery').textContent = delivery === 0 ? 'Free' : fmt(delivery);
     document.getElementById('cartGrand').textContent = fmt(grand);
-    document.getElementById('cartDeliveryMsg').textContent = delivery === 0 ? 'You qualify for free delivery!' : `Add ${fmt(9500 - subtotal)} more for free delivery`;
+    document.getElementById('cartDeliveryMsg').textContent = delivery === 0 ? 'You qualify for free Nairobi delivery!' : `Add ${fmt(7500 - subtotal)} more for free Nairobi delivery`;
   }
 
   function showToast(msg) {

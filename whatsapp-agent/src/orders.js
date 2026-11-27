@@ -139,6 +139,7 @@ async function createOrder({ phone, customerName, phoneGiven, address, zone, req
     'Web Ref': orderRef,
     'Promo Code': promoResult ? [promoResult.record_id] : undefined,
     Notes: [
+      phone.startsWith('2540000') ? 'TEST ORDER from the /test chat page — safe to delete.' : null,
       `Placed ${nairobiStamp()} via WhatsApp (Joy, agent). Area: ${z.label}; payment ${z.payment}.`,
       phoneGiven && last9(phoneGiven) !== last9(phone) ? `Phone given in order: ${phoneGiven} (WhatsApp ${intlPhone(phone)}).` : null,
       pin ? `Map: ${mapLink(pin)}` : null,

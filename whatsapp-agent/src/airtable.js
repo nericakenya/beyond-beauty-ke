@@ -52,4 +52,6 @@ async function createMany(table, fieldsList) {
 // For formulas: quote a string value safely
 const str = s => `'${String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
 
-module.exports = { list, get, create, update, createMany, str };
+const del = (table, id) => call('DELETE', `${table}/${id}`);
+
+module.exports = { list, get, create, update, createMany, del, str };

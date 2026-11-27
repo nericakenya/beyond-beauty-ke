@@ -1,5 +1,17 @@
 // Meta WhatsApp Cloud API: signature check, parsing webhooks, sending replies, media download.
 const crypto = require('crypto');
+const { AsyncLocalStorage } = require('async_hooks');
+
+// Test chat (/test page): everything Joy would send during a test message is collected here
+// instead of going to WhatsApp. Test customers use made-up numbers starting 2540000.
+const testCapture = new AsyncLocalStorage();
+const isTestNumber = to => String(to).startsWith('2540000');
+function captured(to, text) {
+  const store = testCapture.getStore();
+  if (store) { store.outbox.push({ to, text }); return true; }
+  if (isTestNumber(to)) { console.log(`[test number ${to}] not sent: ${String(text).slice(0, 80)}`); return true; }
+  return false;
+}
 const { config } = require('./config');
 
 const graph = path => `https://graph.facebook.com/${config.meta.graphVersion}/${path}`;
@@ -82,6 +94,7 @@ function splitMessage(text, max = 1500) {
 
 // preview: false stops WhatsApp adding a link preview card (used for team alerts)
 async function sendText(to, text, { preview = true } = {}) {
+  if (captured(to, text)) return;
   for (const body of splitMessage(text)) {
     if (config.dryRun) { console.log(`[DRY RUN → ${to}]\n${body}\n`); continue; }
     await post(`${config.meta.phoneNumberId}/messages`, {
@@ -94,6 +107,7 @@ async function sendText(to, text, { preview = true } = {}) {
 // An approved message template (needed to message someone who hasn't chatted in 24 hours).
 // bodyParams fill {{1}}, {{2}}, … in the template body.
 async function sendTemplate(to, name, language, bodyParams = []) {
+  if (captured(to, `[template ${name}] ${bodyParams.join(' | ')}`)) return;
   if (config.dryRun) { console.log(`[DRY RUN template ${name} → ${to}] ${bodyParams.join(' | ')}`); return; }
   await post(`${config.meta.phoneNumberId}/messages`, {
     messaging_product: 'whatsapp', to, type: 'template',
@@ -106,7 +120,7 @@ async function sendTemplate(to, name, language, bodyParams = []) {
 
 // Blue ticks + "typing…" while Joy works on the reply
 async function markReadAndTyping(messageId) {
-  if (config.dryRun) return;
+  if (config.dryRun || testCapture.getStore()) return;
   try {
     await post(`${config.meta.phoneNumberId}/messages`, {
       messaging_product: 'whatsapp', status: 'read', message_id: messageId, typing_indicator: { type: 'text' },
@@ -128,4 +142,4 @@ async function downloadMedia(mediaId) {
   return { base64: buf.toString('base64'), mimeType: meta.mime_type || 'image/jpeg' };
 }
 
-module.exports = { validSignature, parseWebhook, sendText, sendTemplate, markReadAndTyping, downloadMedia, splitMessage };
+module.exports = { validSignature, parseWebhook, sendText, sendTemplate, markReadAndTyping, downloadMedia, splitMessage, testCapture, isTestNumber };

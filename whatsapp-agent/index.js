@@ -39,6 +39,48 @@ app.post('/webhook', express.raw({ type: '*/*', limit: '2mb' }), (req, res) => {
   }
 });
 
+// ── Test chat page (/test) ─────────────────────────────────────────────────────────
+// Same handlers as WhatsApp, but everything Joy would send is collected and returned.
+const crypto = require('crypto');
+const testPage = require('./src/testpage');
+const keyOk = k => {
+  const want = config.testChatKey || '';
+  return !!want && typeof k === 'string' && k.length === want.length && crypto.timingSafeEqual(Buffer.from(k), Buffer.from(want));
+};
+const testPhoneOk = p => /^2540000\d{5}$/.test(String(p || ''));
+
+app.get('/test', (_req, res) => {
+  if (!config.testChatKey) return res.status(404).send('Test chat is switched off (set TEST_CHAT_KEY).');
+  res.type('html').send(testPage);
+});
+
+app.post('/test/message', express.json(), async (req, res) => {
+  const { key, phone, text, name, asAdmin } = req.body || {};
+  if (!keyOk(key)) return res.status(401).json({ error: 'Wrong test key' });
+  if (!testPhoneOk(phone) || !String(text || '').trim()) return res.status(400).json({ error: 'Bad request' });
+  const store = { outbox: [] };
+  try {
+    await wa.testCapture.run(store, () => {
+      const id = `test-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (asAdmin) return handleAdmin({ kind: 'message', from: config.adminNumbers[0] || 'admin', id, type: 'text', text: String(text) });
+      return conversations.enqueue(phone, () => handleCustomer({ kind: 'message', from: phone, name: name || 'Test Customer', id, type: 'text', text: String(text), timestamp: Date.now() / 1000 }));
+    });
+    res.json({ messages: store.outbox.map(m => ({ to: m.to === phone ? 'customer' : 'janet', text: m.text })) });
+  } catch (e) {
+    console.error('[test chat]', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/test/reset', express.json(), async (req, res) => {
+  const { key, phone } = req.body || {};
+  if (!keyOk(key)) return res.status(401).json({ error: 'Wrong test key' });
+  if (!testPhoneOk(phone)) return res.status(400).json({ error: 'Bad request' });
+  const c = await conversations.findByPhone(phone);
+  if (c) await require('./src/airtable').del(config.airtable.tables.conversations, c.id);
+  res.json({ ok: true });
+});
+
 async function handle(ev) {
   if (ev.kind === 'echo') return handleEcho(ev);
   if (config.adminNumbers.includes(ev.from) && /^#\w/.test(ev.text || '')) return handleAdmin(ev);

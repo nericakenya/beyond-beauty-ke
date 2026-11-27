@@ -64,6 +64,8 @@ const config = {
 
   restockCheckMinutes: Number(env('RESTOCK_CHECK_MINUTES', 720)), // every 12 hours; 0 = off
 
+  testChatKey: env('TEST_CHAT_KEY'), // password for the /test chat page; page is off when blank
+
   dryRun: env('DRY_RUN', '0') === '1', // log outgoing WhatsApp messages instead of sending
 };
 

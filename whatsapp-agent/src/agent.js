@@ -54,7 +54,10 @@ function contextNote({ phone, profileName, conv, text }) {
 
 // ── The loop ────────────────────────────────────────────────────────────────────────
 async function reply({ conv, phone, profileName, userContent, text }) {
-  const ctx = { phone, profileName, conv };
+  // The most recent website checkout message in this chat (this message or an earlier one)
+  const lastCheckout = [{ content: text }, ...[...conv.history].reverse()].map(m => typeof m.content === 'string' ? m.content : (m.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n'))
+    .find(t => /I'd like to place an order/i.test(t || '')) || null;
+  const ctx = { phone, profileName, conv, checkoutText: lastCheckout };
   const messages = [
     ...conv.history,
     { role: 'user', content: userContent },

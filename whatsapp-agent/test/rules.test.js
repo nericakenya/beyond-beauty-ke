@@ -132,3 +132,25 @@ test('message source detection and business hours', () => {
   assert.equal(agent.dispatchDay({ day: 6, hour: 16.5 }), 'tomorrow (Sunday)');
   assert.equal(agent.dispatchDay({ day: 0, hour: 17 }), 'tomorrow (Monday)');
 });
+
+test('checkout lines are parsed and every line must be in the order, at the quoted price', () => {
+  const msg = "Hi Beyond Beauty, I'd like to place an order:\nRef: BB-WX\n\n*My Order*\n* Quilted Jewel Box · Blush Pink × 1  —  KSh 2,100\n• Mosaic Multi-Gem Ring (Gold) × 1  —  KSh 1,700\n• Seoul1988 Serum × 2  —  KSh 5,000\n\n*Order Summary*\nSubtotal: KSh 8,800";
+  const lines = orders.parseCheckoutLines(msg);
+  assert.deepEqual(lines.map(l => [l.product, l.qty, l.quoted_unit]), [['quilted jewel box', 1, 2100], ['mosaic multi-gem ring', 1, 1700], ['seoul1988 serum', 2, 2500]]);
+  const priced = [{ name: 'Quilted Jewel Box', unit_price: 2100 }, { name: 'Seoul1988 Serum', unit_price: 2500 }];
+  // ring left out without the customer agreeing → refused
+  let p = orders.checkoutProblems(lines, { requested: [{ name: 'Quilted Jewel Box · Blush Pink', qty: 1 }], priced });
+  assert.equal(p.length, 1); assert.match(p[0], /Mosaic Multi-Gem Ring/);
+  // ring requested (it will fail as out of stock elsewhere) → no "missing" problem
+  p = orders.checkoutProblems(lines, { requested: [{ name: 'Mosaic Multi-Gem Ring (Gold)', qty: 1 }], priced });
+  assert.equal(p.length, 0);
+  // customer agreed to drop it → fine
+  p = orders.checkoutProblems(lines, { requested: [], priced, removed: ['Mosaic Multi-Gem Ring · Gold'] });
+  assert.equal(p.length, 0);
+  // price changed since the message → must ask first
+  p = orders.checkoutProblems(lines, { requested: [], priced: [{ name: 'Quilted Jewel Box', unit_price: 2300 }, { name: 'Seoul1988 Serum', unit_price: 2500 }], removed: ['Mosaic Multi-Gem Ring'] });
+  assert.equal(p.length, 1); assert.match(p[0], /current price is KSh 2,300/);
+  p = orders.checkoutProblems(lines, { requested: [], priced: [{ name: 'Quilted Jewel Box', unit_price: 2300 }, { name: 'Seoul1988 Serum', unit_price: 2500 }], removed: ['Mosaic Multi-Gem Ring'], acceptedNewPrices: true });
+  assert.equal(p.length, 0);
+  assert.deepEqual(orders.parseCheckoutLines('Hi, is the bag available?'), []);
+});

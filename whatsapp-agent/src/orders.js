@@ -30,6 +30,47 @@ function itemName(customerName, productName, colour, now = new Date()) {
   return `${d}-${first}-${initials}${col}`;
 }
 
+// Item lines of a website checkout message: "• Name · Option × 2  —  KSh 4,200".
+// (Copied from WhatsApp the bullet may arrive as "*" or "-".) Returns [{ name, product, qty, quoted_unit }].
+function parseCheckoutLines(text) {
+  if (!/I'd like to place an order/i.test(text || '')) return [];
+  const out = [];
+  for (const raw of String(text).split('\n')) {
+    const m = raw.match(/^\s*[•*·-]\s*(.+?)\s*[×x]\s*(\d+)\s*[—–-]+\s*KSh\s*([\d,]+)/i);
+    if (!m) continue;
+    const name = m[1].trim(), qty = Number(m[2]), total = Number(m[3].replace(/,/g, ''));
+    out.push({ name, product: productPart(name), qty, quoted_unit: qty ? Math.round(total / qty) : total });
+  }
+  return out;
+}
+
+// "Quilted Jewel Box · Blush Pink" / "Mosaic Ring (Gold)" → "quilted jewel box" / "mosaic ring"
+function productPart(name) {
+  return String(name || '').split(' · ')[0].replace(/\s*\([^)]*\)\s*$/, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+const coversLine = (candidate, line) => {
+  const c = productPart(candidate);
+  return !!c && (c === line.product || c.startsWith(line.product) || line.product.startsWith(c));
+};
+
+// Checks that a checkout order call includes every line the customer sent, at the price they saw.
+function checkoutProblems(checkoutLines, { requested, priced, removed = [], acceptedNewPrices = false }) {
+  const problems = [];
+  for (const line of checkoutLines) {
+    const removedOk = removed.some(r => coversLine(r, line));
+    const pricedLine = priced.find(p => coversLine(p.name, line));
+    const requestedRaw = requested.some(r => r.name && coversLine(r.name, line));
+    if (!pricedLine && !requestedRaw && !removedOk) {
+      problems.push(`"${line.name} × ${line.qty}" from the checkout message is missing from this order. Include every line; if an item can't be supplied, tell the customer and only leave it out (removed_items) after they agree.`);
+    }
+    if (pricedLine && !acceptedNewPrices && line.quoted_unit && pricedLine.unit_price !== line.quoted_unit) {
+      problems.push(`"${line.name}": the customer's message says KSh ${line.quoted_unit.toLocaleString('en-KE')} each, but the current price is KSh ${pricedLine.unit_price.toLocaleString('en-KE')}. Tell the customer the current price and ask before going ahead (then set customer_accepted_new_prices).`);
+    }
+  }
+  return problems;
+}
+
 // Pure totals: lines [{ unit_price, qty }]
 function totals(lines, zone, { discount = 0, promoUsed = false, freeDeliveryPromo = false } = {}) {
   const subtotal = lines.reduce((s, l) => s + l.unit_price * l.qty, 0);
@@ -50,9 +91,9 @@ async function priceLines(requested) {
     const { product: p, variant: v } = hit;
     const { price, was_price } = shop.priceOf(p, v);
     const stock = shop.stockOf(p, v);
-    if (!price) { problems.push(`${code}: "${p.name}" has no price — the team must quote it`); continue; }
-    if (!stock.in_stock) { problems.push(`${code}: "${p.name}" (${v ? shop.variantLabel(v) : 'Standard'}) is out of stock`); continue; }
-    if (stock.qty != null && stock.qty < qty) { problems.push(`${code}: only ${stock.qty} of "${p.name}" (${v ? shop.variantLabel(v) : 'Standard'}) in stock, ${qty} requested`); continue; }
+    if (!price) { problems.push(`${label}: "${p.name}" has no price — the team must quote it`); continue; }
+    if (!stock.in_stock) { problems.push(`${label}: "${p.name}" (${v ? shop.variantLabel(v) : 'Standard'}) is out of stock`); continue; }
+    if (stock.qty != null && stock.qty < qty) { problems.push(`${label}: only ${stock.qty} of "${p.name}" (${v ? shop.variantLabel(v) : 'Standard'}) in stock, ${qty} requested`); continue; }
     lines.push({ code: v?.sku || p.id, product_id: p.id, variant_id: v?.id || null, name: p.name, option: v ? shop.variantLabel(v) : 'Standard', colour: v?.colour || null, qty, unit_price: price, was_price, line_total: price * qty });
   }
   return { lines, problems };
@@ -105,13 +146,15 @@ async function ordersForPhone(phone, limit = 5) {
 }
 
 // Creates Customer (if new), Order and Order Items. Idempotent on the reference.
-async function createOrder({ phone, customerName, phoneGiven, address, zone, requestedLines, promoCode, ref, notes, pin }) {
+async function createOrder({ phone, customerName, phoneGiven, address, zone, requestedLines, promoCode, ref, notes, pin, checkoutText, removedItems = [], acceptedNewPrices = false }) {
   if (ref) {
     const dup = await findOrderByRef(ref);
     if (dup) return { ok: true, already_existed: true, order_record_id: dup.id, ...orderSummary(dup) };
   }
   const { lines, problems } = await priceLines(requestedLines);
-  if (problems.length) return { ok: false, problems };
+  const checkoutLines = parseCheckoutLines(checkoutText);
+  if (checkoutLines.length) problems.push(...checkoutProblems(checkoutLines, { requested: requestedLines, priced: lines, removed: removedItems, acceptedNewPrices }));
+  if (problems.length) return { ok: false, problems, note: 'Nothing was created. Tell the customer about each problem in the Unfortunately… However… style, offer what is available (alternatives or a restock alert), and ask how they would like to go ahead.' };
   if (!lines.length) return { ok: false, problems: ['No items to order'] };
 
   let promoResult = null;
@@ -205,4 +248,4 @@ async function logPaymentClaim({ phone, ref, mpesaCode, amount, payerName, paidA
   return { ok: true, ref: s.ref, order_total: s.total, mismatch, note: 'Logged as unverified. The team confirms it against the till statement before marking the order paid.' };
 }
 
-module.exports = { createOrder, priceLines, totals, itemName, newRef, ordersForPhone, logPaymentClaim, findCustomer, upsertCustomer, intlPhone, phoneDigits, nairobiStamp };
+module.exports = { createOrder, priceLines, totals, parseCheckoutLines, checkoutProblems, itemName, newRef, ordersForPhone, logPaymentClaim, findCustomer, upsertCustomer, intlPhone, phoneDigits, nairobiStamp };

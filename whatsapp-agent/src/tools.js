@@ -88,6 +88,8 @@ const TOOLS = [
         promo_code: { type: 'string' },
         ref: { type: 'string', description: 'Reference from the checkout message, e.g. BB-W1A2B3C' },
         notes: { type: 'string', description: 'Anything Janet should know (e.g. preferred delivery time)' },
+        removed_items: { type: 'array', items: { type: 'string' }, description: 'Checkout lines the customer AGREED to drop (e.g. out of stock), by name as written' },
+        customer_accepted_new_prices: { type: 'boolean', description: 'true only after the customer agreed to a current price that differs from their checkout message' },
         location_pin: { type: 'object', description: 'Coordinates from a "Location pin:" line or a shared WhatsApp location', properties: { lat: { type: 'number' }, lng: { type: 'number' } }, required: ['lat', 'lng'], additionalProperties: false },
       },
       required: ['customer_name', 'delivery_area', 'delivery_address', 'items'],
@@ -197,6 +199,9 @@ async function runTool(name, input, ctx) {
         ref: input.ref,
         notes: input.notes,
         pin: input.location_pin,
+        checkoutText: ctx.checkoutText,
+        removedItems: input.removed_items || [],
+        acceptedNewPrices: input.customer_accepted_new_prices === true,
       });
       if (result.ok && !result.already_existed) {
         await conversations.setFields(ctx.conv, {

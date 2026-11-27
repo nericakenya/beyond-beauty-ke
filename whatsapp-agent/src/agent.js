@@ -35,7 +35,7 @@ function dispatchDay(now) {
 }
 
 function messageSource(text) {
-  if (/I'd like to place an order/i.test(text || '')) return 'website checkout';
+  if (/I['’]d like to place an order/i.test(text || '')) return 'website checkout';
   if (/I'm interested in/i.test(text || '')) return 'website product page';
   return 'direct WhatsApp message';
 }
@@ -56,7 +56,7 @@ function contextNote({ phone, profileName, conv, text }) {
 async function reply({ conv, phone, profileName, userContent, text }) {
   // The most recent website checkout message in this chat (this message or an earlier one)
   const lastCheckout = [{ content: text }, ...[...conv.history].reverse()].map(m => typeof m.content === 'string' ? m.content : (m.content || []).filter(b => b.type === 'text').map(b => b.text).join('\n'))
-    .find(t => /I'd like to place an order/i.test(t || '')) || null;
+    .find(t => /I['’]d like to place an order/i.test(t || '')) || null;
   const ctx = { phone, profileName, conv, checkoutText: lastCheckout };
   const messages = [
     ...conv.history,

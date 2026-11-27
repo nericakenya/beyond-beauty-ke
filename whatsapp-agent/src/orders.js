@@ -33,7 +33,7 @@ function itemName(customerName, productName, colour, now = new Date()) {
 // Item lines of a website checkout message: "• Name · Option × 2  —  KSh 4,200".
 // (Copied from WhatsApp the bullet may arrive as "*" or "-".) Returns [{ name, product, qty, quoted_unit }].
 function parseCheckoutLines(text) {
-  if (!/I'd like to place an order/i.test(text || '')) return [];
+  if (!/I['’]d like to place an order/i.test(text || '')) return [];
   const out = [];
   for (const raw of String(text).split('\n')) {
     const m = raw.match(/^\s*[•*·-]\s*(.+?)\s*[×x]\s*(\d+)\s*[—–-]+\s*KSh\s*([\d,]+)/i);
@@ -149,7 +149,31 @@ async function ordersForPhone(phone, limit = 5) {
 async function createOrder({ phone, customerName, phoneGiven, address, zone, requestedLines, promoCode, ref, notes, pin, checkoutText, removedItems = [], acceptedNewPrices = false }) {
   if (ref) {
     const dup = await findOrderByRef(ref);
-    if (dup) return { ok: true, already_existed: true, order_record_id: dup.id, ...orderSummary(dup) };
+    if (dup) {
+      // Same checkout sent again: don't create a second order, but check the order on file
+      // still has every line of the customer's message (it may have been made without some).
+      const checkoutLines = parseCheckoutLines(checkoutText);
+      if (checkoutLines.length) {
+        const items = await Promise.all((dup.fields['Order Items'] || []).map(id => airtable.get(T.orderItems, id)));
+        const onFile = (await Promise.all(items.map(async it => {
+          const pid = it.fields.Product?.[0];
+          const p = pid ? await shop.product(pid).catch(() => null) : null;
+          return p ? { name: p.name, unit_price: it.fields['Unit Price'] } : null;
+        }))).filter(Boolean);
+        const missing = checkoutLines.filter(l => !onFile.some(o => productPart(o.name) === l.product || productPart(o.name).startsWith(l.product) || l.product.startsWith(productPart(o.name)))
+          && !removedItems.some(r => productPart(r) === l.product || l.product.startsWith(productPart(r)) || productPart(r).startsWith(l.product)));
+        if (missing.length) {
+          const why = (await priceLines(missing.map(l => ({ name: l.name, qty: l.qty })))).problems;
+          return {
+            ok: false,
+            already_existed: true,
+            problems: [`Order ${ref} was already created from an earlier copy of this message, WITHOUT: ${missing.map(l => `${l.name} × ${l.qty}`).join(', ')}.`, ...why],
+            note: 'Tell the customer about the missing item(s) in the Unfortunately… However… style and ask how they would like to go ahead. If they agree to go ahead without them, call create_order again with removed_items.',
+          };
+        }
+      }
+      return { ok: true, already_existed: true, order_record_id: dup.id, ...orderSummary(dup) };
+    }
   }
   const { lines, problems } = await priceLines(requestedLines);
   const checkoutLines = parseCheckoutLines(checkoutText);
